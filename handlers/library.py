@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 from imperal_sdk import ActionResult
 
-from config import SP_API_BASE, DEFAULT_HISTORY_LIMIT, DEFAULT_LIKES_LIMIT, MAX_LIMIT
+from spotify_config import SP_API_BASE, DEFAULT_HISTORY_LIMIT, DEFAULT_LIKES_LIMIT, MAX_LIMIT
 from utils import format_track, sp_error
 from handlers.auth import get_auth_headers, get_auth_headers_refreshed
 

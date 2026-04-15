@@ -10,7 +10,7 @@ import base64
 import urllib.parse
 import uuid
 
-from config import (
+from spotify_config import (
     CRED_COLLECTION,
     OAUTH_STATE_COLLECTION,
     SP_AUTH_URL,

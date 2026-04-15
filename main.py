@@ -12,7 +12,7 @@ from imperal_sdk import Extension, ChatExtension, ActionResult, WebhookResponse
 from imperal_sdk import ui
 from imperal_sdk.types.health import HealthStatus
 
-from config import CRED_COLLECTION, OAUTH_STATE_COLLECTION
+from spotify_config import CRED_COLLECTION, OAUTH_STATE_COLLECTION
 from handlers.auth import (
     get_stored_creds, get_access_token, save_token, clear_token,
     build_auth_url, create_oauth_state, consume_oauth_state, exchange_code_for_token,

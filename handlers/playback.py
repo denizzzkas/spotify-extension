@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 from imperal_sdk import ActionResult
 
-from config import SP_API_BASE
+from spotify_config import SP_API_BASE
 from utils import format_track, sp_error
 from handlers.auth import get_auth_headers, get_auth_headers_refreshed
 
