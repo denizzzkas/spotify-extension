@@ -16,6 +16,7 @@ from spotify_config import (
     SP_AUTH_URL,
     SP_TOKEN_URL,
     SP_SCOPES,
+    SP_REDIRECT_URI,
 )
 
 
@@ -37,14 +38,24 @@ async def get_access_token(ctx) -> str | None:
 
 async def save_token(ctx, token_data: dict) -> None:
     """Persist or overwrite OAuth credentials for the current user."""
+    await save_token_for_user(ctx, ctx.user.id, token_data)
+
+
+async def save_token_for_user(ctx, user_id: str, token_data: dict) -> None:
+    """Persist or overwrite OAuth credentials for an explicit user_id.
+
+    Used in the OAuth webhook callback where ctx.user may not reflect
+    the user who initiated the OAuth flow.
+    """
     record = {
-        "user_id": ctx.user.id,
+        "user_id": user_id,
         "access_token": token_data.get("access_token", ""),
         "refresh_token": token_data.get("refresh_token", ""),
         "scope": token_data.get("scope", ""),
         "token_type": token_data.get("token_type", "Bearer"),
     }
-    existing = await get_stored_creds(ctx)
+    page = await ctx.store.query(CRED_COLLECTION, where={"user_id": user_id})
+    existing = page.data[0] if page.data else None
     if existing is None:
         await ctx.store.create(CRED_COLLECTION, record)
     else:
@@ -152,16 +163,18 @@ async def create_oauth_state(ctx) -> str:
     return state
 
 
-async def consume_oauth_state(ctx, state: str) -> bool:
-    """Verify and delete the state token. Returns True if valid."""
-    page = await ctx.store.query(
-        OAUTH_STATE_COLLECTION,
-        where={"user_id": ctx.user.id, "state": state},
-    )
+async def consume_oauth_state(ctx, state: str) -> str | None:
+    """Verify and delete the state token. Returns the user_id or None if invalid.
+
+    Queries by state only — ctx.user may not be the initiating user in
+    the OAuth webhook callback (request comes from Spotify's servers).
+    """
+    page = await ctx.store.query(OAUTH_STATE_COLLECTION, where={"state": state})
     if not page.data:
-        return False
-    await ctx.store.delete(OAUTH_STATE_COLLECTION, page.data[0].id)
-    return True
+        return None
+    doc = page.data[0]
+    await ctx.store.delete(OAUTH_STATE_COLLECTION, doc.id)
+    return doc.data.get("user_id")
 
 
 async def exchange_code_for_token(ctx, code: str, redirect_uri: str) -> dict:

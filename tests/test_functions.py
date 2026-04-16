@@ -24,7 +24,6 @@ SP_CONFIG = {
     "spotify": {
         "client_id": "test_client_id",
         "client_secret": "test_client_secret",
-        "redirect_uri": "https://app.imperal.io/webhooks/spotify-extension/oauth/callback",
     }
 }
 

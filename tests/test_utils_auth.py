@@ -127,17 +127,17 @@ async def test_get_auth_headers_raises_no_token():
 async def test_create_and_consume_state():
     ctx = MockContext(user_id="user1")
     state = await create_oauth_state(ctx)
-    assert await consume_oauth_state(ctx, state) is True
+    assert await consume_oauth_state(ctx, state) == "user1"
 
 async def test_consume_state_only_once():
     ctx = MockContext(user_id="user1")
     state = await create_oauth_state(ctx)
     await consume_oauth_state(ctx, state)
-    assert await consume_oauth_state(ctx, state) is False
+    assert await consume_oauth_state(ctx, state) is None
 
 async def test_consume_unknown_state():
     ctx = MockContext(user_id="user1")
-    assert await consume_oauth_state(ctx, "bogus") is False
+    assert await consume_oauth_state(ctx, "bogus") is None
 
 
 # ── build_auth_url ────────────────────────────────────────────────────────────

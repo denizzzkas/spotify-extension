@@ -46,8 +46,7 @@
   "config_defaults": {
     "spotify": {
       "client_id": "",
-      "client_secret": "",
-      "redirect_uri": ""
+      "client_secret": ""
     }
   }
 }

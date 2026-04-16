@@ -12,9 +12,9 @@ from imperal_sdk import Extension, ChatExtension, ActionResult, WebhookResponse
 from imperal_sdk import ui
 from imperal_sdk.types.health import HealthStatus
 
-from spotify_config import CRED_COLLECTION, OAUTH_STATE_COLLECTION
+from spotify_config import CRED_COLLECTION, OAUTH_STATE_COLLECTION, SP_REDIRECT_URI
 from handlers.auth import (
-    get_stored_creds, get_access_token, save_token, clear_token,
+    get_stored_creds, get_access_token, save_token, save_token_for_user, clear_token,
     build_auth_url, create_oauth_state, consume_oauth_state, exchange_code_for_token,
 )
 from handlers import chat_registry
@@ -27,7 +27,6 @@ ext = Extension(
     config_defaults={
         "spotify.client_id": "",
         "spotify.client_secret": "",
-        "spotify.redirect_uri": "",
     },
 )
 
@@ -90,13 +89,8 @@ async def fn_connect_spotify(ctx, params: ConnectSpotifyParams) -> ActionResult:
         return ActionResult.error(
             "spotify.client_id is not configured. Ask your administrator to add Spotify app credentials."
         )
-    redirect_uri = ctx.config.get("spotify.redirect_uri", "")
-    if not redirect_uri:
-        return ActionResult.error(
-            "spotify.redirect_uri is not configured. Ask your administrator to complete the Spotify setup."
-        )
     state = await create_oauth_state(ctx)
-    auth_url = build_auth_url(client_id, redirect_uri, state)
+    auth_url = build_auth_url(client_id, SP_REDIRECT_URI, state)
     return ActionResult.success(
         data={"auth_url": auth_url},
         summary="Open the URL in your browser to authorise Spotify access",
@@ -128,14 +122,14 @@ async def oauth_callback(ctx, headers, body, query_params):
         return WebhookResponse.error("Missing authorisation code", 400)
     if not state:
         return WebhookResponse.error("Missing state parameter", 400)
-    if not await consume_oauth_state(ctx, state):
+    user_id = await consume_oauth_state(ctx, state)
+    if user_id is None:
         return WebhookResponse.error("Invalid or expired state — please try connect_spotify() again.", 400)
-    redirect_uri = ctx.config.get("spotify.redirect_uri", "")
     try:
-        token_data = await exchange_code_for_token(ctx, code, redirect_uri)
+        token_data = await exchange_code_for_token(ctx, code, SP_REDIRECT_URI)
     except ValueError as exc:
         return WebhookResponse.error(str(exc), 500)
-    await save_token(ctx, token_data)
+    await save_token_for_user(ctx, user_id, token_data)
     return WebhookResponse.ok({"connected": True, "message": "Spotify connected. You can close this window."})
 
 
