@@ -44,9 +44,7 @@
   "category": "music",
   "tags": ["music", "spotify", "playlists", "streaming", "audio"],
   "config_defaults": {
-    "spotify": {
-      "client_id": "",
-      "client_secret": ""
-    }
+    "spotify.client_id": "",
+    "spotify.client_secret": ""
   }
 }
