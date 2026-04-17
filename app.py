@@ -75,6 +75,7 @@ class DisconnectSpotifyParams(BaseModel):
     "connect_spotify",
     description="Connect your Spotify account via OAuth 2.0. Returns an authorisation URL.",
     action_type="write",
+    event="spotify.connected",
 )
 async def fn_connect_spotify(ctx, params: ConnectSpotifyParams) -> ActionResult:
     client_id = ctx.config.get("spotify.client_id", "")
@@ -94,6 +95,7 @@ async def fn_connect_spotify(ctx, params: ConnectSpotifyParams) -> ActionResult:
     "disconnect_spotify",
     description="Disconnect your Spotify account and remove all stored credentials.",
     action_type="write",
+    event="spotify.disconnected",
 )
 async def fn_disconnect_spotify(ctx, params: DisconnectSpotifyParams) -> ActionResult:
     if (await get_stored_creds(ctx)) is None:

@@ -15,7 +15,7 @@ from handlers.auth import get_access_token
     default_width=280,
     min_width=200,
     max_width=400,
-    refresh="on_event:track.liked,track.unliked,playlist.created,track.added_to_playlist,track.removed_from_playlist",
+    refresh="on_event:spotify.connected,spotify.disconnected,track.liked,track.unliked,playlist.created,track.added_to_playlist,track.removed_from_playlist",
 )
 async def panel_spotify(ctx, **kwargs):
     token = await get_access_token(ctx)
