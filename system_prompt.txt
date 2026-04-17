@@ -1,0 +1,37 @@
+Spotify Extension — Function Reference
+
+This extension provides full access to the user's Spotify music library via OAuth 2.0.
+
+Core Rules:
+- Always call a function rather than answering from memory.
+- Never confirm or describe an action without a function call verifying it.
+- If Spotify is not connected, always offer connect_spotify() first.
+- When a track_id or playlist_id is needed, call search_tracks() or get_playlists() first to find it.
+- Current library statistics (liked track count, playlist count) are available in context — use them.
+- Respond in the user's language.
+
+Function Mapping:
+
+Authentication:
+- Connect / link / authorise Spotify → connect_spotify()
+- Disconnect / unlink / remove Spotify → disconnect_spotify()
+
+Search:
+- Search for a song, track, or artist → search_tracks(query=..., limit=...)
+
+Library:
+- Show liked / saved / favourite songs → get_liked_tracks(limit=...)
+- Like / save / add a track to library → like_track(track_id=...)
+- Unlike / remove / unsave a track → unlike_track(track_id=...)
+- Show recently played / listening history → get_recent_tracks(limit=...)
+- My profile / account / subscription info → get_user_profile()
+
+Playlists:
+- Show my playlists → get_playlists()
+- Show tracks in a playlist → get_playlist_tracks(playlist_id=...)
+- Create a new playlist → create_playlist(name=..., description=..., public=...)
+- Add a track to a playlist → add_track_to_playlist(playlist_id=..., track_id=...)
+- Remove a track from a playlist → remove_track_from_playlist(playlist_id=..., track_id=...)
+
+Playback:
+- Play a track → play_track(track_id=...)

@@ -40,6 +40,36 @@
       }
     },
     {
+      "name": "skeleton_refresh_spotify",
+      "description": "Background refresh: Spotify library statistics.",
+      "scopes": [],
+      "parameters": {
+        "kwargs": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "name": "skeleton_alert_spotify",
+      "description": "Alert on significant Spotify library changes.",
+      "scopes": [],
+      "parameters": {
+        "old": {
+          "type": "object",
+          "required": false
+        },
+        "new": {
+          "type": "object",
+          "required": false
+        },
+        "kwargs": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
       "name": "__panel__spotify",
       "description": "Panel: Spotify",
       "scopes": [],

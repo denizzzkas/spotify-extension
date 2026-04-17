@@ -9,8 +9,10 @@ from handlers.auth import (
     get_stored_creds, get_access_token, save_token, save_token_for_user, clear_token,
     build_auth_url, create_oauth_state, consume_oauth_state, exchange_code_for_token,
 )
+from pathlib import Path as _Path
 from handlers import chat_registry
 
+SYSTEM_PROMPT = (_Path(__file__).parent / "system_prompt.txt").read_text()
 
 ext = Extension(
     "spotify-extension",
@@ -29,6 +31,8 @@ chat = ChatExtension(
         "Full access to your Spotify music library. "
         "Search tracks, manage playlists, save songs, view play history, and more."
     ),
+    system_prompt=SYSTEM_PROMPT,
+    model="claude-haiku-4-5-20251001",
 )
 
 chat_registry.register(chat)

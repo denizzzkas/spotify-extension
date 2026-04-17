@@ -8,7 +8,7 @@ _dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, _dir)
 
 for _m in [k for k in sys.modules if k in (
-    "app", "panels", "spotify_config", "utils",
+    "app", "skeleton", "panels", "spotify_config", "utils",
     "handlers", "handlers.auth", "handlers.search",
     "handlers.playlists", "handlers.library", "handlers.playback",
     "handlers.chat_registry",
@@ -16,4 +16,5 @@ for _m in [k for k in sys.modules if k in (
     del sys.modules[_m]
 
 from app import ext, chat  # noqa: F401
+import skeleton  # noqa: F401
 import panels  # noqa: F401
