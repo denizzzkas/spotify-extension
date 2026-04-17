@@ -1,6 +1,4 @@
 """Spotify extension — Extension, ChatExtension, lifecycle and OAuth."""
-from __future__ import annotations
-
 from pydantic import BaseModel
 
 from imperal_sdk import Extension, ChatExtension, ActionResult, WebhookResponse
@@ -78,6 +76,7 @@ class DisconnectSpotifyParams(BaseModel):
     event="spotify.connected",
 )
 async def fn_connect_spotify(ctx, params: ConnectSpotifyParams) -> ActionResult:
+    """Generate a Spotify OAuth 2.0 authorisation URL for the current user."""
     client_id = ctx.config.get("spotify.client_id", "")
     if not client_id:
         return ActionResult.error(
@@ -98,6 +97,7 @@ async def fn_connect_spotify(ctx, params: ConnectSpotifyParams) -> ActionResult:
     event="spotify.disconnected",
 )
 async def fn_disconnect_spotify(ctx, params: DisconnectSpotifyParams) -> ActionResult:
+    """Remove all stored Spotify credentials for the current user."""
     if (await get_stored_creds(ctx)) is None:
         return ActionResult.success(data={"disconnected": False}, summary="Spotify was not connected")
     await clear_token(ctx)
