@@ -1,16 +1,43 @@
 {
   "app_id": "spotify-extension",
   "version": "1.0.0",
-  "capabilities": ["inter-extension"],
+  "capabilities": [
+    "inter-extension"
+  ],
   "tools": [
     {
       "name": "spotify",
       "description": "Full access to your Spotify music library. Search tracks, manage playlists, save songs, view play history, and more.",
-      "scopes": ["*"],
+      "scopes": [
+        "*"
+      ],
       "parameters": {
         "message": {
           "type": "string",
           "required": false
+        },
+        "kwargs": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "name": "__webhook__/oauth/callback",
+      "description": "Webhook handler for path: /oauth/callback",
+      "scopes": [],
+      "parameters": {
+        "headers": {
+          "type": "string",
+          "required": true
+        },
+        "body": {
+          "type": "string",
+          "required": true
+        },
+        "query_params": {
+          "type": "string",
+          "required": true
         }
       }
     },
@@ -28,23 +55,23 @@
   ],
   "signals": [],
   "schedules": [],
-  "webhooks": [
-    {
-      "path": "/oauth/callback",
-      "method": "GET",
-      "description": "Spotify OAuth 2.0 redirect handler"
-    }
+  "required_scopes": [
+    "*"
   ],
-  "required_scopes": ["*"],
+  "config_defaults": {
+    "spotify.client_id": "",
+    "spotify.client_secret": ""
+  },
   "name": "Spotify",
-  "display_name": "Spotify",
   "description": "Full access to your Spotify music library. Search tracks, manage playlists, save songs, view play history, and connect via OAuth 2.0.",
   "author": "Imperal",
   "license": "MIT",
   "category": "music",
-  "tags": ["music", "spotify", "playlists", "streaming", "audio"],
-  "config_defaults": {
-    "spotify.client_id": "",
-    "spotify.client_secret": ""
-  }
+  "tags": [
+    "music",
+    "spotify",
+    "playlists",
+    "streaming",
+    "audio"
+  ]
 }

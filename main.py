@@ -144,13 +144,13 @@ async def panel_spotify(ctx, **kwargs):
     if not token:
         return ui.Stack([
             ui.Header("Spotify", level=3),
-            ui.Alert("Not connected. Click below to link your Spotify account.", variant="warning"),
+            ui.Alert("Not connected. Click below to link your Spotify account.", type="warn"),
             ui.Button("Connect Spotify", variant="primary", icon="Music",
                       on_click=ui.Send("Connect my Spotify account")),
         ], direction="v", gap=2)
     return ui.Stack([
         ui.Header("Spotify", level=3),
-        ui.Alert("Connected", variant="success"),
+        ui.Alert("Connected", type="success"),
         ui.Stack([
             ui.Button("Search Tracks", variant="secondary", size="sm",
                       on_click=ui.Send("Search Spotify tracks")),
@@ -165,6 +165,5 @@ async def panel_spotify(ctx, **kwargs):
         ], direction="v", gap=1),
         ui.Divider(),
         ui.Button("Disconnect", variant="danger", size="sm", icon="LogOut",
-                  on_click=ui.Send("Disconnect Spotify"),
-                  confirm="Disconnect your Spotify account and remove stored credentials?"),
+                  on_click=ui.Send("Disconnect Spotify")),
     ], direction="v", gap=2)
