@@ -1,6 +1,4 @@
 """Spotify extension — UI panel registration."""
-from __future__ import annotations
-
 from imperal_sdk import ui
 
 from app import ext
@@ -18,7 +16,11 @@ from handlers.auth import get_access_token
     refresh="on_event:spotify.connected,spotify.disconnected,track.liked,track.unliked,playlist.created,track.added_to_playlist,track.removed_from_playlist",
 )
 async def panel_spotify(ctx, **kwargs):
-    token = await get_access_token(ctx)
+    try:
+        token = await get_access_token(ctx)
+    except Exception:
+        token = None
+
     if not token:
         return ui.Stack([
             ui.Header("Spotify", level=3),
@@ -26,6 +28,7 @@ async def panel_spotify(ctx, **kwargs):
             ui.Button("Connect Spotify", variant="primary", icon="Music",
                       on_click=ui.Send("Connect my Spotify account")),
         ], direction="v", gap=2)
+
     return ui.Stack([
         ui.Header("Spotify", level=3),
         ui.Alert("Connected", type="success"),
