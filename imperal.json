@@ -1,9 +1,7 @@
 {
   "app_id": "spotify-extension",
   "version": "1.0.0",
-  "capabilities": [
-    "inter-extension"
-  ],
+  "capabilities": [],
   "tools": [
     {
       "name": "spotify",

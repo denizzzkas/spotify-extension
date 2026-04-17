@@ -23,7 +23,7 @@ from handlers import chat_registry
 ext = Extension(
     "spotify-extension",
     version="1.0.0",
-    capabilities=["inter-extension"],
+    capabilities=[],
     config_defaults={
         "spotify.client_id": "",
         "spotify.client_secret": "",
