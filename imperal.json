@@ -81,17 +81,6 @@
       }
     }
   ],
-  "panels": {
-    "spotify": {
-      "slot": "left",
-      "title": "Spotify",
-      "icon": "Music",
-      "default_width": 280,
-      "min_width": 200,
-      "max_width": 400,
-      "refresh": "on_event:spotify.connected,spotify.disconnected,track.liked,track.unliked,playlist.created,track.added_to_playlist,track.removed_from_playlist"
-    }
-  },
   "signals": [],
   "schedules": [],
   "required_scopes": [
