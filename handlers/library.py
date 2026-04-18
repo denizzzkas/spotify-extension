@@ -150,6 +150,7 @@ async def fn_like_track(ctx, params: LikeTrackParams) -> ActionResult:
     return ActionResult.success(
         data={"track_id": params.track_id, "liked": True},
         summary=f"Track {params.track_id} saved to your library",
+        refresh_panels=["spotify"],
     )
 
 
@@ -172,6 +173,7 @@ async def fn_unlike_track(ctx, params: UnlikeTrackParams) -> ActionResult:
     return ActionResult.success(
         data={"track_id": params.track_id, "liked": False},
         summary=f"Track {params.track_id} removed from your library",
+        refresh_panels=["spotify"],
     )
 
 

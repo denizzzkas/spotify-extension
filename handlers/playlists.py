@@ -166,6 +166,7 @@ async def fn_create_playlist(ctx, params: CreatePlaylistParams) -> ActionResult:
     return ActionResult.success(
         data={"playlist": playlist},
         summary=f"Playlist '{params.name}' created (ID: {playlist['id']})",
+        refresh_panels=["spotify"],
     )
 
 
@@ -188,6 +189,7 @@ async def fn_add_track_to_playlist(ctx, params: AddTrackToPlaylistParams) -> Act
     return ActionResult.success(
         data={"playlist_id": params.playlist_id, "track_id": params.track_id, "added": True},
         summary=f"Track {params.track_id} added to playlist {params.playlist_id}",
+        refresh_panels=["spotify"],
     )
 
 
@@ -210,4 +212,5 @@ async def fn_remove_track_from_playlist(ctx, params: RemoveTrackFromPlaylistPara
     return ActionResult.success(
         data={"playlist_id": params.playlist_id, "track_id": params.track_id, "removed": True},
         summary=f"Track {params.track_id} removed from playlist {params.playlist_id}",
+        refresh_panels=["spotify"],
     )
