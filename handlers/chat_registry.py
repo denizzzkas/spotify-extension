@@ -19,6 +19,13 @@ from handlers.library import (
     fn_get_user_profile, GetUserProfileParams,
 )
 from handlers.playback import fn_play_track, PlayTrackParams
+from handlers.panel import (
+    fn_panel_search, PanelSearchParams,
+    fn_open_playlist, OpenPlaylistParams,
+    fn_open_liked_tracks, OpenLikedTracksParams,
+    fn_open_recent_tracks, OpenRecentTracksParams,
+    fn_open_profile, OpenProfileParams,
+)
 
 
 def register(chat) -> None:
@@ -107,3 +114,38 @@ def register(chat) -> None:
     async def wrapped_play_track(ctx, params: PlayTrackParams) -> ActionResult:
         """Fetch track metadata and emit a track.played event for platform-level playback."""
         return await fn_play_track(ctx, params)
+
+    @chat.function("panel_search_tracks",
+                   description="Search Spotify tracks and show results in the sidebar panel.",
+                   action_type="read")
+    async def wrapped_panel_search(ctx, params: PanelSearchParams) -> ActionResult:
+        """Search tracks and push results into the left panel below the search bar."""
+        return await fn_panel_search(ctx, params)
+
+    @chat.function("open_playlist",
+                   description="Open a playlist's tracks in the right detail panel.",
+                   action_type="read")
+    async def wrapped_open_playlist(ctx, params: OpenPlaylistParams) -> ActionResult:
+        """Load playlist tracks into the right detail panel."""
+        return await fn_open_playlist(ctx, params)
+
+    @chat.function("open_liked_tracks",
+                   description="Open liked/saved tracks in the right detail panel.",
+                   action_type="read")
+    async def wrapped_open_liked_tracks(ctx, params: OpenLikedTracksParams) -> ActionResult:
+        """Load liked tracks into the right detail panel."""
+        return await fn_open_liked_tracks(ctx, params)
+
+    @chat.function("open_recent_tracks",
+                   description="Open recently played tracks in the right detail panel.",
+                   action_type="read")
+    async def wrapped_open_recent_tracks(ctx, params: OpenRecentTracksParams) -> ActionResult:
+        """Load recently played tracks into the right detail panel."""
+        return await fn_open_recent_tracks(ctx, params)
+
+    @chat.function("open_profile",
+                   description="Open the user's Spotify profile in the right detail panel.",
+                   action_type="read")
+    async def wrapped_open_profile(ctx, params: OpenProfileParams) -> ActionResult:
+        """Load user profile into the right detail panel."""
+        return await fn_open_profile(ctx, params)

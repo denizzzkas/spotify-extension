@@ -52,6 +52,6 @@ async def fn_play_track(ctx, params: PlayTrackParams) -> ActionResult:
             "preview_url": track_data["preview_url"],
             "spotify_url": track_data["url"],
         },
-        summary=f"Playing: {track_data['artist']} — {track_data['title']}",
+        summary=f"▶ {track_data['artist']} — {track_data['title']} (system player coming soon)",
         refresh_panels=["spotify"],
     )

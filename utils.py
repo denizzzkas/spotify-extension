@@ -18,6 +18,8 @@ def format_track(raw: dict) -> dict:
     """Normalise a raw Spotify track object to a clean dict."""
     artists = raw.get("artists") or []
     artist_names = ", ".join(a.get("name", "") for a in artists) or "Unknown"
+    album = raw.get("album") or {}
+    images = album.get("images") or []
     return {
         "id": raw.get("id", ""),
         "title": raw.get("name", "Unknown"),
@@ -27,13 +29,15 @@ def format_track(raw: dict) -> dict:
         "duration_ms": raw.get("duration_ms", 0),
         "popularity": raw.get("popularity", 0),
         "preview_url": raw.get("preview_url") or "",
-        "album": (raw.get("album") or {}).get("name", ""),
+        "album": album.get("name", ""),
+        "album_art": images[0].get("url", "") if images else "",
     }
 
 
 def format_playlist(raw: dict) -> dict:
     """Normalise a raw Spotify playlist object to a clean dict."""
     tracks = raw.get("tracks") or {}
+    images = raw.get("images") or []
     return {
         "id": raw.get("id", ""),
         "title": raw.get("name", "Unknown"),
@@ -41,6 +45,7 @@ def format_playlist(raw: dict) -> dict:
         "url": (raw.get("external_urls") or {}).get("spotify", ""),
         "description": raw.get("description") or "",
         "is_public": raw.get("public") or False,
+        "image_url": images[0].get("url", "") if images else "",
     }
 
 

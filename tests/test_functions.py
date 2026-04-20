@@ -35,7 +35,10 @@ SAMPLE_TRACK = {
     "duration_ms": 244000,
     "popularity": 85,
     "preview_url": "https://p.scdn.co/mp3-preview/abc123.mp3",
-    "album": {"name": "Hurry Up, We're Dreaming"},
+    "album": {
+        "name": "Hurry Up, We're Dreaming",
+        "images": [{"url": "https://i.scdn.co/image/album.jpg"}],
+    },
 }
 
 SAMPLE_PLAYLIST = {
