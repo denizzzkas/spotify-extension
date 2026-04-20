@@ -2,7 +2,7 @@
 import logging
 
 from app import ext
-from handlers.auth import get_access_token
+from handlers.auth import get_access_token, refresh_access_token
 from spotify_config import SP_API_BASE
 
 log = logging.getLogger("spotify")
@@ -20,7 +20,6 @@ async def skeleton_refresh_spotify(ctx, **kwargs) -> dict:
             await ctx.skeleton.update(SKELETON_STATS, stats)
             return {"response": stats}
 
-        from handlers.auth import refresh_access_token
         fresh = await refresh_access_token(ctx)
         headers = {"Authorization": f"Bearer {fresh or token}"}
 
