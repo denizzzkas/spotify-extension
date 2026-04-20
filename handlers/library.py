@@ -144,6 +144,17 @@ async def fn_like_track(ctx, params: LikeTrackParams) -> ActionResult:
         params={"ids": params.track_id},
     )
 
+    if resp.status_code == 401:
+        try:
+            headers = await get_auth_headers_refreshed(ctx)
+        except ValueError as exc:
+            return ActionResult.error(str(exc))
+        resp = await ctx.http.put(
+            f"{SP_API_BASE}/me/tracks",
+            headers=headers,
+            params={"ids": params.track_id},
+        )
+
     if not resp.ok:
         return ActionResult.error(sp_error(resp.status_code), retryable=False)
 
@@ -166,6 +177,17 @@ async def fn_unlike_track(ctx, params: UnlikeTrackParams) -> ActionResult:
         headers=headers,
         params={"ids": params.track_id},
     )
+
+    if resp.status_code == 401:
+        try:
+            headers = await get_auth_headers_refreshed(ctx)
+        except ValueError as exc:
+            return ActionResult.error(str(exc))
+        resp = await ctx.http.delete(
+            f"{SP_API_BASE}/me/tracks",
+            headers=headers,
+            params={"ids": params.track_id},
+        )
 
     if not resp.ok:
         return ActionResult.error(sp_error(resp.status_code), retryable=False)

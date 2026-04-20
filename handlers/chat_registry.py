@@ -1,4 +1,5 @@
 """Registers all @chat.function handlers on the ChatExtension instance."""
+from __future__ import annotations
 
 from imperal_sdk import ActionResult
 

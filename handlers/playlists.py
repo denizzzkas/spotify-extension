@@ -72,7 +72,7 @@ async def fn_get_playlists(ctx, params: GetPlaylistsParams) -> ActionResult:
             headers = await get_auth_headers_refreshed(ctx)
         except ValueError as exc:
             return ActionResult.error(str(exc))
-        resp = await ctx.http.get(f"{SP_API_BASE}/me/playlists", headers=headers)
+        resp = await ctx.http.get(f"{SP_API_BASE}/me/playlists", headers=headers, params={"limit": 50})
 
     if not resp.ok:
         return ActionResult.error(
@@ -157,14 +157,20 @@ async def fn_create_playlist(ctx, params: CreatePlaylistParams) -> ActionResult:
     # Add initial tracks if provided
     if params.tracks:
         uris = [to_spotify_uri(tid) for tid in params.tracks if tid]
-        await ctx.http.post(
+        tracks_resp = await ctx.http.post(
             f"{SP_API_BASE}/playlists/{playlist['id']}/tracks",
             headers=headers,
             json={"uris": uris},
         )
+        if not tracks_resp.ok:
+            return ActionResult.success(
+                data={"playlist": playlist, "tracks_added": False},
+                summary=f"Playlist '{params.name}' created but tracks could not be added: {sp_error(tracks_resp.status_code)}",
+                refresh_panels=["spotify"],
+            )
 
     return ActionResult.success(
-        data={"playlist": playlist},
+        data={"playlist": playlist, "tracks_added": bool(params.tracks)},
         summary=f"Playlist '{params.name}' created (ID: {playlist['id']})",
         refresh_panels=["spotify"],
     )

@@ -20,7 +20,9 @@ async def skeleton_refresh_spotify(ctx, **kwargs) -> dict:
             await ctx.skeleton.update(SKELETON_STATS, stats)
             return {"response": stats}
 
-        headers = {"Authorization": f"Bearer {token}"}
+        from handlers.auth import refresh_access_token
+        fresh = await refresh_access_token(ctx)
+        headers = {"Authorization": f"Bearer {fresh or token}"}
 
         liked_resp = await ctx.http.get(
             f"{SP_API_BASE}/me/tracks",
