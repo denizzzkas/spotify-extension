@@ -4,10 +4,12 @@ from pydantic import BaseModel
 from imperal_sdk import Extension, ChatExtension, ActionResult, WebhookResponse
 from imperal_sdk.types.health import HealthStatus
 
-from spotify_config import CRED_COLLECTION, OAUTH_STATE_COLLECTION, SP_REDIRECT_URI
+from spotify_config import CRED_COLLECTION, OAUTH_STATE_COLLECTION, SP_REDIRECT_URI, SP_API_BASE
+from utils import format_track
 from handlers.auth import (
     get_stored_creds, get_access_token, save_token, save_token_for_user, clear_token,
     build_auth_url, create_oauth_state, consume_oauth_state, exchange_code_for_token,
+    get_auth_headers,
 )
 from pathlib import Path as _Path
 from handlers import chat_registry
@@ -36,6 +38,27 @@ chat = ChatExtension(
 )
 
 chat_registry.register(chat)
+
+
+# ── Schedule ──────────────────────────────────────────────────────────────────
+
+@ext.schedule("sync_now_playing", cron="*/1 * * * *")
+async def sync_now_playing(ctx):
+    """Poll current Spotify playback state and update skeleton every minute."""
+    try:
+        headers = await get_auth_headers(ctx)
+    except ValueError:
+        return
+    resp = await ctx.http.get(f"{SP_API_BASE}/me/player", headers=headers)
+    if resp.status_code == 204 or not resp.ok:
+        return
+    body = resp.json()
+    item = body.get("item")
+    if not item:
+        return
+    track = format_track(item)
+    track["is_playing"] = body.get("is_playing", False)
+    await ctx.skeleton.update("spotify_now_playing", track)
 
 
 # ── Lifecycle ──────────────────────────────────────────────────────────────────

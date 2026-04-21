@@ -131,11 +131,20 @@ async def panel_spotify(ctx, **kwargs):
     ]
 
     if now_playing:
+        is_playing = now_playing.get("is_playing", True)
         children += [
             ui.Divider(),
             ui.Image(src=now_playing.get("album_art", ""), width="100%", object_fit="cover"),
             ui.Text(now_playing.get("title", ""), variant="heading"),
             ui.Text(now_playing.get("artist", ""), variant="muted"),
+            ui.Stack([
+                ui.Button("", icon="SkipBack", variant="ghost", size="sm",
+                          on_click=ui.Call("previous_track")),
+                ui.Button("", icon="Pause" if is_playing else "Play", variant="ghost", size="sm",
+                          on_click=ui.Call("pause_playback" if is_playing else "resume_playback")),
+                ui.Button("", icon="SkipForward", variant="ghost", size="sm",
+                          on_click=ui.Call("next_track")),
+            ], direction="h", gap=1),
         ]
 
     return ui.Stack(children, direction="v", gap=2)

@@ -22,6 +22,10 @@ from handlers.playback import (
     fn_play_track, PlayTrackParams,
     fn_play_track_by_name, PlayTrackByNameParams,
     fn_play_playlist, PlayPlaylistParams,
+    fn_pause_playback, PausePlaybackParams,
+    fn_resume_playback, ResumePlaybackParams,
+    fn_next_track, NextTrackParams,
+    fn_prev_track, PrevTrackParams,
 )
 from handlers.panel import (
     fn_panel_search, PanelSearchParams,
@@ -139,6 +143,30 @@ def register(chat) -> None:
     async def wrapped_play_playlist(ctx, params: PlayPlaylistParams) -> ActionResult:
         """Load playlist queue and trigger platform playback."""
         return await fn_play_playlist(ctx, params)
+
+    @chat.function("pause_playback",
+                   description="Pause playback on the user's active Spotify device.",
+                   action_type="read")
+    async def wrapped_pause_playback(ctx, params: PausePlaybackParams) -> ActionResult:
+        return await fn_pause_playback(ctx, params)
+
+    @chat.function("resume_playback",
+                   description="Resume playback on the user's active Spotify device.",
+                   action_type="read")
+    async def wrapped_resume_playback(ctx, params: ResumePlaybackParams) -> ActionResult:
+        return await fn_resume_playback(ctx, params)
+
+    @chat.function("next_track",
+                   description="Skip to the next track on the user's active Spotify device.",
+                   action_type="read")
+    async def wrapped_next_track(ctx, params: NextTrackParams) -> ActionResult:
+        return await fn_next_track(ctx, params)
+
+    @chat.function("previous_track",
+                   description="Skip to the previous track on the user's active Spotify device.",
+                   action_type="read")
+    async def wrapped_prev_track(ctx, params: PrevTrackParams) -> ActionResult:
+        return await fn_prev_track(ctx, params)
 
     @chat.function("panel_search_tracks",
                    description="Search Spotify tracks and show results in the sidebar panel.",

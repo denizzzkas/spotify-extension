@@ -1,10 +1,14 @@
-"""Tests for playback handlers: play_track, play_track_by_name, play_playlist."""
+"""Tests for playback handlers: play_track, play_track_by_name, play_playlist, controls."""
 from imperal_sdk.testing import MockContext
 
 from handlers.playback import (
     fn_play_track, PlayTrackParams,
     fn_play_track_by_name, PlayTrackByNameParams,
     fn_play_playlist, PlayPlaylistParams,
+    fn_pause_playback, PausePlaybackParams,
+    fn_resume_playback, ResumePlaybackParams,
+    fn_next_track, NextTrackParams,
+    fn_prev_track, PrevTrackParams,
 )
 from tests.fixtures import ctx_with_token, SAMPLE_TRACK
 
@@ -92,3 +96,53 @@ async def test_play_playlist_empty_returns_error():
 async def test_play_playlist_no_token():
     ctx = MockContext(user_id="user1")
     assert (await fn_play_playlist(ctx, PlayPlaylistParams(playlist_id="pl123"))).status == "error"
+
+
+# ── playback controls ─────────────────────────────────────────────────────────
+
+async def test_pause_playback_success():
+    ctx = await ctx_with_token()
+    ctx.http._mocks.append(("PUT", "api.spotify.com/v1/me/player/pause", {}, 204))
+    result = await fn_pause_playback(ctx, PausePlaybackParams())
+    assert result.status == "success"
+    assert result.data["paused"] is True
+
+
+async def test_resume_playback_success():
+    ctx = await ctx_with_token()
+    ctx.http._mocks.append(("PUT", "api.spotify.com/v1/me/player/play", {}, 204))
+    result = await fn_resume_playback(ctx, ResumePlaybackParams())
+    assert result.status == "success"
+    assert result.data["playing"] is True
+
+
+async def test_next_track_success():
+    ctx = await ctx_with_token()
+    ctx.http._mocks.append(("POST", "api.spotify.com/v1/me/player/next", {}, 204))
+    ctx.http.mock_get("api.spotify.com/v1/me/player", {"is_playing": True, "item": SAMPLE_TRACK})
+    result = await fn_next_track(ctx, NextTrackParams())
+    assert result.status == "success"
+    assert result.data["skipped"] is True
+    assert "Midnight City" in result.summary
+
+
+async def test_prev_track_success():
+    ctx = await ctx_with_token()
+    ctx.http._mocks.append(("POST", "api.spotify.com/v1/me/player/previous", {}, 204))
+    ctx.http.mock_get("api.spotify.com/v1/me/player", {"is_playing": True, "item": SAMPLE_TRACK})
+    result = await fn_prev_track(ctx, PrevTrackParams())
+    assert result.status == "success"
+    assert result.data["skipped"] is True
+
+
+async def test_next_track_no_token():
+    ctx = MockContext(user_id="user1")
+    assert (await fn_next_track(ctx, NextTrackParams())).status == "error"
+
+
+async def test_pause_playback_premium_required():
+    ctx = await ctx_with_token()
+    ctx.http._mocks.append(("PUT", "api.spotify.com/v1/me/player/pause", {}, 403))
+    result = await fn_pause_playback(ctx, PausePlaybackParams())
+    assert result.status == "error"
+    assert "Premium" in result.error
