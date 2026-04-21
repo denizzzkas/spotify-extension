@@ -18,7 +18,11 @@ from handlers.library import (
     fn_unlike_track, UnlikeTrackParams,
     fn_get_user_profile, GetUserProfileParams,
 )
-from handlers.playback import fn_play_track, PlayTrackParams
+from handlers.playback import (
+    fn_play_track, PlayTrackParams,
+    fn_play_track_by_name, PlayTrackByNameParams,
+    fn_play_playlist, PlayPlaylistParams,
+)
 from handlers.panel import (
     fn_panel_search, PanelSearchParams,
     fn_open_playlist, OpenPlaylistParams,
@@ -114,6 +118,20 @@ def register(chat) -> None:
     async def wrapped_play_track(ctx, params: PlayTrackParams) -> ActionResult:
         """Fetch track metadata and emit a track.played event for platform-level playback."""
         return await fn_play_track(ctx, params)
+
+    @chat.function("play_track_by_name",
+                   description="Search for a track by title and artist name, then play it.",
+                   action_type="write", event="track.played")
+    async def wrapped_play_track_by_name(ctx, params: PlayTrackByNameParams) -> ActionResult:
+        """Find a track by name and artist and trigger platform playback."""
+        return await fn_play_track_by_name(ctx, params)
+
+    @chat.function("play_playlist",
+                   description="Play all tracks in a Spotify playlist sequentially.",
+                   action_type="write", event="playlist.played")
+    async def wrapped_play_playlist(ctx, params: PlayPlaylistParams) -> ActionResult:
+        """Load playlist queue and trigger platform playback."""
+        return await fn_play_playlist(ctx, params)
 
     @chat.function("panel_search_tracks",
                    description="Search Spotify tracks and show results in the sidebar panel.",

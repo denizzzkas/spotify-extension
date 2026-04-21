@@ -17,7 +17,7 @@ from handlers.auth import get_access_token, get_auth_headers
     default_width=280,
     min_width=220,
     max_width=400,
-    refresh="on_event:spotify.connected,spotify.disconnected,track.liked,track.unliked,playlist.created",
+    refresh="on_event:spotify.connected,spotify.disconnected,track.liked,track.unliked,playlist.created,track.played,playlist.played",
 )
 async def panel_spotify(ctx, **kwargs):
     try:
@@ -121,6 +121,7 @@ async def panel_spotify(ctx, **kwargs):
         ])
     )
 
+    now_playing = skeleton.get("spotify_now_playing")
     children += [
         ui.Divider(),
         ui.Button("My Profile", variant="ghost", size="sm", icon="User",
@@ -128,6 +129,14 @@ async def panel_spotify(ctx, **kwargs):
         ui.Button("Disconnect", variant="danger", size="sm", icon="LogOut",
                   on_click=ui.Call("disconnect_spotify")),
     ]
+
+    if now_playing:
+        children += [
+            ui.Divider(),
+            ui.Image(src=now_playing.get("album_art", ""), width="100%", object_fit="cover"),
+            ui.Text(now_playing.get("title", ""), variant="heading"),
+            ui.Text(now_playing.get("artist", ""), variant="muted"),
+        ]
 
     return ui.Stack(children, direction="v", gap=2)
 
