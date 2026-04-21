@@ -144,7 +144,7 @@ async def panel_spotify(ctx, **kwargs):
                           on_click=ui.Call("pause_playback" if is_playing else "resume_playback")),
                 ui.Button("", icon="SkipForward", variant="ghost", size="sm",
                           on_click=ui.Call("next_track")),
-            ], direction="h", gap=1),
+            ], direction="h", gap=1, wrap=False),
         ]
 
     return ui.Stack(children, direction="v", gap=2)
