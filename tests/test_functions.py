@@ -2,7 +2,7 @@
 from imperal_sdk.testing import MockContext
 
 from handlers.auth import save_token
-from handlers.search import fn_search_tracks, SearchTracksParams
+from handlers.search import fn_search_tracks, SearchTracksParams, fn_get_recommendations, GetRecommendationsParams
 from handlers.playlists import (
     fn_get_playlists, GetPlaylistsParams,
     fn_get_playlist_tracks, GetPlaylistTracksParams,
@@ -52,6 +52,41 @@ async def test_search_tracks_rate_limit_is_retryable():
     result = await fn_search_tracks(ctx, SearchTracksParams(query="test"))
     assert result.status == "error"
     assert result.retryable is True
+
+
+# ── get_recommendations ───────────────────────────────────────────────────────
+
+async def test_get_recommendations_returns_tracks():
+    ctx = await ctx_with_token()
+    ctx.http.mock_get(
+        "api.spotify.com/v1/search",
+        {"tracks": {"items": [SAMPLE_TRACK]}, "artists": {"items": []}},
+    )
+    ctx.http.mock_get(
+        "api.spotify.com/v1/recommendations",
+        {"tracks": [SAMPLE_TRACK]},
+    )
+    result = await fn_get_recommendations(ctx, GetRecommendationsParams(query="Radiohead"))
+    assert result.status == "success"
+    assert result.data["count"] == 1
+    assert result.data["based_on"] == "Radiohead"
+    assert "playlist" in result.summary.lower()
+
+
+async def test_get_recommendations_not_found():
+    ctx = await ctx_with_token()
+    ctx.http.mock_get(
+        "api.spotify.com/v1/search",
+        {"tracks": {"items": []}, "artists": {"items": []}},
+    )
+    result = await fn_get_recommendations(ctx, GetRecommendationsParams(query="xyzunknown"))
+    assert result.status == "error"
+    assert result.retryable is False
+
+
+async def test_get_recommendations_no_token():
+    ctx = MockContext(user_id="user1")
+    assert (await fn_get_recommendations(ctx, GetRecommendationsParams(query="test"))).status == "error"
 
 
 # ── get_playlists ─────────────────────────────────────────────────────────────

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from imperal_sdk import ActionResult
 
-from handlers.search import fn_search_tracks, SearchTracksParams
+from handlers.search import fn_search_tracks, SearchTracksParams, fn_get_recommendations, GetRecommendationsParams
 from handlers.playlists import (
     fn_get_playlists, GetPlaylistsParams,
     fn_get_playlist_tracks, GetPlaylistTracksParams,
@@ -41,6 +41,13 @@ def register(chat) -> None:
     async def wrapped_search_tracks(ctx, params: SearchTracksParams) -> ActionResult:
         """Search Spotify catalogue for tracks matching a query string."""
         return await fn_search_tracks(ctx, params)
+
+    @chat.function("get_recommendations",
+                   description="Get track recommendations based on an artist, track title, or genre.",
+                   action_type="read")
+    async def wrapped_get_recommendations(ctx, params: GetRecommendationsParams) -> ActionResult:
+        """Return Spotify recommendations similar to the given artist, track, or genre."""
+        return await fn_get_recommendations(ctx, params)
 
     @chat.function("get_recent_tracks",
                    description="Get the user's recently played tracks from Spotify (requires Premium).",
