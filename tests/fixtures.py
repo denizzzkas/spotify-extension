@@ -12,7 +12,7 @@ SP_CONFIG = {
 SAMPLE_TRACK = {
     "id": "4iV5W9uYEdYUVa79Axb7Rh",
     "name": "Midnight City",
-    "artists": [{"name": "M83"}],
+    "artists": [{"id": "artist_123", "name": "M83"}],
     "external_urls": {"spotify": "https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh"},
     "duration_ms": 244000,
     "popularity": 85,

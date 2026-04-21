@@ -99,7 +99,7 @@ async def fn_get_recommendations(ctx, params: GetRecommendationsParams) -> Actio
 
     if top_tracks:
         seed_tracks = [top_tracks[0]["id"]]
-        artist_ids = [a["id"] for a in (top_tracks[0].get("artists") or [])[:1]]
+        artist_ids = [a["id"] for a in (top_tracks[0].get("artists") or [])[:1] if a.get("id")]
         seed_artists = artist_ids
     elif top_artists:
         seed_artists = [top_artists[0]["id"]]
