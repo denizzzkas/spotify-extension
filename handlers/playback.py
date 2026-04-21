@@ -64,7 +64,6 @@ async def fn_play_track(ctx, params: PlayTrackParams) -> ActionResult:
             "spotify_url": track_data["url"],
         },
         summary=f"▶ {track_data['artist']} — {track_data['title']} (system player coming soon)",
-        event="track.played",
         refresh_panels=["spotify"],
     )
 
@@ -107,7 +106,6 @@ async def fn_play_track_by_name(ctx, params: PlayTrackByNameParams) -> ActionRes
     return ActionResult.success(
         data={"track": track, "preview_url": track["preview_url"], "spotify_url": track["url"]},
         summary=f"▶ {track['artist']} — {track['title']} (system player coming soon)",
-        event="track.played",
         refresh_panels=["spotify"],
     )
 
@@ -155,6 +153,5 @@ async def fn_play_playlist(ctx, params: PlayPlaylistParams) -> ActionResult:
     return ActionResult.success(
         data={"playlist_name": name, "tracks": tracks, "count": len(tracks)},
         summary=f"▶ Playing '{name}' — {len(tracks)} tracks (system player coming soon)",
-        event="playlist.played",
         refresh_panels=["spotify"],
     )
