@@ -9,6 +9,7 @@ from __future__ import annotations
 import base64
 import urllib.parse
 import uuid
+from datetime import datetime, timezone
 
 from spotify_config import (
     CRED_COLLECTION,
@@ -158,7 +159,7 @@ async def create_oauth_state(ctx) -> str:
     await ctx.store.create(OAUTH_STATE_COLLECTION, {
         "user_id": ctx.user.id,
         "state": state,
-        "created_at": ctx.time.now_utc,
+        "created_at": datetime.now(timezone.utc).isoformat(),
     })
     return state
 
