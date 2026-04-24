@@ -1,20 +1,20 @@
 """Tests for panel-specific handler functions."""
 from imperal_sdk.testing import MockContext
 
+from cache_models import SearchModel, DetailModel
 from handlers.panel import (
     fn_panel_search, PanelSearchParams,
     fn_open_playlist, OpenPlaylistParams,
     fn_open_liked_tracks, OpenLikedTracksParams,
     fn_open_recent_tracks, OpenRecentTracksParams,
     fn_open_profile, OpenProfileParams,
-    SKELETON_DETAIL, SKELETON_SEARCH,
 )
 from tests.fixtures import ctx_with_token, SAMPLE_TRACK, SAMPLE_USER
 
 
 # ── panel_search_tracks ───────────────────────────────────────────────────────
 
-async def test_panel_search_writes_to_skeleton():
+async def test_panel_search_writes_to_cache():
     ctx = await ctx_with_token()
     ctx.http.mock_get(
         "api.spotify.com/v1/search",
@@ -23,10 +23,11 @@ async def test_panel_search_writes_to_skeleton():
     result = await fn_panel_search(ctx, PanelSearchParams(query="Midnight City"))
     assert result.status == "success"
     assert result.data["count"] == 1
-    stored = await ctx.skeleton.get(SKELETON_SEARCH)
-    assert stored["query"] == "Midnight City"
-    assert stored["tracks"][0]["title"] == "Midnight City"
-    assert stored["tracks"][0]["album_art"] != ""
+    stored = await ctx.cache.get("search", SearchModel)
+    assert stored is not None
+    assert stored.query == "Midnight City"
+    assert stored.tracks[0]["title"] == "Midnight City"
+    assert stored.tracks[0]["album_art"] != ""
 
 
 async def test_panel_search_empty_results():
@@ -34,8 +35,9 @@ async def test_panel_search_empty_results():
     ctx.http.mock_get("api.spotify.com/v1/search", {"tracks": {"items": []}})
     result = await fn_panel_search(ctx, PanelSearchParams(query="xyznotfound"))
     assert result.status == "success"
-    stored = await ctx.skeleton.get(SKELETON_SEARCH)
-    assert stored["tracks"] == []
+    stored = await ctx.cache.get("search", SearchModel)
+    assert stored is not None
+    assert stored.tracks == []
 
 
 async def test_panel_search_no_token_returns_error():
@@ -53,7 +55,7 @@ async def test_panel_search_refreshes_left_panel():
 
 # ── open_playlist ─────────────────────────────────────────────────────────────
 
-async def test_open_playlist_writes_tracks_to_skeleton():
+async def test_open_playlist_writes_tracks_to_cache():
     ctx = await ctx_with_token()
     ctx.http.mock_get(
         "api.spotify.com/v1/playlists/pl123/tracks",
@@ -61,11 +63,12 @@ async def test_open_playlist_writes_tracks_to_skeleton():
     )
     result = await fn_open_playlist(ctx, OpenPlaylistParams(playlist_id="pl123", playlist_name="My Mix"))
     assert result.status == "success"
-    stored = await ctx.skeleton.get(SKELETON_DETAIL)
-    assert stored["type"] == "tracks"
-    assert stored["title"] == "My Mix"
-    assert len(stored["tracks"]) == 1
-    assert stored["tracks"][0]["title"] == "Midnight City"
+    stored = await ctx.cache.get("detail", DetailModel)
+    assert stored is not None
+    assert stored.type == "tracks"
+    assert stored.title == "My Mix"
+    assert len(stored.tracks) == 1
+    assert stored.tracks[0]["title"] == "Midnight City"
 
 
 async def test_open_playlist_uses_id_as_fallback_name():
@@ -73,8 +76,9 @@ async def test_open_playlist_uses_id_as_fallback_name():
     ctx.http.mock_get("api.spotify.com/v1/playlists/pl123/tracks", {"items": []})
     result = await fn_open_playlist(ctx, OpenPlaylistParams(playlist_id="pl123"))
     assert result.status == "success"
-    stored = await ctx.skeleton.get(SKELETON_DETAIL)
-    assert stored["title"] == "pl123"
+    stored = await ctx.cache.get("detail", DetailModel)
+    assert stored is not None
+    assert stored.title == "pl123"
 
 
 async def test_open_playlist_no_token_returns_error():
@@ -92,7 +96,7 @@ async def test_open_playlist_refreshes_detail_panel():
 
 # ── open_liked_tracks ─────────────────────────────────────────────────────────
 
-async def test_open_liked_tracks_writes_to_skeleton():
+async def test_open_liked_tracks_writes_to_cache():
     ctx = await ctx_with_token()
     ctx.http.mock_get(
         "api.spotify.com/v1/me/tracks",
@@ -100,10 +104,11 @@ async def test_open_liked_tracks_writes_to_skeleton():
     )
     result = await fn_open_liked_tracks(ctx, OpenLikedTracksParams())
     assert result.status == "success"
-    stored = await ctx.skeleton.get(SKELETON_DETAIL)
-    assert stored["type"] == "tracks"
-    assert stored["title"] == "Liked Tracks"
-    assert len(stored["tracks"]) == 1
+    stored = await ctx.cache.get("detail", DetailModel)
+    assert stored is not None
+    assert stored.type == "tracks"
+    assert stored.title == "Liked Tracks"
+    assert len(stored.tracks) == 1
 
 
 async def test_open_liked_tracks_no_token_returns_error():
@@ -114,7 +119,7 @@ async def test_open_liked_tracks_no_token_returns_error():
 
 # ── open_recent_tracks ────────────────────────────────────────────────────────
 
-async def test_open_recent_tracks_writes_to_skeleton():
+async def test_open_recent_tracks_writes_to_cache():
     ctx = await ctx_with_token()
     ctx.http.mock_get(
         "api.spotify.com/v1/me/player/recently-played",
@@ -122,9 +127,10 @@ async def test_open_recent_tracks_writes_to_skeleton():
     )
     result = await fn_open_recent_tracks(ctx, OpenRecentTracksParams())
     assert result.status == "success"
-    stored = await ctx.skeleton.get(SKELETON_DETAIL)
-    assert stored["type"] == "tracks"
-    assert stored["title"] == "Recent Tracks"
+    stored = await ctx.cache.get("detail", DetailModel)
+    assert stored is not None
+    assert stored.type == "tracks"
+    assert stored.title == "Recent Tracks"
 
 
 async def test_open_recent_tracks_premium_required():
@@ -143,16 +149,17 @@ async def test_open_recent_tracks_no_token_returns_error():
 
 # ── open_profile ──────────────────────────────────────────────────────────────
 
-async def test_open_profile_writes_to_skeleton():
+async def test_open_profile_writes_to_cache():
     ctx = await ctx_with_token()
     ctx.http.mock_get("api.spotify.com/v1/me", SAMPLE_USER)
     result = await fn_open_profile(ctx, OpenProfileParams())
     assert result.status == "success"
-    stored = await ctx.skeleton.get(SKELETON_DETAIL)
-    assert stored["type"] == "profile"
-    assert stored["profile"]["display_name"] == "Test User"
-    assert stored["profile"]["product"] == "premium"
-    assert stored["profile"]["followers"] == 42
+    stored = await ctx.cache.get("detail", DetailModel)
+    assert stored is not None
+    assert stored.type == "profile"
+    assert stored.profile["display_name"] == "Test User"
+    assert stored.profile["product"] == "premium"
+    assert stored.profile["followers"] == 42
 
 
 async def test_open_profile_no_token_returns_error():

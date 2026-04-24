@@ -43,7 +43,32 @@ SAMPLE_USER = {
 }
 
 
+class MockCache:
+    """In-memory ctx.cache stub for unit tests."""
+
+    def __init__(self):
+        self._data = {}
+
+    async def get(self, key, model=None):
+        val = self._data.get(key)
+        if val is None:
+            return None
+        if model is not None and isinstance(val, dict):
+            return model(**val)
+        return val
+
+    async def set(self, key, value, ttl_seconds=None):
+        if hasattr(value, "model_dump"):
+            self._data[key] = value.model_dump()
+        else:
+            self._data[key] = value
+
+    async def delete(self, key):
+        self._data.pop(key, None)
+
+
 async def ctx_with_token(token: str = "test_token") -> MockContext:
     ctx = MockContext(user_id="user1", config=SP_CONFIG)
+    ctx._cache = MockCache()
     await save_token(ctx, {"access_token": token, "refresh_token": "refresh_abc"})
     return ctx

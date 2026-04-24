@@ -1,6 +1,7 @@
 """Tests for playback handlers: play_track, play_track_by_name, play_playlist, controls."""
 from imperal_sdk.testing import MockContext
 
+from cache_models import NowPlayingModel, QueueModel
 from handlers.playback import (
     fn_play_track, PlayTrackParams,
     fn_play_track_by_name, PlayTrackByNameParams,
@@ -25,13 +26,14 @@ async def test_play_track_returns_track_data():
     assert "spotify.com/track" in result.data["spotify_url"]
 
 
-async def test_play_track_writes_now_playing_to_skeleton():
+async def test_play_track_writes_now_playing_to_cache():
     ctx = await ctx_with_token()
     ctx.http.mock_get("api.spotify.com/v1/tracks/4iV5W9uYEdYUVa79Axb7Rh", SAMPLE_TRACK)
     await fn_play_track(ctx, PlayTrackParams(track_id="4iV5W9uYEdYUVa79Axb7Rh"))
-    stored = await ctx.skeleton.get("spotify_now_playing")
-    assert stored["title"] == "Midnight City"
-    assert stored["artist"] == "M83"
+    stored = await ctx.cache.get("now_playing", NowPlayingModel)
+    assert stored is not None
+    assert stored.title == "Midnight City"
+    assert stored.artist == "M83"
 
 
 async def test_play_track_no_token_returns_error():
@@ -53,8 +55,9 @@ async def test_play_track_by_name_success():
     result = await fn_play_track_by_name(ctx, PlayTrackByNameParams(title="Midnight City", artist="M83"))
     assert result.status == "success"
     assert result.data["track"]["title"] == "Midnight City"
-    stored = await ctx.skeleton.get("spotify_now_playing")
-    assert stored["title"] == "Midnight City"
+    stored = await ctx.cache.get("now_playing", NowPlayingModel)
+    assert stored is not None
+    assert stored.title == "Midnight City"
 
 
 async def test_play_track_by_name_not_found():
@@ -81,10 +84,13 @@ async def test_play_playlist_success():
     result = await fn_play_playlist(ctx, PlayPlaylistParams(playlist_id="pl123", playlist_name="My Mix"))
     assert result.status == "success"
     assert result.data["count"] == 1
-    queue = await ctx.skeleton.get("spotify_queue")
-    assert queue["playlist_name"] == "My Mix"
-    assert queue["index"] == 0
-    assert (await ctx.skeleton.get("spotify_now_playing"))["title"] == "Midnight City"
+    queue = await ctx.cache.get("queue", QueueModel)
+    assert queue is not None
+    assert queue.playlist_name == "My Mix"
+    assert queue.index == 0
+    now_playing = await ctx.cache.get("now_playing", NowPlayingModel)
+    assert now_playing is not None
+    assert now_playing.title == "Midnight City"
 
 
 async def test_play_playlist_empty_returns_error():
