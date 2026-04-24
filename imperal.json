@@ -4,17 +4,286 @@
   "capabilities": [],
   "tools": [
     {
-      "name": "spotify",
-      "description": "Full access to your Spotify music library. Search tracks, manage playlists, save songs, view play history, and more.",
-      "scopes": [
-        "*"
-      ],
+      "name": "search_tracks",
+      "description": "Search Spotify for tracks by title or artist name.",
+      "scopes": [],
       "parameters": {
-        "message": {
+        "params": {
           "type": "string",
-          "required": false
-        },
-        "kwargs": {
+          "required": true
+        }
+      }
+    },
+    {
+      "name": "get_recommendations",
+      "description": "Get track recommendations based on an artist, track title, or genre.",
+      "scopes": [],
+      "parameters": {
+        "params": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "name": "get_recent_tracks",
+      "description": "Get the user's recently played tracks from Spotify (requires Premium).",
+      "scopes": [],
+      "parameters": {
+        "params": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "name": "get_liked_tracks",
+      "description": "Get all tracks saved in the user's Spotify library.",
+      "scopes": [],
+      "parameters": {
+        "params": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "name": "like_track",
+      "description": "Save a track to the user's Spotify library.",
+      "scopes": [],
+      "parameters": {
+        "params": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "name": "unlike_track",
+      "description": "Remove a track from the user's Spotify library.",
+      "scopes": [],
+      "parameters": {
+        "params": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "name": "get_user_profile",
+      "description": "Get the authenticated user's Spotify profile: display name, email, plan.",
+      "scopes": [],
+      "parameters": {
+        "params": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "name": "get_playlists",
+      "description": "Get all playlists owned or followed by the authenticated Spotify user.",
+      "scopes": [],
+      "parameters": {
+        "params": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "name": "get_playlist_tracks",
+      "description": "Get all tracks in a specific Spotify playlist by its ID.",
+      "scopes": [],
+      "parameters": {
+        "params": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "name": "create_playlist",
+      "description": "Create a new playlist on the user's Spotify account.",
+      "scopes": [],
+      "parameters": {
+        "params": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "name": "add_track_to_playlist",
+      "description": "Add a track to an existing Spotify playlist.",
+      "scopes": [],
+      "parameters": {
+        "params": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "name": "remove_track_from_playlist",
+      "description": "Remove a track from a Spotify playlist.",
+      "scopes": [],
+      "parameters": {
+        "params": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "name": "play_track",
+      "description": "Get track metadata and trigger playback.",
+      "scopes": [],
+      "parameters": {
+        "params": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "name": "play_track_by_name",
+      "description": "Search for a track by title and artist name, then play it.",
+      "scopes": [],
+      "parameters": {
+        "params": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "name": "play_playlist",
+      "description": "Play all tracks in a Spotify playlist sequentially.",
+      "scopes": [],
+      "parameters": {
+        "params": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "name": "pause_playback",
+      "description": "Pause playback on the user's active Spotify device.",
+      "scopes": [],
+      "parameters": {
+        "params": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "name": "resume_playback",
+      "description": "Resume playback on the user's active Spotify device.",
+      "scopes": [],
+      "parameters": {
+        "params": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "name": "next_track",
+      "description": "Skip to the next track on the user's active Spotify device.",
+      "scopes": [],
+      "parameters": {
+        "params": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "name": "previous_track",
+      "description": "Skip to the previous track on the user's active Spotify device.",
+      "scopes": [],
+      "parameters": {
+        "params": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "name": "panel_search_tracks",
+      "description": "Search Spotify tracks and show results in the sidebar panel.",
+      "scopes": [],
+      "parameters": {
+        "params": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "name": "open_playlist",
+      "description": "Open a playlist's tracks in the right detail panel.",
+      "scopes": [],
+      "parameters": {
+        "params": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "name": "open_liked_tracks",
+      "description": "Open liked/saved tracks in the right detail panel.",
+      "scopes": [],
+      "parameters": {
+        "params": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "name": "open_recent_tracks",
+      "description": "Open recently played tracks in the right detail panel.",
+      "scopes": [],
+      "parameters": {
+        "params": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "name": "open_profile",
+      "description": "Open the user's Spotify profile in the right detail panel.",
+      "scopes": [],
+      "parameters": {
+        "params": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "name": "connect_spotify",
+      "description": "Connect your Spotify account via OAuth 2.0. Returns an authorisation URL.",
+      "scopes": [],
+      "parameters": {
+        "params": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
+      "name": "disconnect_spotify",
+      "description": "Disconnect your Spotify account and remove all stored credentials.",
+      "scopes": [],
+      "parameters": {
+        "params": {
           "type": "string",
           "required": true
         }
@@ -40,34 +309,10 @@
       }
     },
     {
-      "name": "skeleton_refresh_spotify",
-      "description": "Background refresh: Spotify library statistics.",
+      "name": "skeleton_refresh_spotify_stats",
+      "description": "Spotify library stats: liked track count and playlist count for classifier",
       "scopes": [],
-      "parameters": {
-        "kwargs": {
-          "type": "string",
-          "required": true
-        }
-      }
-    },
-    {
-      "name": "skeleton_alert_spotify",
-      "description": "Alert on significant Spotify library changes.",
-      "scopes": [],
-      "parameters": {
-        "old": {
-          "type": "object",
-          "required": false
-        },
-        "new": {
-          "type": "object",
-          "required": false
-        },
-        "kwargs": {
-          "type": "string",
-          "required": true
-        }
-      }
+      "parameters": {}
     },
     {
       "name": "__panel__spotify",
@@ -79,13 +324,27 @@
           "required": true
         }
       }
+    },
+    {
+      "name": "__panel__spotify_detail",
+      "description": "Panel: Spotify",
+      "scopes": [],
+      "parameters": {
+        "params": {
+          "type": "string",
+          "required": true
+        }
+      }
     }
   ],
   "signals": [],
-  "schedules": [],
-  "required_scopes": [
-    "*"
+  "schedules": [
+    {
+      "name": "sync_now_playing",
+      "cron": "*/1 * * * *"
+    }
   ],
+  "required_scopes": [],
   "config_defaults": {
     "spotify.client_id": "",
     "spotify.client_secret": ""
