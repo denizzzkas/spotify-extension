@@ -5,6 +5,7 @@ from app import ext
 from spotify_config import SP_API_BASE
 from utils import format_playlist
 from handlers.auth import get_access_token, get_auth_headers
+from cache_models import NowPlayingModel, SearchModel, DetailModel, PlaylistsModel
 
 
 # ── Left panel ────────────────────────────────────────────────────────────────
@@ -33,15 +34,13 @@ async def panel_spotify(ctx, **kwargs):
                       on_click=ui.Call("connect_spotify")),
         ], direction="v", gap=2)
 
-    skeleton = getattr(ctx, "skeleton_data", None) or {}
-
-    # Search results from skeleton
-    search_data = skeleton.get("spotify_search") or {}
+    search_cache = await ctx.cache.get(key="search", model=SearchModel)
+    search_data = search_cache.model_dump() if search_cache else {}
     search_tracks = search_data.get("tracks", [])
     search_query = search_data.get("query", "")
 
-    # Load playlists — use skeleton cache, fetch if missing
-    playlists = skeleton.get("spotify_playlists") or []
+    playlists_cache = await ctx.cache.get(key="playlists", model=PlaylistsModel)
+    playlists = playlists_cache.items if playlists_cache else []
     if not playlists:
         try:
             headers = await get_auth_headers(ctx)
@@ -52,7 +51,11 @@ async def panel_spotify(ctx, **kwargs):
             )
             if resp.ok:
                 playlists = [format_playlist(p) for p in (resp.json().get("items") or [])]
-                await ctx.skeleton.update("spotify_playlists", playlists)
+                await ctx.cache.set(
+                    key="playlists",
+                    value=PlaylistsModel(items=playlists),
+                    ttl_seconds=120,
+                )
         except Exception:
             playlists = []
 
@@ -121,7 +124,8 @@ async def panel_spotify(ctx, **kwargs):
         ])
     )
 
-    now_playing = skeleton.get("spotify_now_playing")
+    now_playing_cache = await ctx.cache.get(key="now_playing", model=NowPlayingModel)
+    now_playing = now_playing_cache.model_dump() if now_playing_cache else None
     children += [
         ui.Divider(),
         ui.Button("My Profile", variant="ghost", size="sm", icon="User",
@@ -163,7 +167,8 @@ async def panel_spotify(ctx, **kwargs):
     refresh="manual",
 )
 async def panel_spotify_detail(ctx, **kwargs):
-    detail = (getattr(ctx, "skeleton_data", None) or {}).get("spotify_detail") or {}
+    detail_cache = await ctx.cache.get(key="detail", model=DetailModel)
+    detail = detail_cache.model_dump() if detail_cache else {}
     detail_type = detail.get("type")
     title = detail.get("title", "")
 

@@ -2,6 +2,7 @@
 from pydantic import BaseModel
 
 from imperal_sdk import Extension, ChatExtension, ActionResult, WebhookResponse
+from cache_models import NowPlayingModel, SearchModel, DetailModel, PlaylistsModel, QueueModel
 from imperal_sdk.types.health import HealthStatus
 
 from spotify_config import CRED_COLLECTION, OAUTH_STATE_COLLECTION, SP_REDIRECT_URI, SP_API_BASE
@@ -26,6 +27,12 @@ ext = Extension(
     },
 )
 
+ext.cache_model("now_playing")(NowPlayingModel)
+ext.cache_model("search")(SearchModel)
+ext.cache_model("detail")(DetailModel)
+ext.cache_model("playlists")(PlaylistsModel)
+ext.cache_model("queue")(QueueModel)
+
 chat = ChatExtension(
     ext,
     tool_name="spotify",
@@ -44,7 +51,7 @@ chat_registry.register(chat)
 
 @ext.schedule("sync_now_playing", cron="*/1 * * * *")
 async def sync_now_playing(ctx):
-    """Poll current Spotify playback state and update skeleton every minute."""
+    """Poll current Spotify playback state and update cache every minute."""
     try:
         headers = await get_auth_headers(ctx)
     except ValueError:
@@ -58,7 +65,7 @@ async def sync_now_playing(ctx):
         return
     track = format_track(item)
     track["is_playing"] = body.get("is_playing", False)
-    await ctx.skeleton.update("spotify_now_playing", track)
+    await ctx.cache.set(key="now_playing", value=NowPlayingModel(**track), ttl_seconds=90)
 
 
 # ── Lifecycle ──────────────────────────────────────────────────────────────────

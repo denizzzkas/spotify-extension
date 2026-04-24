@@ -8,9 +8,10 @@ from imperal_sdk import ActionResult
 from spotify_config import SP_API_BASE, DEFAULT_SEARCH_LIMIT, MAX_LIMIT
 from utils import format_track, sp_error
 from handlers.auth import get_auth_headers, get_auth_headers_refreshed
+from cache_models import SearchModel, DetailModel
 
-SKELETON_DETAIL = "spotify_detail"
-SKELETON_SEARCH = "spotify_search"
+SKELETON_DETAIL = "spotify_detail"  # kept for backwards compat with tests
+SKELETON_SEARCH = "spotify_search"  # kept for backwards compat with tests
 
 
 # ── Param models ──────────────────────────────────────────────────────────────
@@ -69,7 +70,11 @@ async def fn_panel_search(ctx, params: PanelSearchParams) -> ActionResult:
     raw_list = (resp.json().get("tracks") or {}).get("items", [])
     tracks = [format_track(t) for t in raw_list]
 
-    await ctx.skeleton.update(SKELETON_SEARCH, {"query": params.query, "tracks": tracks})
+    await ctx.cache.set(
+        key="search",
+        value=SearchModel(query=params.query, tracks=tracks),
+        ttl_seconds=60,
+    )
 
     return ActionResult.success(
         data={"count": len(tracks), "query": params.query},
@@ -107,7 +112,11 @@ async def fn_open_playlist(ctx, params: OpenPlaylistParams) -> ActionResult:
     tracks = [format_track(item["track"]) for item in raw_list if item.get("track")]
 
     name = params.playlist_name or params.playlist_id
-    await ctx.skeleton.update(SKELETON_DETAIL, {"type": "tracks", "title": name, "tracks": tracks})
+    await ctx.cache.set(
+        key="detail",
+        value=DetailModel(type="tracks", title=name, tracks=tracks),
+        ttl_seconds=120,
+    )
 
     return ActionResult.success(
         data={"count": len(tracks)},
@@ -142,7 +151,11 @@ async def fn_open_liked_tracks(ctx, params: OpenLikedTracksParams) -> ActionResu
     raw_list = resp.json().get("items") or []
     tracks = [format_track(item["track"]) for item in raw_list if item.get("track")]
 
-    await ctx.skeleton.update(SKELETON_DETAIL, {"type": "tracks", "title": "Liked Tracks", "tracks": tracks})
+    await ctx.cache.set(
+        key="detail",
+        value=DetailModel(type="tracks", title="Liked Tracks", tracks=tracks),
+        ttl_seconds=120,
+    )
 
     return ActionResult.success(
         data={"count": len(tracks)},
@@ -184,7 +197,11 @@ async def fn_open_recent_tracks(ctx, params: OpenRecentTracksParams) -> ActionRe
     raw_list = resp.json().get("items") or []
     tracks = [format_track(item["track"]) for item in raw_list if item.get("track")]
 
-    await ctx.skeleton.update(SKELETON_DETAIL, {"type": "tracks", "title": "Recent Tracks", "tracks": tracks})
+    await ctx.cache.set(
+        key="detail",
+        value=DetailModel(type="tracks", title="Recent Tracks", tracks=tracks),
+        ttl_seconds=120,
+    )
 
     return ActionResult.success(
         data={"count": len(tracks)},
@@ -223,7 +240,11 @@ async def fn_open_profile(ctx, params: OpenProfileParams) -> ActionResult:
         "url": (raw.get("external_urls") or {}).get("spotify", ""),
     }
 
-    await ctx.skeleton.update(SKELETON_DETAIL, {"type": "profile", "title": profile["display_name"], "profile": profile})
+    await ctx.cache.set(
+        key="detail",
+        value=DetailModel(type="profile", title=profile["display_name"], profile=profile),
+        ttl_seconds=120,
+    )
 
     return ActionResult.success(
         data={"profile": profile},

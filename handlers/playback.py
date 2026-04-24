@@ -8,10 +8,11 @@ from imperal_sdk import ActionResult
 from spotify_config import SP_API_BASE
 from utils import format_track, sp_error
 from handlers.auth import get_auth_headers, get_auth_headers_refreshed
+from cache_models import NowPlayingModel, QueueModel
 
 
 async def _refresh_now_playing(ctx, headers) -> dict | None:
-    """Fetch current player state from Spotify and write to skeleton. Returns track or None."""
+    """Fetch current player state from Spotify and write to cache. Returns track or None."""
     resp = await ctx.http.get(f"{SP_API_BASE}/me/player", headers=headers)
     if resp.status_code == 204 or not resp.ok:
         return None
@@ -21,7 +22,7 @@ async def _refresh_now_playing(ctx, headers) -> dict | None:
         return None
     track = format_track(item)
     track["is_playing"] = body.get("is_playing", False)
-    await ctx.skeleton.update("spotify_now_playing", track)
+    await ctx.cache.set(key="now_playing", value=NowPlayingModel(**track), ttl_seconds=90)
     return track
 
 
@@ -69,7 +70,7 @@ async def fn_play_track(ctx, params: PlayTrackParams) -> ActionResult:
         return ActionResult.error(sp_error(resp.status_code), retryable=False)
 
     track_data = format_track(resp.json())
-    await ctx.skeleton.update("spotify_now_playing", track_data)
+    await ctx.cache.set(key="now_playing", value=NowPlayingModel(**track_data), ttl_seconds=90)
 
     return ActionResult.success(
         data={
@@ -116,7 +117,7 @@ async def fn_play_track_by_name(ctx, params: PlayTrackByNameParams) -> ActionRes
         return ActionResult.error(f"Track '{query}' not found on Spotify.", retryable=False)
 
     track = format_track(items[0])
-    await ctx.skeleton.update("spotify_now_playing", track)
+    await ctx.cache.set(key="now_playing", value=NowPlayingModel(**track), ttl_seconds=90)
 
     return ActionResult.success(
         data={"track": track, "preview_url": track["preview_url"], "spotify_url": track["url"]},
@@ -157,13 +158,17 @@ async def fn_play_playlist(ctx, params: PlayPlaylistParams) -> ActionResult:
         return ActionResult.error("Playlist is empty.", retryable=False)
 
     name = params.playlist_name or params.playlist_id
-    await ctx.skeleton.update("spotify_queue", {
-        "playlist_id": params.playlist_id,
-        "playlist_name": name,
-        "tracks": tracks,
-        "index": 0,
-    })
-    await ctx.skeleton.update("spotify_now_playing", tracks[0])
+    await ctx.cache.set(
+        key="queue",
+        value=QueueModel(
+            playlist_id=params.playlist_id,
+            playlist_name=name,
+            tracks=tracks[:30],  # cap at 30 to stay under 64 KB
+            index=0,
+        ),
+        ttl_seconds=300,
+    )
+    await ctx.cache.set(key="now_playing", value=NowPlayingModel(**tracks[0]), ttl_seconds=90)
 
     return ActionResult.success(
         data={"playlist_name": name, "tracks": tracks, "count": len(tracks)},
@@ -196,11 +201,13 @@ async def fn_pause_playback(ctx, params: PausePlaybackParams) -> ActionResult:
     resp = await ctx.http.put(f"{SP_API_BASE}/me/player/pause", headers=headers)
     if not resp.ok:
         return ActionResult.error(sp_error(resp.status_code), retryable=False)
-    skeleton = getattr(ctx, "skeleton_data", None) or {}
-    now_playing = dict(skeleton.get("spotify_now_playing") or {})
-    if now_playing:
-        now_playing["is_playing"] = False
-        await ctx.skeleton.update("spotify_now_playing", now_playing)
+    cached = await ctx.cache.get(key="now_playing", model=NowPlayingModel)
+    if cached:
+        await ctx.cache.set(
+            key="now_playing",
+            value=cached.model_copy(update={"is_playing": False}),
+            ttl_seconds=90,
+        )
     return ActionResult.success(data={"paused": True}, summary="Paused.", refresh_panels=["spotify"])
 
 
@@ -213,11 +220,13 @@ async def fn_resume_playback(ctx, params: ResumePlaybackParams) -> ActionResult:
     resp = await ctx.http.put(f"{SP_API_BASE}/me/player/play", headers=headers)
     if not resp.ok:
         return ActionResult.error(sp_error(resp.status_code), retryable=False)
-    skeleton = getattr(ctx, "skeleton_data", None) or {}
-    now_playing = dict(skeleton.get("spotify_now_playing") or {})
-    if now_playing:
-        now_playing["is_playing"] = True
-        await ctx.skeleton.update("spotify_now_playing", now_playing)
+    cached = await ctx.cache.get(key="now_playing", model=NowPlayingModel)
+    if cached:
+        await ctx.cache.set(
+            key="now_playing",
+            value=cached.model_copy(update={"is_playing": True}),
+            ttl_seconds=90,
+        )
     return ActionResult.success(data={"playing": True}, summary="Resumed.", refresh_panels=["spotify"])
 
 
