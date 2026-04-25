@@ -15,6 +15,6 @@ for _m in [k for k in sys.modules if k in (
 )]:
     del sys.modules[_m]
 
-from app import ext  # noqa: F401
+from app import ext, chat  # noqa: F401
 import skeleton  # noqa: F401
 import panels  # noqa: F401

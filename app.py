@@ -1,7 +1,7 @@
-"""Spotify extension — Extension, lifecycle and OAuth."""
+"""Spotify extension — Extension, ChatExtension, lifecycle and OAuth."""
 from pydantic import BaseModel
 
-from imperal_sdk import Extension, ActionResult, WebhookResponse
+from imperal_sdk import Extension, ChatExtension, ActionResult, WebhookResponse
 from cache_models import NowPlayingModel, SearchModel, DetailModel, PlaylistsModel, QueueModel
 from imperal_sdk.types.health import HealthStatus
 
@@ -12,7 +12,10 @@ from handlers.auth import (
     build_auth_url, create_oauth_state, consume_oauth_state, exchange_code_for_token,
     get_auth_headers,
 )
+from pathlib import Path as _Path
 from handlers import chat_registry
+
+SYSTEM_PROMPT = (_Path(__file__).parent / "system_prompt.txt").read_text()
 
 ext = Extension(
     "spotify-extension",
@@ -30,7 +33,18 @@ ext.cache_model("detail")(DetailModel)
 ext.cache_model("playlists")(PlaylistsModel)
 ext.cache_model("queue")(QueueModel)
 
-chat_registry.register(ext)
+chat = ChatExtension(
+    ext,
+    tool_name="spotify",
+    description=(
+        "Full access to your Spotify music library. "
+        "Search tracks, manage playlists, save songs, view play history, and more."
+    ),
+    system_prompt=SYSTEM_PROMPT,
+    model="claude-haiku-4-5-20251001",
+)
+
+chat_registry.register(chat)
 
 
 # ── Schedule ──────────────────────────────────────────────────────────────────
@@ -89,9 +103,11 @@ class DisconnectSpotifyParams(BaseModel):
     """No parameters — removes stored Spotify credentials."""
 
 
-@ext.tool(
+@chat.function(
     "connect_spotify",
     description="Connect your Spotify account via OAuth 2.0. Returns an authorisation URL.",
+    action_type="write",
+    event="spotify.connected",
 )
 async def fn_connect_spotify(ctx, params: ConnectSpotifyParams) -> ActionResult:
     """Generate a Spotify OAuth 2.0 authorisation URL for the current user."""
@@ -108,16 +124,17 @@ async def fn_connect_spotify(ctx, params: ConnectSpotifyParams) -> ActionResult:
     )
 
 
-@ext.tool(
+@chat.function(
     "disconnect_spotify",
     description="Disconnect your Spotify account and remove all stored credentials.",
+    action_type="write",
+    event="spotify.disconnected",
 )
 async def fn_disconnect_spotify(ctx, params: DisconnectSpotifyParams) -> ActionResult:
     """Remove all stored Spotify credentials for the current user."""
     if (await get_stored_creds(ctx)) is None:
         return ActionResult.success(data={"disconnected": False}, summary="Spotify was not connected")
     await clear_token(ctx)
-    await ctx.extensions.emit("spotify.disconnected", {})
     return ActionResult.success(data={"disconnected": True}, summary="Spotify account disconnected")
 
 
@@ -142,5 +159,4 @@ async def oauth_callback(ctx, headers, body, query_params):
     except ValueError as exc:
         return WebhookResponse.error(str(exc), 500)
     await save_token_for_user(ctx, user_id, token_data)
-    await ctx.extensions.emit("spotify.connected", {})
     return WebhookResponse.ok({"connected": True, "message": "Spotify connected. You can close this window."})
