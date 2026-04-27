@@ -25,7 +25,7 @@ from spotify_config import (
 
 async def get_stored_creds(ctx):
     """Return the credential Document for the current user, or None."""
-    page = await ctx.store.query(CRED_COLLECTION, where={"user_id": ctx.user.id})
+    page = await ctx.store.query(CRED_COLLECTION, where={"user_id": ctx.user.imperal_id})
     return page.data[0] if page.data else None
 
 
@@ -39,7 +39,7 @@ async def get_access_token(ctx) -> str | None:
 
 async def save_token(ctx, token_data: dict) -> None:
     """Persist or overwrite OAuth credentials for the current user."""
-    await save_token_for_user(ctx, ctx.user.id, token_data)
+    await save_token_for_user(ctx, ctx.user.imperal_id, token_data)
 
 
 async def save_token_for_user(ctx, user_id: str, token_data: dict) -> None:
@@ -65,7 +65,7 @@ async def save_token_for_user(ctx, user_id: str, token_data: dict) -> None:
 
 async def clear_token(ctx) -> None:
     """Delete all stored credentials for the current user."""
-    page = await ctx.store.query(CRED_COLLECTION, where={"user_id": ctx.user.id})
+    page = await ctx.store.query(CRED_COLLECTION, where={"user_id": ctx.user.imperal_id})
     for doc in page.data:
         await ctx.store.delete(CRED_COLLECTION, doc.id)
 
@@ -157,7 +157,7 @@ async def create_oauth_state(ctx) -> str:
     """Generate a random state token and persist it for CSRF verification."""
     state = str(uuid.uuid4())
     await ctx.store.create(OAUTH_STATE_COLLECTION, {
-        "user_id": ctx.user.id,
+        "user_id": ctx.user.imperal_id,
         "state": state,
         "created_at": datetime.now(timezone.utc).isoformat(),
     })

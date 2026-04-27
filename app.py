@@ -78,7 +78,7 @@ async def on_install(ctx):
 @ext.on_uninstall
 async def on_uninstall(ctx):
     await clear_token(ctx)
-    state_page = await ctx.store.query(OAUTH_STATE_COLLECTION, where={"user_id": ctx.user.id})
+    state_page = await ctx.store.query(OAUTH_STATE_COLLECTION, where={"user_id": ctx.user.imperal_id})
     for doc in state_page.data:
         await ctx.store.delete(OAUTH_STATE_COLLECTION, doc.id)
 
