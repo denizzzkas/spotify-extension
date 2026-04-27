@@ -146,25 +146,25 @@ def register(chat) -> None:
 
     @chat.function("pause_playback",
                    description="Pause playback on the user's active Spotify device.",
-                   action_type="read")
+                   action_type="write")
     async def wrapped_pause_playback(ctx, params: PausePlaybackParams) -> ActionResult:
         return await fn_pause_playback(ctx, params)
 
     @chat.function("resume_playback",
                    description="Resume playback on the user's active Spotify device.",
-                   action_type="read")
+                   action_type="write")
     async def wrapped_resume_playback(ctx, params: ResumePlaybackParams) -> ActionResult:
         return await fn_resume_playback(ctx, params)
 
     @chat.function("next_track",
                    description="Skip to the next track on the user's active Spotify device.",
-                   action_type="read")
+                   action_type="write")
     async def wrapped_next_track(ctx, params: NextTrackParams) -> ActionResult:
         return await fn_next_track(ctx, params)
 
     @chat.function("previous_track",
                    description="Skip to the previous track on the user's active Spotify device.",
-                   action_type="read")
+                   action_type="write")
     async def wrapped_prev_track(ctx, params: PrevTrackParams) -> ActionResult:
         return await fn_prev_track(ctx, params)
 

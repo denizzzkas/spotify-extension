@@ -70,7 +70,7 @@ async def fn_play_track(ctx, params: PlayTrackParams) -> ActionResult:
         return ActionResult.error(sp_error(resp.status_code), retryable=False)
 
     track_data = format_track(resp.json())
-    await ctx.cache.set(key="now_playing", value=NowPlayingModel(**track_data), ttl_seconds=90)
+    await ctx.cache.set(key="now_playing", value=NowPlayingModel(**track_data, is_playing=True), ttl_seconds=90)
 
     return ActionResult.success(
         data={
@@ -117,7 +117,7 @@ async def fn_play_track_by_name(ctx, params: PlayTrackByNameParams) -> ActionRes
         return ActionResult.error(f"Track '{query}' not found on Spotify.", retryable=False)
 
     track = format_track(items[0])
-    await ctx.cache.set(key="now_playing", value=NowPlayingModel(**track), ttl_seconds=90)
+    await ctx.cache.set(key="now_playing", value=NowPlayingModel(**track, is_playing=True), ttl_seconds=90)
 
     return ActionResult.success(
         data={"track": track, "preview_url": track["preview_url"], "spotify_url": track["url"]},
@@ -168,7 +168,7 @@ async def fn_play_playlist(ctx, params: PlayPlaylistParams) -> ActionResult:
         ),
         ttl_seconds=300,
     )
-    await ctx.cache.set(key="now_playing", value=NowPlayingModel(**tracks[0]), ttl_seconds=90)
+    await ctx.cache.set(key="now_playing", value=NowPlayingModel(**tracks[0], is_playing=True), ttl_seconds=90)
 
     return ActionResult.success(
         data={"playlist_name": name, "tracks": tracks, "count": len(tracks)},

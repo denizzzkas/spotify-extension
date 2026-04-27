@@ -2,9 +2,9 @@
 from imperal_sdk import ui
 
 from app import ext
-from spotify_config import SP_API_BASE
+from spotify_config import SP_API_BASE, SP_REDIRECT_URI
 from utils import format_playlist
-from handlers.auth import get_access_token, get_auth_headers
+from handlers.auth import get_access_token, get_auth_headers, build_auth_url, create_oauth_state
 from cache_models import NowPlayingModel, SearchModel, DetailModel, PlaylistsModel
 
 
@@ -27,11 +27,19 @@ async def panel_spotify(ctx, **kwargs):
         token = None
 
     if not token:
+        client_id = ctx.config.get("spotify.client_id", "")
+        if not client_id:
+            return ui.Stack([
+                ui.Header("Spotify", level=3),
+                ui.Alert("Spotify credentials are not configured. Add client_id and client_secret in extension settings.", type="error"),
+            ], direction="v", gap=2)
+        state = await create_oauth_state(ctx)
+        auth_url = build_auth_url(client_id, SP_REDIRECT_URI, state)
         return ui.Stack([
             ui.Header("Spotify", level=3),
             ui.Alert("Not connected. Click below to link your Spotify account.", type="warn"),
             ui.Button("Connect Spotify", variant="primary", icon="Music",
-                      on_click=ui.Call("connect_spotify")),
+                      on_click=ui.Open(auth_url)),
         ], direction="v", gap=2)
 
     search_cache = await ctx.cache.get(key="search", model=SearchModel)
@@ -65,7 +73,7 @@ async def panel_spotify(ctx, **kwargs):
             id=p["id"],
             title=p["title"],
             subtitle=f"{p['track_count']} tracks",
-            avatar=p["image_url"],
+            avatar=ui.Avatar(src=p["image_url"], fallback=(p["title"] or "?")[0].upper()),
             on_click=ui.Call("open_playlist", playlist_id=p["id"], playlist_name=p["title"]),
         )
         for p in playlists
@@ -78,7 +86,7 @@ async def panel_spotify(ctx, **kwargs):
             title=t["title"],
             subtitle=t["artist"],
             meta=t["duration"],
-            avatar=t["album_art"],
+            avatar=ui.Avatar(src=t["album_art"], fallback=(t["title"] or "?")[0].upper()),
             actions=[{"icon": "Play", "on_click": ui.Call("play_track", track_id=t["id"])}],
         )
         for t in search_tracks
@@ -94,7 +102,7 @@ async def panel_spotify(ctx, **kwargs):
     ]
 
     if search_result_items:
-        children.append(ui.Text(f'Results for "{search_query}"', variant="muted"))
+        children.append(ui.Text(f'Results for "{search_query}"', variant="caption"))
         children.append(ui.List(items=search_result_items))
         children.append(ui.Divider())
 
@@ -140,7 +148,7 @@ async def panel_spotify(ctx, **kwargs):
             ui.Divider(),
             ui.Image(src=now_playing.get("album_art", ""), width="100%", object_fit="cover"),
             ui.Text(now_playing.get("title", ""), variant="heading"),
-            ui.Text(now_playing.get("artist", ""), variant="muted"),
+            ui.Text(now_playing.get("artist", ""), variant="caption"),
             ui.Stack([
                 ui.Button("", icon="SkipBack", variant="ghost", size="sm",
                           on_click=ui.Call("previous_track")),
@@ -196,7 +204,7 @@ async def panel_spotify_detail(ctx, **kwargs):
             title=t["title"],
             subtitle=t["artist"],
             meta=t["duration"],
-            avatar=t["album_art"],
+            avatar=ui.Avatar(src=t["album_art"], fallback=(t["title"] or "?")[0].upper()),
             actions=[{"icon": "Play", "on_click": ui.Call("play_track", track_id=t["id"])}],
         )
         for t in tracks
