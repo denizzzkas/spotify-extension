@@ -1,0 +1,67 @@
+"""Hardcoded demo playlist shown when Spotify credentials are not configured."""
+
+DEMO_PLAYLIST_ID = "__demo__"
+DEMO_PLAYLIST_NAME = "Demo Playlist"
+
+DEMO_TRACKS = [
+    {
+        "id": "3j84U36KvLeXNDPv4t5pI8",
+        "title": "Pure Water (with Migos)",
+        "artist": "Mustard feat. Migos",
+        "album": "Perfect Ten",
+        "album_art": "https://i.scdn.co/image/ab67616d0000b27323adc1277fba4944f3a2d8c5",
+        "preview_url": "",
+        "duration": "3:04",
+        "duration_ms": 184000,
+        "url": "https://open.spotify.com/track/3j84U36KvLeXNDPv4t5pI8",
+        "popularity": 75,
+    },
+    {
+        "id": "3CdCn3ml6TOVgFp9rR7n8c",
+        "title": "ХТТ",
+        "artist": "Платина",
+        "album": "",
+        "album_art": "https://i.scdn.co/image/ab67616d0000b2732afe0792c36b417d4ef87cd5",
+        "preview_url": "",
+        "duration": "2:30",
+        "duration_ms": 150000,
+        "url": "https://open.spotify.com/track/3CdCn3ml6TOVgFp9rR7n8c",
+        "popularity": 70,
+    },
+    {
+        "id": "0si4hbWQ2OwdxKLF6x5xEX",
+        "title": "ARISTOCRAT",
+        "artist": "MORGENSHTERN",
+        "album": "",
+        "album_art": "https://i.scdn.co/image/ab67616d0000b2738fb99fca9cffbaf43c167037",
+        "preview_url": "",
+        "duration": "2:20",
+        "duration_ms": 140000,
+        "url": "https://open.spotify.com/track/0si4hbWQ2OwdxKLF6x5xEX",
+        "popularity": 72,
+    },
+    {
+        "id": "527D034h8WFtVDOBO6GAN5",
+        "title": "Последняя Любовь",
+        "artist": "MORGENSHTERN",
+        "album": "",
+        "album_art": "https://i.scdn.co/image/ab67616d0000b27306d115628b77ec4b64232d0b",
+        "preview_url": "",
+        "duration": "2:45",
+        "duration_ms": 165000,
+        "url": "https://open.spotify.com/track/527D034h8WFtVDOBO6GAN5",
+        "popularity": 68,
+    },
+    {
+        "id": "6V1THrNJrzNnPjKJwg4WfZ",
+        "title": "Санта Клаус",
+        "artist": "Платина",
+        "album": "",
+        "album_art": "https://i.scdn.co/image/ab67616d0000b2732d170a3e5b798661f5881a0f",
+        "preview_url": "",
+        "duration": "2:55",
+        "duration_ms": 175000,
+        "url": "https://open.spotify.com/track/6V1THrNJrzNnPjKJwg4WfZ",
+        "popularity": 65,
+    },
+]

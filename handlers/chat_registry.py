@@ -34,6 +34,13 @@ from handlers.panel import (
     fn_open_recent_tracks, OpenRecentTracksParams,
     fn_open_profile, OpenProfileParams,
 )
+from handlers.demo import (
+    fn_open_demo_playlist, OpenDemoPlaylistParams,
+    fn_demo_play_track, DemoPlayTrackParams,
+    fn_demo_next_track, DemoNextTrackParams,
+    fn_demo_prev_track, DemoPrevTrackParams,
+    fn_demo_pause, DemoPauseParams,
+)
 
 
 def register(chat) -> None:
@@ -195,3 +202,33 @@ def register(chat) -> None:
     async def wrapped_open_profile(ctx, params: OpenProfileParams) -> ActionResult:
         """Load user profile into the right detail panel."""
         return await fn_open_profile(ctx, params)
+
+    @chat.function("open_demo_playlist",
+                   description="Open the demo playlist (no Spotify login required).",
+                   action_type="read")
+    async def wrapped_open_demo_playlist(ctx, params: OpenDemoPlaylistParams) -> ActionResult:
+        return await fn_open_demo_playlist(ctx, params)
+
+    @chat.function("demo_play_track",
+                   description="Play a specific track from the demo playlist.",
+                   action_type="read")
+    async def wrapped_demo_play_track(ctx, params: DemoPlayTrackParams) -> ActionResult:
+        return await fn_demo_play_track(ctx, params)
+
+    @chat.function("demo_next_track",
+                   description="Skip to the next track in the demo playlist.",
+                   action_type="read")
+    async def wrapped_demo_next_track(ctx, params: DemoNextTrackParams) -> ActionResult:
+        return await fn_demo_next_track(ctx, params)
+
+    @chat.function("demo_prev_track",
+                   description="Go back to the previous track in the demo playlist.",
+                   action_type="read")
+    async def wrapped_demo_prev_track(ctx, params: DemoPrevTrackParams) -> ActionResult:
+        return await fn_demo_prev_track(ctx, params)
+
+    @chat.function("demo_pause",
+                   description="Toggle play/pause in demo mode.",
+                   action_type="read")
+    async def wrapped_demo_pause(ctx, params: DemoPauseParams) -> ActionResult:
+        return await fn_demo_pause(ctx, params)

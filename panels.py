@@ -5,7 +5,8 @@ from app import ext
 from spotify_config import SP_API_BASE, SP_REDIRECT_URI
 from utils import format_playlist
 from handlers.auth import get_access_token, get_auth_headers, build_auth_url, create_oauth_state
-from cache_models import NowPlayingModel, SearchModel, DetailModel, PlaylistsModel
+from cache_models import NowPlayingModel, SearchModel, DetailModel, PlaylistsModel, QueueModel
+from demo_data import DEMO_TRACKS, DEMO_PLAYLIST_ID, DEMO_PLAYLIST_NAME
 
 
 # ── Left panel ────────────────────────────────────────────────────────────────
@@ -28,19 +29,65 @@ async def panel_spotify(ctx, **kwargs):
 
     if not token:
         client_id = ctx.config.get("spotify.client_id", "")
+
+        demo_now_playing = await ctx.cache.get(key="now_playing", model=NowPlayingModel)
+        demo_queue = await ctx.cache.get(key="queue", model=QueueModel)
+        is_demo_active = demo_queue and demo_queue.playlist_id == DEMO_PLAYLIST_ID
+        now_playing = demo_now_playing.model_dump() if (demo_now_playing and is_demo_active) else None
+
+        children = [ui.Header("Spotify", level=3)]
+
         if not client_id:
-            return ui.Stack([
-                ui.Header("Spotify", level=3),
-                ui.Alert("Spotify credentials are not configured. Add client_id and client_secret in extension settings.", type="error"),
-            ], direction="v", gap=2)
-        state = await create_oauth_state(ctx)
-        auth_url = build_auth_url(client_id, SP_REDIRECT_URI, state)
-        return ui.Stack([
-            ui.Header("Spotify", level=3),
-            ui.Alert("Not connected. Click below to link your Spotify account.", type="warn"),
-            ui.Button("Connect Spotify", variant="primary", icon="Music",
-                      on_click=ui.Open(auth_url)),
-        ], direction="v", gap=2)
+            children.append(ui.Alert(
+                "Spotify credentials are not configured. Add client_id and client_secret in extension settings.",
+                type="error",
+            ))
+        else:
+            state = await create_oauth_state(ctx)
+            auth_url = build_auth_url(client_id, SP_REDIRECT_URI, state)
+            children += [
+                ui.Alert("Not connected. Click below to link your Spotify account.", type="warn"),
+                ui.Button("Connect Spotify", variant="primary", icon="Music",
+                          on_click=ui.Open(auth_url)),
+            ]
+
+        children.append(
+            ui.Accordion(sections=[{
+                "id": "demo_playlists",
+                "title": "My Playlists",
+                "children": [ui.List(items=[
+                    ui.ListItem(
+                        id=DEMO_PLAYLIST_ID,
+                        title=DEMO_PLAYLIST_NAME,
+                        subtitle=f"{len(DEMO_TRACKS)} tracks",
+                        avatar=ui.Avatar(src=DEMO_TRACKS[0]["album_art"], fallback="D"),
+                        on_click=ui.Call("open_demo_playlist"),
+                    ),
+                ])],
+            }])
+        )
+
+        if now_playing:
+            is_playing = now_playing.get("is_playing", True)
+            preview_url = now_playing.get("preview_url", "")
+            children += [
+                ui.Divider(),
+                ui.Image(src=now_playing.get("album_art", ""), width="100%", object_fit="cover"),
+                ui.Text(now_playing.get("title", ""), variant="heading"),
+                ui.Text(now_playing.get("artist", ""), variant="caption"),
+                ui.Stack([
+                    ui.Button("", icon="SkipBack", variant="ghost", size="sm",
+                              on_click=ui.Call("demo_prev_track")),
+                    ui.Button("", icon="Pause" if is_playing else "Play", variant="ghost", size="sm",
+                              on_click=ui.Call("demo_pause")),
+                    ui.Button("", icon="SkipForward", variant="ghost", size="sm",
+                              on_click=ui.Call("demo_next_track")),
+                ], direction="h", gap=1, wrap=False),
+            ]
+            if preview_url:
+                children.append(ui.Audio(src=preview_url, title="30s preview"))
+
+        return ui.Stack(children, direction="v", gap=2)
 
     search_cache = await ctx.cache.get(key="search", model=SearchModel)
     search_data = search_cache.model_dump() if search_cache else {}
@@ -198,6 +245,7 @@ async def panel_spotify_detail(ctx, **kwargs):
 
     # Track list (playlist / liked / recent)
     tracks = detail.get("tracks") or []
+    is_demo = title == DEMO_PLAYLIST_NAME
     track_items = [
         ui.ListItem(
             id=t["id"],
@@ -205,7 +253,9 @@ async def panel_spotify_detail(ctx, **kwargs):
             subtitle=t["artist"],
             meta=t["duration"],
             avatar=ui.Avatar(src=t["album_art"], fallback=(t["title"] or "?")[0].upper()),
-            actions=[{"icon": "Play", "on_click": ui.Call("play_track", track_id=t["id"])}],
+            actions=[{"icon": "Play", "on_click": ui.Call(
+                "demo_play_track" if is_demo else "play_track", track_id=t["id"],
+            )}],
         )
         for t in tracks
     ]
