@@ -1,6 +1,6 @@
 """Hardcoded demo playlist shown when Spotify credentials are not configured."""
 
-DEMO_PLAYLIST_ID = "__demo__"
+DEMO_PLAYLIST_ID = "demo-playlist"
 DEMO_PLAYLIST_NAME = "Demo Playlist"
 
 DEMO_TRACKS = [

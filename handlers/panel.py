@@ -8,8 +8,7 @@ from imperal_sdk import ActionResult
 from spotify_config import SP_API_BASE, DEFAULT_SEARCH_LIMIT, MAX_LIMIT
 from utils import format_track, sp_error
 from handlers.auth import get_auth_headers, get_auth_headers_refreshed
-from cache_models import SearchModel, DetailModel, NowPlayingModel, QueueModel
-from demo_data import DEMO_TRACKS, DEMO_PLAYLIST_ID, DEMO_PLAYLIST_NAME
+from cache_models import SearchModel, DetailModel
 
 SKELETON_DETAIL = "spotify_detail"  # kept for backwards compat with tests
 SKELETON_SEARCH = "spotify_search"  # kept for backwards compat with tests
