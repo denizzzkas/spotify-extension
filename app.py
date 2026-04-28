@@ -41,7 +41,6 @@ chat = ChatExtension(
         "Search tracks, manage playlists, save songs, view play history, and more."
     ),
     system_prompt=SYSTEM_PROMPT,
-    model="claude-haiku-4-5-20251001",
 )
 
 chat_registry.register(chat)
