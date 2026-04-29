@@ -22,6 +22,7 @@ SP_SCOPES = " ".join([
 # Store collections
 CRED_COLLECTION = "sp_credentials"
 OAUTH_STATE_COLLECTION = "sp_oauth_states"
+DEMO_STATE_COLLECTION = "sp_demo_state"
 
 # Pagination defaults
 DEFAULT_SEARCH_LIMIT = 20

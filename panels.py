@@ -2,7 +2,7 @@
 from imperal_sdk import ui
 
 from app import ext
-from spotify_config import SP_API_BASE, SP_REDIRECT_URI
+from spotify_config import SP_API_BASE, SP_REDIRECT_URI, DEMO_STATE_COLLECTION
 from utils import format_playlist
 from handlers.auth import get_access_token, get_auth_headers, build_auth_url, create_oauth_state
 from cache_models import NowPlayingModel, SearchModel, DetailModel, PlaylistsModel, QueueModel
@@ -33,13 +33,27 @@ async def panel_spotify(ctx, **kwargs):
         except Exception:
             client_id = ""
 
+        demo_now_playing = None
+        is_demo_active = False
         try:
             demo_now_playing = await ctx.cache.get(key="now_playing", model=NowPlayingModel)
             demo_queue = await ctx.cache.get(key="queue", model=QueueModel)
+            is_demo_active = bool(demo_queue and demo_queue.playlist_id == DEMO_PLAYLIST_ID)
         except Exception:
-            demo_now_playing = None
-            demo_queue = None
-        is_demo_active = demo_queue and demo_queue.playlist_id == DEMO_PLAYLIST_ID
+            pass
+
+        if not is_demo_active:
+            try:
+                page = await ctx.store.query(DEMO_STATE_COLLECTION, where={"user_id": ctx.user.imperal_id})
+                if page.data:
+                    state = page.data[0].data
+                    if state.get("active"):
+                        track = DEMO_TRACKS[state.get("track_index", 0)]
+                        demo_now_playing = NowPlayingModel(**track, is_playing=state.get("is_playing", True))
+                        is_demo_active = True
+            except Exception:
+                pass
+
         now_playing = demo_now_playing.model_dump() if (demo_now_playing and is_demo_active) else None
 
         children = [ui.Header("Spotify", level=3)]

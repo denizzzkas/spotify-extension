@@ -1,31 +1,38 @@
-"""Demo mode handlers — no Spotify auth required, manipulate cache only."""
+"""Demo mode handlers — no Spotify auth required, uses ctx.store for state."""
 from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
 from imperal_sdk import ActionResult
 
-from cache_models import NowPlayingModel, QueueModel, DetailModel
+from cache_models import DetailModel, NowPlayingModel
 from demo_data import DEMO_TRACKS, DEMO_PLAYLIST_ID, DEMO_PLAYLIST_NAME
+from spotify_config import DEMO_STATE_COLLECTION
+
+
+async def _get_demo_state(ctx) -> dict:
+    try:
+        page = await ctx.store.query(DEMO_STATE_COLLECTION, where={"user_id": ctx.user.imperal_id})
+        return page.data[0].data if page.data else {}
+    except Exception:
+        return {}
+
+
+async def _save_demo_state(ctx, state: dict) -> None:
+    try:
+        record = {"user_id": ctx.user.imperal_id, **state}
+        page = await ctx.store.query(DEMO_STATE_COLLECTION, where={"user_id": ctx.user.imperal_id})
+        if page.data:
+            await ctx.store.update(DEMO_STATE_COLLECTION, page.data[0].id, record)
+        else:
+            await ctx.store.create(DEMO_STATE_COLLECTION, record)
+    except Exception:
+        pass
 
 
 async def _set_demo_track(ctx, index: int) -> None:
     index = index % len(DEMO_TRACKS)
-    track = DEMO_TRACKS[index]
-    queue = await ctx.cache.get(key="queue", model=QueueModel)
-    await ctx.cache.set(
-        key="queue",
-        value=(queue.model_copy(update={"index": index}) if queue else QueueModel(
-            playlist_id=DEMO_PLAYLIST_ID, playlist_name=DEMO_PLAYLIST_NAME,
-            tracks=DEMO_TRACKS, index=index,
-        )),
-        ttl_seconds=300,
-    )
-    await ctx.cache.set(
-        key="now_playing",
-        value=NowPlayingModel(**track, is_playing=True),
-        ttl_seconds=300,
-    )
+    await _save_demo_state(ctx, {"track_index": index, "is_playing": True, "active": True})
 
 
 class OpenDemoPlaylistParams(BaseModel):
@@ -45,13 +52,15 @@ class DemoPauseParams(BaseModel):
 
 
 async def fn_open_demo_playlist(ctx, params: OpenDemoPlaylistParams) -> ActionResult:
-    """Load demo playlist into cache — no Spotify auth required."""
-    await ctx.cache.set(
-        key="detail",
-        value=DetailModel(type="tracks", title=DEMO_PLAYLIST_NAME, tracks=DEMO_TRACKS),
-        ttl_seconds=300,
-    )
     await _set_demo_track(ctx, 0)
+    try:
+        await ctx.cache.set(
+            key="detail",
+            value=DetailModel(type="tracks", title=DEMO_PLAYLIST_NAME, tracks=DEMO_TRACKS),
+            ttl_seconds=300,
+        )
+    except Exception:
+        pass
     return ActionResult.success(
         data={"count": len(DEMO_TRACKS)},
         refresh_panels=["spotify", "spotify_detail"],
@@ -59,7 +68,6 @@ async def fn_open_demo_playlist(ctx, params: OpenDemoPlaylistParams) -> ActionRe
 
 
 async def fn_demo_play_track(ctx, params: DemoPlayTrackParams) -> ActionResult:
-    """Set a specific demo track as now playing."""
     index = next((i for i, t in enumerate(DEMO_TRACKS) if t["id"] == params.track_id), None)
     if index is None:
         return ActionResult.error("Track not found in demo playlist.", retryable=False)
@@ -68,27 +76,20 @@ async def fn_demo_play_track(ctx, params: DemoPlayTrackParams) -> ActionResult:
 
 
 async def fn_demo_next_track(ctx, params: DemoNextTrackParams) -> ActionResult:
-    """Advance to the next demo track."""
-    queue = await ctx.cache.get(key="queue", model=QueueModel)
-    await _set_demo_track(ctx, (queue.index + 1) if queue else 0)
+    state = await _get_demo_state(ctx)
+    await _set_demo_track(ctx, state.get("track_index", 0) + 1)
     return ActionResult.success(data={}, refresh_panels=["spotify"])
 
 
 async def fn_demo_prev_track(ctx, params: DemoPrevTrackParams) -> ActionResult:
-    """Go back to the previous demo track."""
-    queue = await ctx.cache.get(key="queue", model=QueueModel)
-    await _set_demo_track(ctx, (queue.index - 1) if queue else 0)
+    state = await _get_demo_state(ctx)
+    await _set_demo_track(ctx, state.get("track_index", 0) - 1)
     return ActionResult.success(data={}, refresh_panels=["spotify"])
 
 
 async def fn_demo_pause(ctx, params: DemoPauseParams) -> ActionResult:
-    """Toggle play/pause in demo mode."""
-    cached = await ctx.cache.get(key="now_playing", model=NowPlayingModel)
-    if not cached:
+    state = await _get_demo_state(ctx)
+    if not state.get("active"):
         return ActionResult.error("Click the demo playlist first.", retryable=False)
-    await ctx.cache.set(
-        key="now_playing",
-        value=cached.model_copy(update={"is_playing": not cached.is_playing}),
-        ttl_seconds=300,
-    )
+    await _save_demo_state(ctx, {**state, "is_playing": not state.get("is_playing", True)})
     return ActionResult.success(data={}, refresh_panels=["spotify"])
