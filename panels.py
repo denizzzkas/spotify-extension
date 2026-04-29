@@ -28,10 +28,17 @@ async def panel_spotify(ctx, **kwargs):
         token = None
 
     if not token:
-        client_id = ctx.config.get("spotify.client_id", "")
+        try:
+            client_id = ctx.config.get("spotify.client_id", "")
+        except Exception:
+            client_id = ""
 
-        demo_now_playing = await ctx.cache.get(key="now_playing", model=NowPlayingModel)
-        demo_queue = await ctx.cache.get(key="queue", model=QueueModel)
+        try:
+            demo_now_playing = await ctx.cache.get(key="now_playing", model=NowPlayingModel)
+            demo_queue = await ctx.cache.get(key="queue", model=QueueModel)
+        except Exception:
+            demo_now_playing = None
+            demo_queue = None
         is_demo_active = demo_queue and demo_queue.playlist_id == DEMO_PLAYLIST_ID
         now_playing = demo_now_playing.model_dump() if (demo_now_playing and is_demo_active) else None
 
@@ -89,12 +96,18 @@ async def panel_spotify(ctx, **kwargs):
 
         return ui.Stack(children, direction="v", gap=2)
 
-    search_cache = await ctx.cache.get(key="search", model=SearchModel)
+    try:
+        search_cache = await ctx.cache.get(key="search", model=SearchModel)
+    except Exception:
+        search_cache = None
     search_data = search_cache.model_dump() if search_cache else {}
     search_tracks = search_data.get("tracks", [])
     search_query = search_data.get("query", "")
 
-    playlists_cache = await ctx.cache.get(key="playlists", model=PlaylistsModel)
+    try:
+        playlists_cache = await ctx.cache.get(key="playlists", model=PlaylistsModel)
+    except Exception:
+        playlists_cache = None
     playlists = playlists_cache.items if playlists_cache else []
     if not playlists:
         try:
@@ -179,7 +192,10 @@ async def panel_spotify(ctx, **kwargs):
         ])
     )
 
-    now_playing_cache = await ctx.cache.get(key="now_playing", model=NowPlayingModel)
+    try:
+        now_playing_cache = await ctx.cache.get(key="now_playing", model=NowPlayingModel)
+    except Exception:
+        now_playing_cache = None
     now_playing = now_playing_cache.model_dump() if now_playing_cache else None
     children += [
         ui.Divider(),
@@ -222,7 +238,10 @@ async def panel_spotify(ctx, **kwargs):
     refresh="manual",
 )
 async def panel_spotify_detail(ctx, **kwargs):
-    detail_cache = await ctx.cache.get(key="detail", model=DetailModel)
+    try:
+        detail_cache = await ctx.cache.get(key="detail", model=DetailModel)
+    except Exception:
+        detail_cache = None
     detail = detail_cache.model_dump() if detail_cache else {}
     detail_type = detail.get("type")
     title = detail.get("title", "")
