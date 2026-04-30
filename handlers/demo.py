@@ -63,6 +63,7 @@ async def fn_open_demo_playlist(ctx, params: OpenDemoPlaylistParams) -> ActionRe
         pass
     return ActionResult.success(
         data={"count": len(DEMO_TRACKS)},
+        summary=f"Opened demo playlist ({len(DEMO_TRACKS)} tracks)",
         refresh_panels=["spotify", "spotify_detail"],
     )
 
@@ -72,19 +73,19 @@ async def fn_demo_play_track(ctx, params: DemoPlayTrackParams) -> ActionResult:
     if index is None:
         return ActionResult.error("Track not found in demo playlist.", retryable=False)
     await _set_demo_track(ctx, index)
-    return ActionResult.success(data={}, refresh_panels=["spotify"])
+    return ActionResult.success(data={}, summary="Playing track", refresh_panels=["spotify"])
 
 
 async def fn_demo_next_track(ctx, params: DemoNextTrackParams) -> ActionResult:
     state = await _get_demo_state(ctx)
     await _set_demo_track(ctx, state.get("track_index", 0) + 1)
-    return ActionResult.success(data={}, refresh_panels=["spotify"])
+    return ActionResult.success(data={}, summary="Next track", refresh_panels=["spotify"])
 
 
 async def fn_demo_prev_track(ctx, params: DemoPrevTrackParams) -> ActionResult:
     state = await _get_demo_state(ctx)
     await _set_demo_track(ctx, state.get("track_index", 0) - 1)
-    return ActionResult.success(data={}, refresh_panels=["spotify"])
+    return ActionResult.success(data={}, summary="Previous track", refresh_panels=["spotify"])
 
 
 async def fn_demo_pause(ctx, params: DemoPauseParams) -> ActionResult:
@@ -92,4 +93,4 @@ async def fn_demo_pause(ctx, params: DemoPauseParams) -> ActionResult:
     if not state.get("active"):
         return ActionResult.error("Click the demo playlist first.", retryable=False)
     await _save_demo_state(ctx, {**state, "is_playing": not state.get("is_playing", True)})
-    return ActionResult.success(data={}, refresh_panels=["spotify"])
+    return ActionResult.success(data={}, summary="Toggled playback", refresh_panels=["spotify"])
