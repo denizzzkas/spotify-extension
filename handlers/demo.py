@@ -1,6 +1,7 @@
 """Demo mode handlers — no Spotify auth required, uses ctx.store for state."""
 from __future__ import annotations
 
+import random
 from pydantic import BaseModel, Field
 
 from imperal_sdk import ActionResult
@@ -50,6 +51,9 @@ class DemoPrevTrackParams(BaseModel):
 class DemoPauseParams(BaseModel):
     """No parameters."""
 
+class DemoShuffleParams(BaseModel):
+    """No parameters."""
+
 
 async def fn_open_demo_playlist(ctx, params: OpenDemoPlaylistParams) -> ActionResult:
     await _set_demo_track(ctx, 0)
@@ -62,7 +66,7 @@ async def fn_open_demo_playlist(ctx, params: OpenDemoPlaylistParams) -> ActionRe
     except Exception:
         pass
     return ActionResult.success(
-        data={"count": len(DEMO_TRACKS)},
+        data={"count": len(DEMO_TRACKS), "tracks": DEMO_TRACKS},
         summary=f"Opened demo playlist ({len(DEMO_TRACKS)} tracks)",
         refresh_panels=["spotify", "spotify_detail"],
     )
@@ -78,7 +82,13 @@ async def fn_demo_play_track(ctx, params: DemoPlayTrackParams) -> ActionResult:
 
 async def fn_demo_next_track(ctx, params: DemoNextTrackParams) -> ActionResult:
     state = await _get_demo_state(ctx)
-    await _set_demo_track(ctx, state.get("track_index", 0) + 1)
+    if state.get("shuffle", False):
+        current = state.get("track_index", 0)
+        candidates = [i for i in range(len(DEMO_TRACKS)) if i != current]
+        next_index = random.choice(candidates)
+    else:
+        next_index = state.get("track_index", 0) + 1
+    await _set_demo_track(ctx, next_index)
     return ActionResult.success(data={}, summary="Next track", refresh_panels=["spotify"])
 
 
@@ -94,3 +104,13 @@ async def fn_demo_pause(ctx, params: DemoPauseParams) -> ActionResult:
         return ActionResult.error("Click the demo playlist first.", retryable=False)
     await _save_demo_state(ctx, {**state, "is_playing": not state.get("is_playing", True)})
     return ActionResult.success(data={}, summary="Toggled playback", refresh_panels=["spotify"])
+
+
+async def fn_demo_shuffle(ctx, params: DemoShuffleParams) -> ActionResult:
+    state = await _get_demo_state(ctx)
+    if not state.get("active"):
+        return ActionResult.error("Click the demo playlist first.", retryable=False)
+    new_shuffle = not state.get("shuffle", False)
+    await _save_demo_state(ctx, {**state, "shuffle": new_shuffle})
+    label = "on" if new_shuffle else "off"
+    return ActionResult.success(data={"shuffle": new_shuffle}, summary=f"Shuffle {label}", refresh_panels=["spotify"])

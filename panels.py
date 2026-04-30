@@ -35,6 +35,7 @@ async def panel_spotify(ctx, **kwargs):
 
         demo_now_playing = None
         is_demo_active = False
+        demo_shuffle = False
         try:
             demo_now_playing = await ctx.cache.get(key="now_playing", model=NowPlayingModel)
             demo_queue = await ctx.cache.get(key="queue", model=QueueModel)
@@ -51,6 +52,7 @@ async def panel_spotify(ctx, **kwargs):
                         track = DEMO_TRACKS[state.get("track_index", 0)]
                         demo_now_playing = NowPlayingModel(**track, is_playing=state.get("is_playing", True))
                         is_demo_active = True
+                        demo_shuffle = state.get("shuffle", False)
             except Exception:
                 pass
 
@@ -103,6 +105,9 @@ async def panel_spotify(ctx, **kwargs):
                               on_click=ui.Call("demo_pause")),
                     ui.Button("", icon="SkipForward", variant="ghost", size="sm",
                               on_click=ui.Call("demo_next_track")),
+                    ui.Button("", icon="Shuffle", size="sm",
+                              variant="secondary" if demo_shuffle else "ghost",
+                              on_click=ui.Call("demo_shuffle")),
                 ], direction="h", gap=1, wrap=False),
             ]
             if preview_url:

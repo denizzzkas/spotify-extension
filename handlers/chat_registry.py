@@ -40,6 +40,7 @@ from handlers.demo import (
     fn_demo_next_track, DemoNextTrackParams,
     fn_demo_prev_track, DemoPrevTrackParams,
     fn_demo_pause, DemoPauseParams,
+    fn_demo_shuffle, DemoShuffleParams,
 )
 
 
@@ -232,3 +233,9 @@ def register(chat) -> None:
                    action_type="read")
     async def wrapped_demo_pause(ctx, params: DemoPauseParams) -> ActionResult:
         return await fn_demo_pause(ctx, params)
+
+    @chat.function("demo_shuffle",
+                   description="Toggle shuffle mode in the demo playlist.",
+                   action_type="read")
+    async def wrapped_demo_shuffle(ctx, params: DemoShuffleParams) -> ActionResult:
+        return await fn_demo_shuffle(ctx, params)
