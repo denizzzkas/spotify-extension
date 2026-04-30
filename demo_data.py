@@ -9,7 +9,7 @@ DEMO_TRACKS = [
         "title": "Pure Water (with Migos)",
         "artist": "Mustard feat. Migos",
         "album": "Perfect Ten",
-        "album_art": "https://i.scdn.co/image/ab67616d0000b27323adc1277fba4944f3a2d8c5",
+        "album_art": "https://i.scdn.co/image/ab67616d00001e0293b1e96fad758869d0974162",
         "preview_url": "",
         "duration": "3:04",
         "duration_ms": 184000,
