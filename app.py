@@ -16,13 +16,12 @@ from pathlib import Path as _Path
 from handlers import chat_registry
 
 SYSTEM_PROMPT = (_Path(__file__).parent / "system_prompt.txt").read_text()
-ICON = (_Path(__file__).parent / "icon.svg").read_text()
 
 ext = Extension(
     "spotify-extension",
     display_name="Spotify",
     description="Full access to your Spotify music library. Search tracks, manage playlists, save songs, view play history, and more.",
-    icon=ICON,
+    icon="icon.svg",
     version="1.0.0",
     capabilities=[],
     actions_explicit=True,
