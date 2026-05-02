@@ -2,9 +2,7 @@
 from imperal_sdk import ui
 
 from app import ext
-from spotify_config import DEMO_STATE_COLLECTION
 from cache_models import DetailModel
-from demo_data import DEMO_TRACKS, DEMO_PLAYLIST_NAME
 
 
 @ext.panel(
@@ -17,28 +15,26 @@ from demo_data import DEMO_TRACKS, DEMO_PLAYLIST_NAME
     max_width=480,
     refresh="manual",
 )
-async def panel_spotify_detail(ctx, **kwargs):
-    detail = {}
-    try:
-        page = await ctx.store.query(DEMO_STATE_COLLECTION, where={"user_id": ctx.user.imperal_id})
-        if page.data and page.data[0].data.get("active") and page.data[0].data.get("detail_open"):
-            try:
-                detail_cache = await ctx.cache.get(key="detail", model=DetailModel)
-                if detail_cache:
-                    detail = detail_cache.model_dump()
-                else:
-                    detail = {"type": "tracks", "title": DEMO_PLAYLIST_NAME, "tracks": DEMO_TRACKS}
-            except Exception:
-                detail = {"type": "tracks", "title": DEMO_PLAYLIST_NAME, "tracks": DEMO_TRACKS}
-    except Exception:
-        pass
-    detail_type = detail.get("type")
-    title = detail.get("title", "")
-
+async def panel_spotify_detail(ctx, detail_type: str = "", **kwargs):
+    """Right panel: shows playlist/profile details only if detail_type param is set."""
     if not detail_type:
         return ui.Empty("Select a playlist or profile from the sidebar.", icon="Music")
 
-    if detail_type == "profile":
+    detail = {}
+    try:
+        detail_cache = await ctx.cache.get(key="detail", model=DetailModel)
+        if detail_cache:
+            detail = detail_cache.model_dump()
+    except Exception:
+        pass
+
+    if not detail:
+        return ui.Empty("No data loaded.", icon="Music")
+
+    detail_type_cached = detail.get("type")
+    title = detail.get("title", "")
+
+    if detail_type_cached == "profile":
         profile = detail.get("profile") or {}
         items = [
             ui.ListItem(id="name", title="Name", subtitle=profile.get("display_name", "")),
@@ -52,7 +48,6 @@ async def panel_spotify_detail(ctx, **kwargs):
         ], direction="v", gap=2)
 
     tracks = detail.get("tracks") or []
-    is_demo = title == DEMO_PLAYLIST_NAME
     track_items = [
         ui.ListItem(
             id=t["id"],
@@ -60,9 +55,7 @@ async def panel_spotify_detail(ctx, **kwargs):
             subtitle=t["artist"],
             meta=t["duration"],
             avatar=ui.Avatar(src=t["album_art"], fallback=(t["title"] or "?")[0].upper()),
-            actions=[{"icon": "Play", "on_click": ui.Call(
-                "demo_play_track" if is_demo else "play_track", track_id=t["id"],
-            )}],
+            actions=[{"icon": "Play", "on_click": ui.Call("play_track", track_id=t["id"])}],
         )
         for t in tracks
     ]

@@ -37,13 +37,6 @@ async def _set_demo_track(ctx, index: int) -> None:
     await _save_demo_state(ctx, {**state, "track_index": index, "is_playing": True, "active": True})
 
 
-async def _close_demo_detail(ctx) -> None:
-    """Clear detail_open flag when switching away from demo playlist."""
-    state = await _get_demo_state(ctx)
-    if state.get("detail_open"):
-        await _save_demo_state(ctx, {**state, "detail_open": False})
-
-
 class OpenDemoPlaylistParams(BaseModel):
     """No parameters."""
 

@@ -9,7 +9,6 @@ from spotify_config import SP_API_BASE, DEFAULT_SEARCH_LIMIT, MAX_LIMIT
 from utils import format_track, sp_error
 from handlers.auth import get_auth_headers, get_auth_headers_refreshed
 from cache_models import SearchModel, DetailModel
-from handlers.demo import _close_demo_detail
 
 SKELETON_DETAIL = "spotify_detail"  # kept for backwards compat with tests
 SKELETON_SEARCH = "spotify_search"  # kept for backwards compat with tests
@@ -86,7 +85,6 @@ async def fn_panel_search(ctx, params: PanelSearchParams) -> ActionResult:
 
 async def fn_open_playlist(ctx, params: OpenPlaylistParams) -> ActionResult:
     """Load playlist tracks into the right detail panel."""
-    await _close_demo_detail(ctx)
 
     try:
         headers = await get_auth_headers(ctx)
@@ -125,12 +123,12 @@ async def fn_open_playlist(ctx, params: OpenPlaylistParams) -> ActionResult:
         data={"count": len(tracks)},
         summary=f"Opened '{name}' ({len(tracks)} tracks)",
         refresh_panels=["spotify_detail"],
+        panel_params={"spotify_detail": {"detail_type": "tracks"}},
     )
 
 
 async def fn_open_liked_tracks(ctx, params: OpenLikedTracksParams) -> ActionResult:
     """Load liked tracks into the right detail panel."""
-    await _close_demo_detail(ctx)
 
     try:
         headers = await get_auth_headers(ctx)
@@ -166,12 +164,12 @@ async def fn_open_liked_tracks(ctx, params: OpenLikedTracksParams) -> ActionResu
         data={"count": len(tracks)},
         summary=f"Opened Liked Tracks ({len(tracks)} tracks)",
         refresh_panels=["spotify_detail"],
+        panel_params={"spotify_detail": {"detail_type": "tracks"}},
     )
 
 
 async def fn_open_recent_tracks(ctx, params: OpenRecentTracksParams) -> ActionResult:
     """Load recently played tracks into the right detail panel."""
-    await _close_demo_detail(ctx)
 
     try:
         headers = await get_auth_headers(ctx)
@@ -214,12 +212,12 @@ async def fn_open_recent_tracks(ctx, params: OpenRecentTracksParams) -> ActionRe
         data={"count": len(tracks)},
         summary=f"Opened Recent Tracks ({len(tracks)} tracks)",
         refresh_panels=["spotify_detail"],
+        panel_params={"spotify_detail": {"detail_type": "tracks"}},
     )
 
 
 async def fn_open_profile(ctx, params: OpenProfileParams) -> ActionResult:
     """Load user profile into the right detail panel."""
-    await _close_demo_detail(ctx)
 
     try:
         headers = await get_auth_headers(ctx)
@@ -259,4 +257,5 @@ async def fn_open_profile(ctx, params: OpenProfileParams) -> ActionResult:
         data={"profile": profile},
         summary=f"Opened profile: {profile['display_name']}",
         refresh_panels=["spotify_detail"],
+        panel_params={"spotify_detail": {"detail_type": "profile"}},
     )
