@@ -28,6 +28,7 @@ ext = Extension(
     config_defaults={
         "spotify.client_id": "",
         "spotify.client_secret": "",
+        "genius.access_token": "",
     },
 )
 

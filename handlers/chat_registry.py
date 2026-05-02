@@ -42,6 +42,7 @@ from handlers.demo import (
     fn_demo_pause, DemoPauseParams,
     fn_demo_shuffle, DemoShuffleParams,
 )
+from handlers.lyrics import fn_get_lyrics, GetLyricsParams
 
 
 def register(chat) -> None:
@@ -249,3 +250,10 @@ def register(chat) -> None:
     async def wrapped_demo_shuffle(ctx, params: DemoShuffleParams) -> ActionResult:
         """Toggle shuffle mode in the demo playlist."""
         return await fn_demo_shuffle(ctx, params)
+
+    @chat.function("get_lyrics",
+                   description="Get song lyrics from Genius API.",
+                   action_type="read")
+    async def wrapped_get_lyrics(ctx, params: GetLyricsParams) -> ActionResult:
+        """Fetch lyrics for a song from Genius."""
+        return await fn_get_lyrics(ctx, params)
