@@ -54,7 +54,10 @@ async def fn_get_lyrics(ctx, params: GetLyricsParams) -> ActionResult:
             )
 
         import re
-        html = lyrics_resp.text
+        if isinstance(lyrics_resp.text, str):
+            html = lyrics_resp.text
+        else:
+            html = lyrics_resp.content.decode('utf-8')
 
         lyrics_pattern = r'<div data-lyrics-container="true">(.*?)</div>'
         matches = re.findall(lyrics_pattern, html, re.DOTALL)
