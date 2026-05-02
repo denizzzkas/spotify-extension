@@ -19,8 +19,12 @@ SYSTEM_PROMPT = (_Path(__file__).parent / "system_prompt.txt").read_text()
 
 ext = Extension(
     "spotify-extension",
+    display_name="Spotify",
+    description="Full access to your Spotify music library. Search tracks, manage playlists, save songs, view play history, and more.",
+    icon="icon.svg",
     version="1.0.0",
     capabilities=[],
+    actions_explicit=True,
     config_defaults={
         "spotify.client_id": "",
         "spotify.client_secret": "",
@@ -106,6 +110,8 @@ class DisconnectSpotifyParams(BaseModel):
     "connect_spotify",
     description="Connect your Spotify account via OAuth 2.0. Returns an authorisation URL.",
     action_type="write",
+    chain_callable=True,
+    effects=["auth:connect"],
     event="spotify.connected",
 )
 async def fn_connect_spotify(ctx, params: ConnectSpotifyParams) -> ActionResult:
@@ -127,6 +133,8 @@ async def fn_connect_spotify(ctx, params: ConnectSpotifyParams) -> ActionResult:
     "disconnect_spotify",
     description="Disconnect your Spotify account and remove all stored credentials.",
     action_type="write",
+    chain_callable=True,
+    effects=["auth:disconnect"],
     event="spotify.disconnected",
 )
 async def fn_disconnect_spotify(ctx, params: DisconnectSpotifyParams) -> ActionResult:
