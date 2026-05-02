@@ -58,6 +58,16 @@ async def panel_spotify(ctx, **kwargs):
 
         now_playing = demo_now_playing.model_dump() if (demo_now_playing and is_demo_active) else None
 
+        # Save demo playlist to cache so right panel can display it
+        try:
+            await ctx.cache.set(
+                key="detail",
+                value=DetailModel(type="tracks", title=DEMO_PLAYLIST_NAME, tracks=DEMO_TRACKS),
+                ttl_seconds=120,
+            )
+        except Exception:
+            pass
+
         children = [ui.Header("Spotify", level=3)]
 
         if not client_id:
@@ -84,7 +94,7 @@ async def panel_spotify(ctx, **kwargs):
                         title=DEMO_PLAYLIST_NAME,
                         subtitle=f"{len(DEMO_TRACKS)} tracks",
                         avatar=ui.Avatar(src=DEMO_TRACKS[0]["album_art"], fallback="D"),
-                        on_click=ui.Call("open_demo_playlist"),
+                        on_click=ui.Call("__panel__spotify_detail", detail_type="tracks"),
                     ),
                 ])],
             }])
@@ -153,7 +163,7 @@ async def panel_spotify(ctx, **kwargs):
             title=p["title"],
             subtitle=f"{p['track_count']} tracks",
             avatar=ui.Avatar(src=p["image_url"], fallback=(p["title"] or "?")[0].upper()),
-            on_click=ui.Call("open_playlist", playlist_id=p["id"], playlist_name=p["title"]),
+            on_click=ui.Call("__panel__spotify_detail", detail_type="tracks"),
         )
         for p in playlists
     ]
