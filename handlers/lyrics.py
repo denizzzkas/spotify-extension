@@ -46,24 +46,32 @@ async def fn_get_lyrics(ctx, params: GetLyricsParams) -> ActionResult:
 
         song_url = hits[0]["result"]["url"]
 
-        lyrics_resp = await ctx.http.get(song_url, headers=headers)
+        lyrics_resp = await ctx.http.get(song_url)
         if not lyrics_resp.ok:
             return ActionResult.error(
                 "Failed to fetch lyrics page",
                 retryable=True
             )
 
-        from bs4 import BeautifulSoup
-        soup = BeautifulSoup(lyrics_resp.text, "html.parser")
+        import re
+        html = lyrics_resp.text
 
-        lyrics_divs = soup.find_all("div", {"data-lyrics-container": "true"})
-        if not lyrics_divs:
+        lyrics_pattern = r'<div data-lyrics-container="true">(.*?)</div>'
+        matches = re.findall(lyrics_pattern, html, re.DOTALL)
+
+        if not matches:
             return ActionResult.error(
                 "Could not parse lyrics from page",
                 retryable=False
             )
 
-        lyrics = "\n".join([div.get_text() for div in lyrics_divs])
+        def clean_html(text):
+            text = re.sub(r'<br\s*/?>', '\n', text)
+            text = re.sub(r'<[^>]+>', '', text)
+            text = text.strip()
+            return text
+
+        lyrics = "\n\n".join([clean_html(match) for match in matches])
 
         if not lyrics.strip():
             return ActionResult.error(
