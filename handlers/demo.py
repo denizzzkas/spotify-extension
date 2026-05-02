@@ -65,25 +65,10 @@ class DemoShuffleParams(BaseModel):
 
 async def fn_open_demo_playlist(ctx, params: OpenDemoPlaylistParams) -> ActionResult:
     await _set_demo_track(ctx, 0)
-    try:
-        page = await ctx.store.query(DEMO_STATE_COLLECTION, where={"user_id": ctx.user.imperal_id})
-        if page.data:
-            record = {**page.data[0].data, "detail_open": True}
-            await ctx.store.update(DEMO_STATE_COLLECTION, page.data[0].id, record)
-    except Exception:
-        pass
-    try:
-        await ctx.cache.set(
-            key="detail",
-            value=DetailModel(type="tracks", title=DEMO_PLAYLIST_NAME, tracks=DEMO_TRACKS),
-            ttl_seconds=300,
-        )
-    except Exception:
-        pass
     return ActionResult.success(
         data={"count": len(DEMO_TRACKS), "tracks": DEMO_TRACKS},
         summary=f"Opened demo playlist ({len(DEMO_TRACKS)} tracks)",
-        refresh_panels=["spotify", "spotify_detail"],
+        refresh_panels=["spotify"],
     )
 
 

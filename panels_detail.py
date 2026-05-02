@@ -18,22 +18,20 @@ from demo_data import DEMO_TRACKS, DEMO_PLAYLIST_NAME
     refresh="manual",
 )
 async def panel_spotify_detail(ctx, **kwargs):
+    detail = {}
     try:
-        detail_cache = await ctx.cache.get(key="detail", model=DetailModel)
-    except Exception:
-        detail_cache = None
-
-    if detail_cache:
-        detail = detail_cache.model_dump()
-    else:
-        try:
-            page = await ctx.store.query(DEMO_STATE_COLLECTION, where={"user_id": ctx.user.imperal_id})
-            if page.data and page.data[0].data.get("active") and page.data[0].data.get("detail_open"):
+        page = await ctx.store.query(DEMO_STATE_COLLECTION, where={"user_id": ctx.user.imperal_id})
+        if page.data and page.data[0].data.get("active") and page.data[0].data.get("detail_open"):
+            try:
+                detail_cache = await ctx.cache.get(key="detail", model=DetailModel)
+                if detail_cache:
+                    detail = detail_cache.model_dump()
+                else:
+                    detail = {"type": "tracks", "title": DEMO_PLAYLIST_NAME, "tracks": DEMO_TRACKS}
+            except Exception:
                 detail = {"type": "tracks", "title": DEMO_PLAYLIST_NAME, "tracks": DEMO_TRACKS}
-            else:
-                detail = {}
-        except Exception:
-            detail = {}
+    except Exception:
+        pass
     detail_type = detail.get("type")
     title = detail.get("title", "")
 
