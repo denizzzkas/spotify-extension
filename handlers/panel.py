@@ -119,11 +119,19 @@ async def fn_open_playlist(ctx, params: OpenPlaylistParams) -> ActionResult:
         ttl_seconds=120,
     )
 
+    try:
+        page = await ctx.store.query(DEMO_STATE_COLLECTION, where={"user_id": ctx.user.imperal_id})
+        if page.data:
+            await ctx.store.update(DEMO_STATE_COLLECTION, page.data[0].id, {**page.data[0].data, "detail_type": "tracks"})
+        else:
+            await ctx.store.create(DEMO_STATE_COLLECTION, {"user_id": ctx.user.imperal_id, "detail_type": "tracks"})
+    except Exception:
+        pass
+
     return ActionResult.success(
         data={"count": len(tracks)},
         summary=f"Opened '{name}' ({len(tracks)} tracks)",
         refresh_panels=["spotify_detail"],
-        panel_params={"spotify_detail": {"detail_type": "tracks"}},
     )
 
 
@@ -160,11 +168,19 @@ async def fn_open_liked_tracks(ctx, params: OpenLikedTracksParams) -> ActionResu
         ttl_seconds=120,
     )
 
+    try:
+        page = await ctx.store.query(DEMO_STATE_COLLECTION, where={"user_id": ctx.user.imperal_id})
+        if page.data:
+            await ctx.store.update(DEMO_STATE_COLLECTION, page.data[0].id, {**page.data[0].data, "detail_type": "tracks"})
+        else:
+            await ctx.store.create(DEMO_STATE_COLLECTION, {"user_id": ctx.user.imperal_id, "detail_type": "tracks"})
+    except Exception:
+        pass
+
     return ActionResult.success(
         data={"count": len(tracks)},
         summary=f"Opened Liked Tracks ({len(tracks)} tracks)",
         refresh_panels=["spotify_detail"],
-        panel_params={"spotify_detail": {"detail_type": "tracks"}},
     )
 
 
@@ -208,11 +224,19 @@ async def fn_open_recent_tracks(ctx, params: OpenRecentTracksParams) -> ActionRe
         ttl_seconds=120,
     )
 
+    try:
+        page = await ctx.store.query(DEMO_STATE_COLLECTION, where={"user_id": ctx.user.imperal_id})
+        if page.data:
+            await ctx.store.update(DEMO_STATE_COLLECTION, page.data[0].id, {**page.data[0].data, "detail_type": "tracks"})
+        else:
+            await ctx.store.create(DEMO_STATE_COLLECTION, {"user_id": ctx.user.imperal_id, "detail_type": "tracks"})
+    except Exception:
+        pass
+
     return ActionResult.success(
         data={"count": len(tracks)},
         summary=f"Opened Recent Tracks ({len(tracks)} tracks)",
         refresh_panels=["spotify_detail"],
-        panel_params={"spotify_detail": {"detail_type": "tracks"}},
     )
 
 
@@ -253,9 +277,17 @@ async def fn_open_profile(ctx, params: OpenProfileParams) -> ActionResult:
         ttl_seconds=120,
     )
 
+    try:
+        page = await ctx.store.query(DEMO_STATE_COLLECTION, where={"user_id": ctx.user.imperal_id})
+        if page.data:
+            await ctx.store.update(DEMO_STATE_COLLECTION, page.data[0].id, {**page.data[0].data, "detail_type": "profile"})
+        else:
+            await ctx.store.create(DEMO_STATE_COLLECTION, {"user_id": ctx.user.imperal_id, "detail_type": "profile"})
+    except Exception:
+        pass
+
     return ActionResult.success(
         data={"profile": profile},
         summary=f"Opened profile: {profile['display_name']}",
         refresh_panels=["spotify_detail"],
-        panel_params={"spotify_detail": {"detail_type": "profile"}},
     )

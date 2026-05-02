@@ -2,6 +2,7 @@
 from imperal_sdk import ui
 
 from app import ext
+from spotify_config import DEMO_STATE_COLLECTION
 from cache_models import DetailModel
 
 
@@ -15,8 +16,16 @@ from cache_models import DetailModel
     max_width=480,
     refresh="manual",
 )
-async def panel_spotify_detail(ctx, detail_type: str = "", **kwargs):
-    """Right panel: shows playlist/profile details only if detail_type param is set."""
+async def panel_spotify_detail(ctx, **kwargs):
+    """Right panel: shows playlist/profile details based on detail_type in store."""
+    detail_type = ""
+    try:
+        page = await ctx.store.query(DEMO_STATE_COLLECTION, where={"user_id": ctx.user.imperal_id})
+        if page.data:
+            detail_type = page.data[0].data.get("detail_type", "")
+    except Exception:
+        pass
+
     if not detail_type:
         return ui.Empty("Select a playlist or profile from the sidebar.", icon="Music")
 
