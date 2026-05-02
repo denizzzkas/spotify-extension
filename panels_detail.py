@@ -13,7 +13,7 @@ from cache_models import DetailModel
     icon="Music",
     min_width=260,
     max_width=480,
-    refresh="manual",
+    refresh="on_event:panel.playlist_opened,panel.liked_tracks_opened,panel.recent_tracks_opened,panel.profile_opened",
 )
 async def panel_spotify_detail(ctx, **kwargs):
     """Right panel: shows playlist/profile details based on detail_type in store."""
