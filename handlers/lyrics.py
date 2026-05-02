@@ -5,6 +5,8 @@ from pydantic import BaseModel, Field
 
 from imperal_sdk import ActionResult
 
+GENIUS_ACCESS_TOKEN = "kLp7D46sSLTNr3_eZFz4vLinJeiaYbx_7bSu20-itx4g-WBa_IKCMYh-AmtaBbMI"
+
 
 class GetLyricsParams(BaseModel):
     track_name: str = Field(..., description="Song title")
@@ -13,17 +15,16 @@ class GetLyricsParams(BaseModel):
 
 async def fn_get_lyrics(ctx, params: GetLyricsParams) -> ActionResult:
     """Fetch song lyrics from Genius API."""
-    genius_token = ctx.config.get("genius.access_token", "")
-    if not genius_token:
+    if not GENIUS_ACCESS_TOKEN:
         return ActionResult.error(
-            "Genius API token not configured. Ask administrator to add genius.access_token.",
+            "Genius API token not configured.",
             retryable=False
         )
 
     query = f"{params.track_name} {params.artist_name}"
 
     try:
-        headers = {"Authorization": f"Bearer {genius_token}"}
+        headers = {"Authorization": f"Bearer {GENIUS_ACCESS_TOKEN}"}
         search_resp = await ctx.http.get(
             "https://api.genius.com/search",
             params={"q": query},
