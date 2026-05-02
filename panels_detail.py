@@ -11,7 +11,6 @@ from cache_models import DetailModel
     slot="right",
     title="Spotify",
     icon="Music",
-    default_width=320,
     min_width=260,
     max_width=480,
     refresh="manual",
