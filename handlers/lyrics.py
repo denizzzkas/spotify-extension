@@ -45,49 +45,12 @@ async def fn_get_lyrics(ctx, params: GetLyricsParams) -> ActionResult:
             )
 
         song_url = hits[0]["result"]["url"]
-
-        lyrics_resp = await ctx.http.get(song_url)
-        if not lyrics_resp.ok:
-            return ActionResult.error(
-                "Failed to fetch lyrics page",
-                retryable=True
-            )
-
-        import re
-        if isinstance(lyrics_resp.text, str):
-            html = lyrics_resp.text
-        else:
-            html = lyrics_resp.content.decode('utf-8')
-
-        lyrics_pattern = r'<div data-lyrics-container="true">(.*?)</div>'
-        matches = re.findall(lyrics_pattern, html, re.DOTALL)
-
-        if not matches:
-            return ActionResult.error(
-                "Could not parse lyrics from page",
-                retryable=False
-            )
-
-        def clean_html(text):
-            text = re.sub(r'<br\s*/?>', '\n', text)
-            text = re.sub(r'<[^>]+>', '', text)
-            text = text.strip()
-            return text
-
-        lyrics = "\n\n".join([clean_html(match) for match in matches])
-
-        if not lyrics.strip():
-            return ActionResult.error(
-                "Lyrics are empty",
-                retryable=False
-            )
-
         song_title = hits[0]["result"]["title"]
         song_artist = hits[0]["result"]["primary_artist"]["name"]
 
         return ActionResult.success(
-            data={"lyrics": lyrics, "title": song_title, "artist": song_artist},
-            summary=f"Lyrics for '{song_title}' by {song_artist}"
+            data={"url": song_url, "title": song_title, "artist": song_artist},
+            summary=f"🎵 {song_title} by {song_artist}\n\n📖 Lyrics: {song_url}"
         )
 
     except Exception as e:
