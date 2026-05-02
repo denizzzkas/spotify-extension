@@ -182,70 +182,70 @@ def register(chat) -> None:
 
     @chat.function("open_playlist",
                    description="Open a playlist's tracks in the right detail panel.",
-                   action_type="read")
+                   action_type="write", chain_callable=True, effects=["panel:open"], event="panel.playlist_opened")
     async def wrapped_open_playlist(ctx, params: OpenPlaylistParams) -> ActionResult:
         """Load playlist tracks into the right detail panel."""
         return await fn_open_playlist(ctx, params)
 
     @chat.function("open_liked_tracks",
                    description="Open liked/saved tracks in the right detail panel.",
-                   action_type="read")
+                   action_type="write", chain_callable=True, effects=["panel:open"], event="panel.liked_tracks_opened")
     async def wrapped_open_liked_tracks(ctx, params: OpenLikedTracksParams) -> ActionResult:
         """Load liked tracks into the right detail panel."""
         return await fn_open_liked_tracks(ctx, params)
 
     @chat.function("open_recent_tracks",
                    description="Open recently played tracks in the right detail panel.",
-                   action_type="read")
+                   action_type="write", chain_callable=True, effects=["panel:open"], event="panel.recent_tracks_opened")
     async def wrapped_open_recent_tracks(ctx, params: OpenRecentTracksParams) -> ActionResult:
         """Load recently played tracks into the right detail panel."""
         return await fn_open_recent_tracks(ctx, params)
 
     @chat.function("open_profile",
                    description="Open the user's Spotify profile in the right detail panel.",
-                   action_type="read")
+                   action_type="write", chain_callable=True, effects=["panel:open"], event="panel.profile_opened")
     async def wrapped_open_profile(ctx, params: OpenProfileParams) -> ActionResult:
         """Load user profile into the right detail panel."""
         return await fn_open_profile(ctx, params)
 
     @chat.function("open_demo_playlist",
                    description="Open the demo playlist (no Spotify login required).",
-                   action_type="read")
+                   action_type="write", chain_callable=True, effects=["demo:open"], event="demo.playlist_opened")
     async def wrapped_open_demo_playlist(ctx, params: OpenDemoPlaylistParams) -> ActionResult:
         """Open the demo playlist (no Spotify login required)."""
         return await fn_open_demo_playlist(ctx, params)
 
     @chat.function("demo_play_track",
                    description="Play a specific track from the demo playlist.",
-                   action_type="read")
+                   action_type="write", chain_callable=True, effects=["demo:play"], event="demo.track_played")
     async def wrapped_demo_play_track(ctx, params: DemoPlayTrackParams) -> ActionResult:
         """Play a specific track from the demo playlist."""
         return await fn_demo_play_track(ctx, params)
 
     @chat.function("demo_next_track",
                    description="Skip to the next track in the demo playlist.",
-                   action_type="read")
+                   action_type="write", chain_callable=True, effects=["demo:next"], event="demo.track_next")
     async def wrapped_demo_next_track(ctx, params: DemoNextTrackParams) -> ActionResult:
         """Skip to the next track in the demo playlist."""
         return await fn_demo_next_track(ctx, params)
 
     @chat.function("demo_prev_track",
                    description="Go back to the previous track in the demo playlist.",
-                   action_type="read")
+                   action_type="write", chain_callable=True, effects=["demo:prev"], event="demo.track_previous")
     async def wrapped_demo_prev_track(ctx, params: DemoPrevTrackParams) -> ActionResult:
         """Go back to the previous track in the demo playlist."""
         return await fn_demo_prev_track(ctx, params)
 
     @chat.function("demo_pause",
                    description="Toggle play/pause in demo mode.",
-                   action_type="read")
+                   action_type="write", chain_callable=True, effects=["demo:pause"], event="demo.playback_toggled")
     async def wrapped_demo_pause(ctx, params: DemoPauseParams) -> ActionResult:
         """Toggle play/pause in demo mode."""
         return await fn_demo_pause(ctx, params)
 
     @chat.function("demo_shuffle",
                    description="Toggle shuffle mode in the demo playlist.",
-                   action_type="read")
+                   action_type="write", chain_callable=True, effects=["demo:shuffle"], event="demo.shuffle_toggled")
     async def wrapped_demo_shuffle(ctx, params: DemoShuffleParams) -> ActionResult:
         """Toggle shuffle mode in the demo playlist."""
         return await fn_demo_shuffle(ctx, params)

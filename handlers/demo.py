@@ -33,7 +33,15 @@ async def _save_demo_state(ctx, state: dict) -> None:
 
 async def _set_demo_track(ctx, index: int) -> None:
     index = index % len(DEMO_TRACKS)
-    await _save_demo_state(ctx, {"track_index": index, "is_playing": True, "active": True})
+    state = await _get_demo_state(ctx)
+    await _save_demo_state(ctx, {**state, "track_index": index, "is_playing": True, "active": True})
+
+
+async def _close_demo_detail(ctx) -> None:
+    """Clear detail_open flag when switching away from demo playlist."""
+    state = await _get_demo_state(ctx)
+    if state.get("detail_open"):
+        await _save_demo_state(ctx, {**state, "detail_open": False})
 
 
 class OpenDemoPlaylistParams(BaseModel):
@@ -84,7 +92,7 @@ async def fn_demo_play_track(ctx, params: DemoPlayTrackParams) -> ActionResult:
     if index is None:
         return ActionResult.error("Track not found in demo playlist.", retryable=False)
     await _set_demo_track(ctx, index)
-    return ActionResult.success(data={}, summary="Playing track")
+    return ActionResult.success(data={}, summary="Playing track", refresh_panels=["spotify"])
 
 
 async def fn_demo_next_track(ctx, params: DemoNextTrackParams) -> ActionResult:
@@ -96,13 +104,13 @@ async def fn_demo_next_track(ctx, params: DemoNextTrackParams) -> ActionResult:
     else:
         next_index = state.get("track_index", 0) + 1
     await _set_demo_track(ctx, next_index)
-    return ActionResult.success(data={}, summary="Next track")
+    return ActionResult.success(data={}, summary="Next track", refresh_panels=["spotify"])
 
 
 async def fn_demo_prev_track(ctx, params: DemoPrevTrackParams) -> ActionResult:
     state = await _get_demo_state(ctx)
     await _set_demo_track(ctx, state.get("track_index", 0) - 1)
-    return ActionResult.success(data={}, summary="Previous track")
+    return ActionResult.success(data={}, summary="Previous track", refresh_panels=["spotify"])
 
 
 async def fn_demo_pause(ctx, params: DemoPauseParams) -> ActionResult:
@@ -110,7 +118,7 @@ async def fn_demo_pause(ctx, params: DemoPauseParams) -> ActionResult:
     if not state.get("active"):
         return ActionResult.error("Click the demo playlist first.", retryable=False)
     await _save_demo_state(ctx, {**state, "is_playing": not state.get("is_playing", True)})
-    return ActionResult.success(data={}, summary="Toggled playback")
+    return ActionResult.success(data={}, summary="Toggled playback", refresh_panels=["spotify"])
 
 
 async def fn_demo_shuffle(ctx, params: DemoShuffleParams) -> ActionResult:
@@ -120,4 +128,4 @@ async def fn_demo_shuffle(ctx, params: DemoShuffleParams) -> ActionResult:
     new_shuffle = not state.get("shuffle", False)
     await _save_demo_state(ctx, {**state, "shuffle": new_shuffle})
     label = "on" if new_shuffle else "off"
-    return ActionResult.success(data={"shuffle": new_shuffle}, summary=f"Shuffle {label}")
+    return ActionResult.success(data={"shuffle": new_shuffle}, summary=f"Shuffle {label}", refresh_panels=["spotify"])
