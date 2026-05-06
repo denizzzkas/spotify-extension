@@ -3,9 +3,7 @@ import logging
 
 from imperal_sdk import ActionResult
 
-from app import ext
-from handlers.auth import get_access_token, refresh_access_token
-from spotify_config import SP_API_BASE
+from app import ext, _get_access_token, _refresh_access_token, SP_API_BASE
 
 log = logging.getLogger("spotify")
 
@@ -21,14 +19,14 @@ SKELETON_STATS = "spotify_stats"
 async def skeleton_refresh_spotify(ctx) -> ActionResult:
     """Fetch Spotify library statistics and return as skeleton state."""
     try:
-        token = await get_access_token(ctx)
+        token = await _get_access_token(ctx)
         if not token:
             return ActionResult.success(
                 data={"connected": False, "liked_tracks": 0, "playlists": 0},
                 summary="Not connected",
             )
 
-        fresh = await refresh_access_token(ctx)
+        fresh = await _refresh_access_token(ctx)
         headers = {"Authorization": f"Bearer {fresh or token}"}
 
         liked_resp = await ctx.http.get(

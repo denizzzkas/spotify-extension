@@ -1,209 +1,186 @@
-"""OAuth 2.0 token management for the Spotify extension.
-
-Tokens are stored in the Imperal document store (CRED_COLLECTION), keyed by
-user_id. Spotify tokens expire after 1 hour — this module handles automatic
-refresh via the stored refresh_token.
-"""
+"""Spotify OAuth 2.0 authentication handlers."""
 from __future__ import annotations
 
 import base64
-import urllib.parse
+import logging
 import uuid
 from datetime import datetime, timezone
 
-from spotify_config import (
-    CRED_COLLECTION,
-    OAUTH_STATE_COLLECTION,
-    SP_AUTH_URL,
-    SP_TOKEN_URL,
-    SP_SCOPES,
-    SP_REDIRECT_URI,
+from pydantic import BaseModel, Field
+
+from imperal_sdk import ActionResult
+
+from app import (
+    ext, chat, SP_AUTH_URL, SP_TOKEN_URL, SP_REDIRECT_URI, SP_SCOPES,
+    OAUTH_STATE_COLLECTION, CRED_COLLECTION,
+    _get_access_token, _save_token, _require_user_id,
 )
 
+log = logging.getLogger("spotify.auth")
 
-# ── Token storage ─────────────────────────────────────────────────────────────
+# ─── Param models ─────────────────────────────────────────────────────────── #
 
-async def get_stored_creds(ctx):
-    """Return the credential Document for the current user, or None."""
-    page = await ctx.store.query(CRED_COLLECTION, where={"user_id": ctx.user.imperal_id})
-    return page.data[0] if page.data else None
+class ConnectSpotifyParams(BaseModel):
+    pass
 
+class DisconnectSpotifyParams(BaseModel):
+    pass
 
-async def get_access_token(ctx) -> str | None:
-    """Return the stored access token, or None if the user has not connected."""
-    doc = await get_stored_creds(ctx)
-    if doc is None:
-        return None
-    return doc.data.get("access_token")
+class CheckConnectionParams(BaseModel):
+    pass
 
+# ─── Auth handlers ────────────────────────────────────────────────────────── #
 
-async def save_token(ctx, token_data: dict) -> None:
-    """Persist or overwrite OAuth credentials for the current user."""
-    await save_token_for_user(ctx, ctx.user.imperal_id, token_data)
+@chat.function(
+    "connect_spotify",
+    action_type="write",
+    chain_callable=True,
+    effects=["auth:connect"],
+    event="spotify-extension.connected",
+    description="Connect your Spotify account via OAuth 2.0. Returns an authorisation URL to visit.",
+)
+async def fn_connect_spotify(ctx, params: ConnectSpotifyParams) -> ActionResult:
+    user_id = await _require_user_id(ctx)
+    if isinstance(user_id, ActionResult):
+        return user_id
 
+    try:
+        client_id = ctx.config.get("spotify.client_id", "")
+        if not client_id:
+            return ActionResult.error(
+                "spotify.client_id is not configured. Ask your administrator to add Spotify app credentials."
+            )
 
-async def save_token_for_user(ctx, user_id: str, token_data: dict) -> None:
-    """Persist or overwrite OAuth credentials for an explicit user_id.
+        state = str(uuid.uuid4())
+        await ctx.store.create(OAUTH_STATE_COLLECTION, {
+            "user_id": user_id,
+            "state": state,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        })
 
-    Used in the OAuth webhook callback where ctx.user may not reflect
-    the user who initiated the OAuth flow.
-    """
-    record = {
-        "user_id": user_id,
-        "access_token": token_data.get("access_token", ""),
-        "refresh_token": token_data.get("refresh_token", ""),
-        "scope": token_data.get("scope", ""),
-        "token_type": token_data.get("token_type", "Bearer"),
-    }
-    page = await ctx.store.query(CRED_COLLECTION, where={"user_id": user_id})
-    existing = page.data[0] if page.data else None
-    if existing is None:
-        await ctx.store.create(CRED_COLLECTION, record)
-    else:
-        await ctx.store.update(CRED_COLLECTION, existing.id, record)
+        params_dict = {
+            "client_id": client_id,
+            "redirect_uri": SP_REDIRECT_URI,
+            "response_type": "code",
+            "scope": SP_SCOPES,
+            "state": state,
+        }
+        import urllib.parse
+        auth_url = SP_AUTH_URL + "?" + urllib.parse.urlencode(params_dict)
 
-
-async def clear_token(ctx) -> None:
-    """Delete all stored credentials for the current user."""
-    page = await ctx.store.query(CRED_COLLECTION, where={"user_id": ctx.user.imperal_id})
-    for doc in page.data:
-        await ctx.store.delete(CRED_COLLECTION, doc.id)
-
-
-async def refresh_access_token(ctx) -> str | None:
-    """Use the stored refresh_token to obtain a new access_token.
-
-    Returns the new access token, or None if refresh failed.
-    Spotify tokens expire after 1 hour — this is called automatically on 401.
-    """
-    doc = await get_stored_creds(ctx)
-    if doc is None:
-        return None
-
-    refresh_token = doc.data.get("refresh_token", "")
-    if not refresh_token:
-        return None
-
-    client_id = ctx.config.get("spotify.client_id", "")
-    client_secret = ctx.config.get("spotify.client_secret", "")
-    if not client_id or not client_secret:
-        return None
-
-    credentials = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
-
-    resp = await ctx.http.post(
-        SP_TOKEN_URL,
-        headers={
-            "Authorization": f"Basic {credentials}",
-            "Content-Type": "application/x-www-form-urlencoded",
-        },
-        data={"grant_type": "refresh_token", "refresh_token": refresh_token},
-    )
-
-    if not resp.ok:
-        return None
-
-    new_token = resp.json().get("access_token")
-    if new_token:
-        await ctx.store.update(CRED_COLLECTION, doc.id, {"access_token": new_token})
-    return new_token
-
-
-async def get_auth_headers(ctx) -> dict:
-    """Return Authorization headers, or raise ValueError if not connected."""
-    token = await get_access_token(ctx)
-    if not token:
-        raise ValueError(
-            "Not connected to Spotify. Use connect_spotify() to authorise."
+        return ActionResult.success(
+            data={"auth_url": auth_url},
+            summary="Open the URL in your browser to authorise Spotify access",
         )
-    return {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json",
-    }
+    except Exception as e:
+        log.error("connect_spotify failed: %s", e)
+        return ActionResult.error(f"Connection failed: {str(e)}")
 
+@chat.function(
+    "disconnect_spotify",
+    action_type="write",
+    chain_callable=True,
+    effects=["auth:disconnect"],
+    event="spotify-extension.disconnected",
+    description="Disconnect your Spotify account and remove all stored credentials.",
+)
+async def fn_disconnect_spotify(ctx, params: DisconnectSpotifyParams) -> ActionResult:
+    user_id = await _require_user_id(ctx)
+    if isinstance(user_id, ActionResult):
+        return user_id
 
-async def get_auth_headers_refreshed(ctx) -> dict:
-    """Same as get_auth_headers but attempts token refresh first.
+    try:
+        page = await ctx.store.query(CRED_COLLECTION, where={"user_id": user_id})
+        if not page.data:
+            return ActionResult.success(data={"disconnected": False}, summary="Spotify was not connected")
 
-    Use this after receiving a 401 to get fresh headers.
-    Raises ValueError if refresh also fails.
-    """
-    new_token = await refresh_access_token(ctx)
-    if not new_token:
-        raise ValueError(
-            "Spotify token expired and refresh failed. Please reconnect via connect_spotify()."
+        for doc in page.data:
+            await ctx.store.delete(CRED_COLLECTION, doc.id)
+
+        return ActionResult.success(data={"disconnected": True}, summary="Spotify account disconnected")
+    except Exception as e:
+        log.error("disconnect_spotify failed: %s", e)
+        return ActionResult.error(f"Disconnect failed: {str(e)}")
+
+@chat.function(
+    "check_spotify_connection",
+    action_type="read",
+    description="Check if you are connected to Spotify and get your profile info.",
+)
+async def fn_check_connection(ctx, params: CheckConnectionParams) -> ActionResult:
+    user_id = await _require_user_id(ctx)
+    if isinstance(user_id, ActionResult):
+        return user_id
+
+    try:
+        token = await _get_access_token(ctx)
+        if not token:
+            return ActionResult.success(
+                data={"connected": False},
+                summary="Not connected to Spotify",
+            )
+
+        return ActionResult.success(
+            data={"connected": True, "token_available": True},
+            summary="Connected to Spotify",
         )
-    return {
-        "Authorization": f"Bearer {new_token}",
-        "Content-Type": "application/json",
-    }
+    except Exception as e:
+        log.error("check_connection failed: %s", e)
+        return ActionResult.error(f"Status check failed: {str(e)}")
 
+# ─── OAuth webhook callback ────────────────────────────────────────────────── #
 
-# ── OAuth helpers ─────────────────────────────────────────────────────────────
+@ext.webhook("/oauth/callback", method="GET")
+async def oauth_callback(ctx, headers, body, query_params) -> dict:
+    from imperal_sdk import WebhookResponse
 
-def build_auth_url(client_id: str, redirect_uri: str, state: str) -> str:
-    """Construct the Spotify OAuth 2.0 authorisation URL."""
-    params = {
-        "client_id": client_id,
-        "redirect_uri": redirect_uri,
-        "response_type": "code",
-        "scope": SP_SCOPES,
-        "state": state,
-    }
-    return SP_AUTH_URL + "?" + urllib.parse.urlencode(params)
+    try:
+        error = query_params.get("error", "")
+        code = query_params.get("code", "")
+        state = query_params.get("state", "")
 
+        if error:
+            return WebhookResponse.error(f"Spotify authorisation denied: {error}", 400)
+        if not code:
+            return WebhookResponse.error("Missing authorisation code", 400)
+        if not state:
+            return WebhookResponse.error("Missing state parameter", 400)
 
-async def create_oauth_state(ctx) -> str:
-    """Generate a random state token and persist it for CSRF verification."""
-    state = str(uuid.uuid4())
-    await ctx.store.create(OAUTH_STATE_COLLECTION, {
-        "user_id": ctx.user.imperal_id,
-        "state": state,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-    })
-    return state
+        page = await ctx.store.query(OAUTH_STATE_COLLECTION, where={"state": state})
+        if not page.data:
+            return WebhookResponse.error("Invalid or expired state — please try connect_spotify() again.", 400)
 
+        user_id = page.data[0].data.get("user_id")
+        await ctx.store.delete(OAUTH_STATE_COLLECTION, page.data[0].id)
 
-async def consume_oauth_state(ctx, state: str) -> str | None:
-    """Verify and delete the state token. Returns the user_id or None if invalid.
+        client_id = ctx.config.get("spotify.client_id", "")
+        client_secret = ctx.config.get("spotify.client_secret", "")
+        if not client_id or not client_secret:
+            return WebhookResponse.error("Server not configured for Spotify OAuth", 500)
 
-    Queries by state only — ctx.user may not be the initiating user in
-    the OAuth webhook callback (request comes from Spotify's servers).
-    """
-    page = await ctx.store.query(OAUTH_STATE_COLLECTION, where={"state": state})
-    if not page.data:
-        return None
-    doc = page.data[0]
-    await ctx.store.delete(OAUTH_STATE_COLLECTION, doc.id)
-    return doc.data.get("user_id")
+        credentials = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
 
-
-async def exchange_code_for_token(ctx, code: str, redirect_uri: str) -> dict:
-    """Exchange an authorisation code for access + refresh tokens from Spotify."""
-    client_id = ctx.config.get("spotify.client_id", "")
-    client_secret = ctx.config.get("spotify.client_secret", "")
-
-    if not client_id or not client_secret:
-        raise ValueError(
-            "spotify.client_id and spotify.client_secret must be configured."
+        resp = await ctx.http.post(
+            SP_TOKEN_URL,
+            headers={
+                "Authorization": f"Basic {credentials}",
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            data={
+                "grant_type": "authorization_code",
+                "code": code,
+                "redirect_uri": SP_REDIRECT_URI,
+            },
         )
 
-    credentials = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
+        if not resp.ok:
+            log.error("oauth_callback token exchange failed: %s", resp.status_code)
+            return WebhookResponse.error(f"Token exchange failed (HTTP {resp.status_code}).", 500)
 
-    resp = await ctx.http.post(
-        SP_TOKEN_URL,
-        headers={
-            "Authorization": f"Basic {credentials}",
-            "Content-Type": "application/x-www-form-urlencoded",
-        },
-        data={
-            "grant_type": "authorization_code",
-            "code": code,
-            "redirect_uri": redirect_uri,
-        },
-    )
+        token_data = resp.json()
+        await _save_token(ctx, user_id, token_data)
 
-    if not resp.ok:
-        raise ValueError(f"Token exchange failed (HTTP {resp.status_code}).")
-
-    return resp.json()
+        return WebhookResponse.ok({"connected": True, "message": "Spotify connected. You can close this window."})
+    except Exception as e:
+        log.error("oauth_callback failed: %s", e)
+        return WebhookResponse.error(f"Callback failed: {str(e)}", 500)

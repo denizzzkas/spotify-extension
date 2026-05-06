@@ -151,7 +151,7 @@ async def fn_get_liked_tracks(ctx, params: GetLikedTracksParams) -> ActionResult
     chain_callable=True,
     id_projection="track_id",
     effects=["library:like"],
-    event="track.liked",
+    event="spotify-extension.track.liked",
     description="Save a track to the user's Spotify library (like it).",
 )
 async def fn_like_track(ctx, params: LikeTrackParams) -> ActionResult:
@@ -198,7 +198,7 @@ async def fn_like_track(ctx, params: LikeTrackParams) -> ActionResult:
     chain_callable=True,
     id_projection="track_id",
     effects=["library:unlike"],
-    event="track.unliked",
+    event="spotify-extension.track.unliked",
     description="Remove a track from the user's Spotify library (unlike it).",
 )
 async def fn_unlike_track(ctx, params: UnlikeTrackParams) -> ActionResult:

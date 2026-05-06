@@ -1,6 +1,6 @@
 {
   "app_id": "spotify-extension",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "capabilities": [],
   "tools": [
     {
@@ -80,7 +80,7 @@
   },
   "name": "Spotify",
   "description": "Full access to your Spotify music library. Search tracks, manage playlists, save songs, view play history, and connect via OAuth 2.0.",
-  "author": "Imperal",
+  "author": "Denis Anifiev & Claude",
   "license": "MIT",
   "category": "music",
   "tags": [

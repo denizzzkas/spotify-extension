@@ -11,11 +11,18 @@ for _m in [k for k in sys.modules if k in (
     "app", "skeleton", "panels", "panels_detail", "spotify_config", "utils", "demo_data",
     "handlers", "handlers.auth", "handlers.search",
     "handlers.playlists", "handlers.library", "handlers.playback",
-    "handlers.panel", "handlers.demo", "handlers.chat_registry",
+    "handlers.demo", "handlers.lyrics",
 )]:
     del sys.modules[_m]
 
 from app import ext, chat  # noqa: F401
+import handlers.auth  # noqa: F401
+import handlers.search  # noqa: F401
+import handlers.playlists  # noqa: F401
+import handlers.library  # noqa: F401
+import handlers.playback  # noqa: F401
+import handlers.demo  # noqa: F401
+import handlers.lyrics  # noqa: F401
 import skeleton  # noqa: F401
 import panels  # noqa: F401
 import panels_detail  # noqa: F401
