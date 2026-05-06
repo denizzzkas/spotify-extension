@@ -92,7 +92,8 @@ async def test_create_playlist_success():
     ctx.http.mock_post("api.spotify.com/v1/users/spotify_user_123/playlists", SAMPLE_PLAYLIST)
     result = await fn_create_playlist(ctx, CreatePlaylistParams(name="My Workout"))
     assert result.status == "success"
-    assert result.data["playlist"]["title"] == "My Workout"
+    assert result.data["playlist_id"] == "37i9dQZF1DXcBWIGoYBM5M"
+    assert result.data["name"] == "My Workout"
 
 
 async def test_create_playlist_no_token_returns_error():
