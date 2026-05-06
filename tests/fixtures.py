@@ -1,6 +1,6 @@
 """Shared test fixtures for Spotify extension tests."""
 from imperal_sdk.testing import MockContext
-from handlers.auth import save_token
+from app import _save_token
 
 SP_CONFIG = {
     "spotify": {
@@ -70,5 +70,5 @@ class MockCache:
 async def ctx_with_token(token: str = "test_token") -> MockContext:
     ctx = MockContext(user_id="user1", config=SP_CONFIG)
     ctx._cache = MockCache()
-    await save_token(ctx, {"access_token": token, "refresh_token": "refresh_abc"})
+    await _save_token(ctx, "user1", {"access_token": token, "refresh_token": "refresh_abc"})
     return ctx

@@ -1,12 +1,17 @@
 """Spotify extension — UI panel registration."""
+import logging
+
 from imperal_sdk import ui
 
-from app import ext
-from spotify_config import SP_API_BASE, SP_REDIRECT_URI, DEMO_STATE_COLLECTION
-from utils import format_playlist
-from handlers.auth import get_access_token, get_auth_headers, build_auth_url, create_oauth_state
+from app import (
+    ext, SP_API_BASE, DEMO_PLAYER_STATE, DEMO_PANEL_STATE,
+    _get_access_token, _refresh_access_token, _spotify_error,
+)
+from utils import format_playlist, format_track
 from cache_models import NowPlayingModel, SearchModel, DetailModel, PlaylistsModel, QueueModel
 from demo_data import DEMO_TRACKS, DEMO_PLAYLIST_ID, DEMO_PLAYLIST_NAME
+
+log = logging.getLogger("spotify.panels")
 
 
 # ── Left panel ────────────────────────────────────────────────────────────────
@@ -19,11 +24,11 @@ from demo_data import DEMO_TRACKS, DEMO_PLAYLIST_ID, DEMO_PLAYLIST_NAME
     default_width=280,
     min_width=220,
     max_width=400,
-    refresh="on_event:spotify.connected,spotify.disconnected,track.liked,track.unliked,playlist.created,track.played,playlist.played",
+    refresh="on_event:spotify-extension.connected,spotify-extension.disconnected,spotify-extension.track.liked,spotify-extension.track.unliked,spotify-extension.playlist.created,spotify-extension.track.played,spotify-extension.playlist.played",
 )
 async def panel_spotify(ctx, **kwargs):
     try:
-        token = await get_access_token(ctx)
+        token = await _get_access_token(ctx)
     except Exception:
         token = None
 
@@ -45,7 +50,7 @@ async def panel_spotify(ctx, **kwargs):
 
         if not is_demo_active:
             try:
-                page = await ctx.store.query(DEMO_STATE_COLLECTION, where={"user_id": ctx.user.imperal_id})
+                page = await ctx.store.query(DEMO_PLAYER_STATE, where={"user_id": ctx.user.imperal_id})
                 if page.data:
                     state = page.data[0].data
                     if state.get("active"):
@@ -53,8 +58,8 @@ async def panel_spotify(ctx, **kwargs):
                         demo_now_playing = NowPlayingModel(**track, is_playing=state.get("is_playing", True))
                         is_demo_active = True
                         demo_shuffle = state.get("shuffle", False)
-            except Exception:
-                pass
+            except Exception as e:
+                log.error("Failed to load demo player state: %s", e)
 
         now_playing = demo_now_playing.model_dump() if (demo_now_playing and is_demo_active) else None
 
@@ -65,8 +70,8 @@ async def panel_spotify(ctx, **kwargs):
                 value=DetailModel(type="tracks", title=DEMO_PLAYLIST_NAME, tracks=DEMO_TRACKS),
                 ttl_seconds=120,
             )
-        except Exception:
-            pass
+        except Exception as e:
+            log.error("Failed to set demo detail cache: %s", e)
 
         children = [ui.Header("Spotify", level=3)]
 
@@ -76,12 +81,10 @@ async def panel_spotify(ctx, **kwargs):
                 type="error",
             ))
         else:
-            state = await create_oauth_state(ctx)
-            auth_url = build_auth_url(client_id, SP_REDIRECT_URI, state)
             children += [
                 ui.Alert("Not connected. Click below to link your Spotify account.", type="warn"),
                 ui.Button("Connect Spotify", variant="primary", icon="Music",
-                          on_click=ui.Open(auth_url)),
+                          on_click=ui.Call("connect_spotify")),
             ]
 
         children.append(
@@ -94,7 +97,7 @@ async def panel_spotify(ctx, **kwargs):
                         title=DEMO_PLAYLIST_NAME,
                         subtitle=f"{len(DEMO_TRACKS)} tracks",
                         avatar=ui.Avatar(src=DEMO_TRACKS[0]["album_art"], fallback="D"),
-                        on_click=ui.Call("__panel__spotify_detail", detail_type="tracks"),
+                        on_click=ui.Call("open_demo_playlist"),
                     ),
                 ])],
             }])
@@ -140,21 +143,22 @@ async def panel_spotify(ctx, **kwargs):
     playlists = playlists_cache.items if playlists_cache else []
     if not playlists:
         try:
-            headers = await get_auth_headers(ctx)
-            resp = await ctx.http.get(
-                f"{SP_API_BASE}/me/playlists",
-                headers=headers,
-                params={"limit": 50},
-            )
-            if resp.ok:
-                playlists = [format_playlist(p) for p in (resp.json().get("items") or [])]
-                await ctx.cache.set(
-                    key="playlists",
-                    value=PlaylistsModel(items=playlists),
-                    ttl_seconds=120,
+            headers = await _get_auth_headers(ctx)
+            if headers:
+                resp = await ctx.http.get(
+                    f"{SP_API_BASE}/me/playlists",
+                    headers=headers,
+                    params={"limit": 50},
                 )
-        except Exception:
-            playlists = []
+                if resp.ok:
+                    playlists = [format_playlist(p) for p in (resp.json().get("items") or [])]
+                    await ctx.cache.set(
+                        key="playlists",
+                        value=PlaylistsModel(items=playlists),
+                        ttl_seconds=120,
+                    )
+        except Exception as e:
+            log.error("Failed to fetch playlists: %s", e)
 
     # Build playlist list items for accordion
     playlist_items = [
@@ -163,7 +167,7 @@ async def panel_spotify(ctx, **kwargs):
             title=p["title"],
             subtitle=f"{p['track_count']} tracks",
             avatar=ui.Avatar(src=p["image_url"], fallback=(p["title"] or "?")[0].upper()),
-            on_click=ui.Call("__panel__spotify_detail", detail_type="tracks"),
+            on_click=ui.Call("__panel__spotify_detail", detail_type="tracks", playlist_id=p["id"], playlist_name=p["title"]),
         )
         for p in playlists
     ]
@@ -198,57 +202,141 @@ async def panel_spotify(ctx, **kwargs):
     children.append(
         ui.Accordion(sections=[
             {
-                "id": "playlists",
+                "id": "my_playlists",
                 "title": "My Playlists",
-                "children": [ui.List(items=playlist_items)] if playlist_items else [ui.Empty("No playlists found.")],
+                "children": [ui.List(items=playlist_items)] if playlist_items else [ui.Empty("No playlists")],
             },
             {
-                "id": "liked",
+                "id": "liked_tracks",
                 "title": "Liked Tracks",
-                "children": [
-                    ui.Button("Open in panel", variant="secondary", size="sm",
-                              on_click=ui.Call("open_liked_tracks")),
-                ],
+                "children": [ui.Button("Open", size="sm", on_click=ui.Call("open_liked_tracks"))],
             },
             {
-                "id": "recent",
+                "id": "recent_tracks",
                 "title": "Recent Tracks",
-                "children": [
-                    ui.Button("Open in panel", variant="secondary", size="sm",
-                              on_click=ui.Call("open_recent_tracks")),
-                ],
+                "children": [ui.Button("Open", size="sm", on_click=ui.Call("open_recent_tracks"))],
+            },
+            {
+                "id": "profile",
+                "title": "My Profile",
+                "children": [ui.Button("Open", size="sm", on_click=ui.Call("open_profile"))],
             },
         ])
     )
 
+    return ui.Stack(children, direction="v", gap=2)
+
+
+# ── Right detail panel ─────────────────────────────────────────────────────────
+
+@ext.panel(
+    "spotify_detail",
+    slot="right",
+    title="Spotify",
+    icon="Music",
+    default_width=320,
+    min_width=260,
+    max_width=480,
+)
+async def panel_spotify_detail(ctx, detail_type: str = "", playlist_id: str = "", playlist_name: str = "", **kwargs):
+    """Right panel: shows playlist/profile details based on parameters."""
+
+    if not detail_type:
+        return ui.Empty("Select a playlist or profile from the sidebar.", icon="Music")
+
+    detail = {}
     try:
-        now_playing_cache = await ctx.cache.get(key="now_playing", model=NowPlayingModel)
-    except Exception:
-        now_playing_cache = None
-    now_playing = now_playing_cache.model_dump() if now_playing_cache else None
-    children += [
-        ui.Divider(),
-        ui.Button("My Profile", variant="ghost", size="sm", icon="User",
-                  on_click=ui.Call("open_profile")),
-        ui.Button("Disconnect", variant="danger", size="sm", icon="LogOut",
-                  on_click=ui.Call("disconnect_spotify")),
+        detail_cache = await ctx.cache.get(key="detail", model=DetailModel)
+        if detail_cache:
+            detail = detail_cache.model_dump()
+    except Exception as e:
+        log.error("Failed to get detail cache: %s", e)
+
+    if not detail:
+        return ui.Empty("No data loaded.", icon="Music")
+
+    detail_type_cached = detail.get("type")
+    title = detail.get("title", "")
+
+    if detail_type_cached == "profile":
+        profile = detail.get("profile") or {}
+        items = [
+            ui.ListItem(id="name", title="Name", subtitle=profile.get("display_name", "")),
+            ui.ListItem(id="email", title="Email", subtitle=profile.get("email", "")),
+            ui.ListItem(id="plan", title="Plan", subtitle=profile.get("product", "free").capitalize()),
+            ui.ListItem(id="followers", title="Followers", subtitle=str(profile.get("followers", 0))),
+        ]
+        return ui.Stack([
+            ui.Header(title, level=3),
+            ui.List(items=items),
+        ], direction="v", gap=2)
+
+    tracks = detail.get("tracks") or []
+    track_items = [
+        ui.ListItem(
+            id=t["id"],
+            title=t["title"],
+            subtitle=t["artist"],
+            meta=t["duration"],
+            avatar=ui.Avatar(src=t["album_art"], fallback=(t["title"] or "?")[0].upper()),
+            actions=[{"icon": "Play", "on_click": ui.Call("play_track", track_id=t["id"])}],
+        )
+        for t in tracks
     ]
 
-    if now_playing:
-        is_playing = now_playing.get("is_playing", True)
-        children += [
-            ui.Divider(),
-            ui.Image(src=now_playing.get("album_art", ""), width="100%", object_fit="cover"),
-            ui.Text(now_playing.get("title", ""), variant="heading"),
-            ui.Text(now_playing.get("artist", ""), variant="caption"),
-            ui.Stack([
-                ui.Button("", icon="SkipBack", variant="ghost", size="sm",
-                          on_click=ui.Call("previous_track")),
-                ui.Button("", icon="Pause" if is_playing else "Play", variant="ghost", size="sm",
-                          on_click=ui.Call("pause_playback" if is_playing else "resume_playback")),
-                ui.Button("", icon="SkipForward", variant="ghost", size="sm",
-                          on_click=ui.Call("next_track")),
-            ], direction="h", gap=1, wrap=False),
-        ]
+    return ui.Stack([
+        ui.Header(title, level=3),
+        ui.List(items=track_items) if track_items else ui.Empty("No tracks"),
+    ], direction="v", gap=2)
 
-    return ui.Stack(children, direction="v", gap=2)
+
+# ── Panel-specific handlers (UI-only, no @chat.function) ──────────────────────
+
+async def _get_auth_headers(ctx) -> dict | None:
+    """Get auth headers with token refresh if needed."""
+    token = await _get_access_token(ctx)
+    if not token:
+        return None
+    return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+
+
+async def panel_search_tracks(ctx, query: str = "", limit: int = 20) -> dict:
+    """Search tracks via HTTP for panel display."""
+    if not query:
+        return {}
+
+    try:
+        headers = await _get_auth_headers(ctx)
+        if not headers:
+            return {}
+
+        resp = await ctx.http.get(
+            f"{SP_API_BASE}/search",
+            headers=headers,
+            params={"q": query, "type": "track", "limit": limit},
+        )
+
+        if resp.status_code == 401:
+            token = await _refresh_access_token(ctx)
+            if token:
+                headers["Authorization"] = f"Bearer {token}"
+                resp = await ctx.http.get(
+                    f"{SP_API_BASE}/search",
+                    headers=headers,
+                    params={"q": query, "type": "track", "limit": limit},
+                )
+
+        if resp.ok:
+            raw_list = (resp.json().get("tracks") or {}).get("items", [])
+            tracks = [format_track(t) for t in raw_list]
+            await ctx.cache.set(
+                key="search",
+                value=SearchModel(query=query, tracks=tracks),
+                ttl_seconds=60,
+            )
+            return {"count": len(tracks)}
+
+    except Exception as e:
+        log.error("panel_search_tracks failed: %s", e)
+
+    return {}

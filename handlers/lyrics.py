@@ -1,11 +1,15 @@
-"""Genius lyrics handler — fetch song lyrics from Genius API."""
+"""Spotify lyrics handler — fetch song lyrics from Genius API."""
 from __future__ import annotations
+
+import logging
 
 from pydantic import BaseModel, Field
 
 from imperal_sdk import ActionResult
 
-GENIUS_ACCESS_TOKEN = "kLp7D46sSLTNr3_eZFz4vLinJeiaYbx_7bSu20-itx4g-WBa_IKCMYh-AmtaBbMI"
+from app import chat, GENIUS_ACCESS_TOKEN
+
+log = logging.getLogger("spotify.lyrics")
 
 
 class GetLyricsParams(BaseModel):
@@ -13,12 +17,16 @@ class GetLyricsParams(BaseModel):
     artist_name: str = Field(..., description="Artist name")
 
 
+@chat.function(
+    "get_lyrics",
+    action_type="read",
+    description="Search for song lyrics on Genius. Returns URL to full lyrics page.",
+)
 async def fn_get_lyrics(ctx, params: GetLyricsParams) -> ActionResult:
-    """Fetch song lyrics from Genius API."""
     if not GENIUS_ACCESS_TOKEN:
         return ActionResult.error(
-            "Genius API token not configured.",
-            retryable=False
+            "Genius API token not configured. Ask administrator to add GENIUS_ACCESS_TOKEN env var.",
+            retryable=False,
         )
 
     query = f"{params.track_name} {params.artist_name}"
@@ -33,25 +41,24 @@ async def fn_get_lyrics(ctx, params: GetLyricsParams) -> ActionResult:
 
         if not search_resp.ok:
             return ActionResult.error(
-                f"Genius search failed: {search_resp.status_code}",
-                retryable=(search_resp.status_code == 429)
+                f"Genius search failed (HTTP {search_resp.status_code})",
+                retryable=(search_resp.status_code == 429),
             )
 
         hits = search_resp.json().get("response", {}).get("hits", [])
         if not hits:
-            return ActionResult.error(
-                f"No lyrics found for '{query}'",
-                retryable=False
-            )
+            return ActionResult.error(f"No lyrics found for '{query}'")
 
-        song_url = hits[0]["result"]["url"]
-        song_title = hits[0]["result"]["title"]
-        song_artist = hits[0]["result"]["primary_artist"]["name"]
+        result = hits[0]["result"]
+        song_url = result["url"]
+        song_title = result["title"]
+        song_artist = result["primary_artist"]["name"]
 
         return ActionResult.success(
             data={"url": song_url, "title": song_title, "artist": song_artist},
-            summary=f"🎵 {song_title} by {song_artist}\n\n📖 Lyrics: {song_url}"
+            summary=f"Found '{song_title}' by {song_artist}",
         )
 
     except Exception as e:
-        return ActionResult.error(f"Error fetching lyrics: {str(e)}", retryable=True)
+        log.error("get_lyrics failed: %s", e)
+        return ActionResult.error(f"Lyrics search failed: {str(e)}", retryable=True)

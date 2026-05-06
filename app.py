@@ -1,21 +1,56 @@
-"""Spotify extension — Extension, ChatExtension, lifecycle and OAuth."""
+"""Spotify extension — config, helpers, Extension setup."""
+from __future__ import annotations
+
+import logging
+import os
+from pathlib import Path
+
 from pydantic import BaseModel
 
-from imperal_sdk import Extension, ChatExtension, ActionResult, WebhookResponse
-from cache_models import NowPlayingModel, SearchModel, DetailModel, PlaylistsModel, QueueModel
+from imperal_sdk import Extension
+from imperal_sdk.chat import ChatExtension, ActionResult
 from imperal_sdk.types.health import HealthStatus
 
-from spotify_config import CRED_COLLECTION, OAUTH_STATE_COLLECTION, SP_REDIRECT_URI, SP_API_BASE
-from utils import format_track
-from handlers.auth import (
-    get_stored_creds, get_access_token, save_token, save_token_for_user, clear_token,
-    build_auth_url, create_oauth_state, consume_oauth_state, exchange_code_for_token,
-    get_auth_headers,
-)
-from pathlib import Path as _Path
-from handlers import chat_registry
+log = logging.getLogger("spotify")
 
-SYSTEM_PROMPT = (_Path(__file__).parent / "system_prompt.txt").read_text()
+# ─── Config ───────────────────────────────────────────────────────────────── #
+
+SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID", "")
+SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET", "")
+GENIUS_ACCESS_TOKEN = os.getenv("GENIUS_ACCESS_TOKEN", "")
+
+SP_API_BASE = "https://api.spotify.com/v1"
+SP_AUTH_URL = "https://accounts.spotify.com/authorize"
+SP_TOKEN_URL = "https://accounts.spotify.com/api/token"
+SP_REDIRECT_URI = "https://imperal.cloud/v1/ext/spotify/webhook/oauth/callback"
+
+SP_SCOPES = " ".join([
+    "user-read-private",
+    "user-read-email",
+    "user-library-read",
+    "user-library-modify",
+    "user-read-recently-played",
+    "playlist-read-private",
+    "playlist-read-collaborative",
+    "playlist-modify-public",
+    "playlist-modify-private",
+])
+
+# ─── Store collections ───────────────────────────────────────────────────── #
+
+CRED_COLLECTION = "sp_credentials"
+OAUTH_STATE_COLLECTION = "sp_oauth_states"
+DEMO_PLAYER_STATE = "sp_demo_player"
+DEMO_PANEL_STATE = "sp_demo_panel"
+
+# ─── Cache defaults ────────────────────────────────────────────────────── #
+
+DEFAULT_SEARCH_LIMIT = 20
+DEFAULT_HISTORY_LIMIT = 50
+DEFAULT_LIKES_LIMIT = 50
+MAX_LIMIT = 50
+
+# ─── Extension ────────────────────────────────────────────────────────────── #
 
 ext = Extension(
     "spotify-extension",
@@ -26,144 +61,214 @@ ext = Extension(
     capabilities=[],
     actions_explicit=True,
     config_defaults={
-        "spotify.client_id": "",
-        "spotify.client_secret": "",
+        "spotify.client_id": SPOTIFY_CLIENT_ID,
+        "spotify.client_secret": SPOTIFY_CLIENT_SECRET,
     },
 )
 
-ext.cache_model("now_playing")(NowPlayingModel)
-ext.cache_model("search")(SearchModel)
-ext.cache_model("detail")(DetailModel)
-ext.cache_model("playlists")(PlaylistsModel)
-ext.cache_model("queue")(QueueModel)
+# ─── Cache models ─────────────────────────────────────────────────────────── #
+
+@ext.cache_model("now_playing")
+class NowPlayingModel(BaseModel):
+    id: str = ""
+    title: str = ""
+    artist: str = ""
+    url: str = ""
+    duration: str = ""
+    duration_ms: int = 0
+    popularity: int = 0
+    preview_url: str = ""
+    album: str = ""
+    album_art: str = ""
+    is_playing: bool = False
+
+@ext.cache_model("search")
+class SearchModel(BaseModel):
+    query: str = ""
+    tracks: list[dict] = []
+
+@ext.cache_model("detail")
+class DetailModel(BaseModel):
+    type: str = ""
+    title: str = ""
+    tracks: list[dict] = []
+    profile: dict = {}
+
+@ext.cache_model("playlists")
+class PlaylistsModel(BaseModel):
+    items: list[dict] = []
+
+@ext.cache_model("queue")
+class QueueModel(BaseModel):
+    playlist_id: str = ""
+    playlist_name: str = ""
+    tracks: list[dict] = []
+    index: int = 0
+
+# ─── ChatExtension ────────────────────────────────────────────────────────── #
+
+SYSTEM_PROMPT = (Path(__file__).parent / "system_prompt.txt").read_text()
 
 chat = ChatExtension(
     ext,
     tool_name="spotify",
-    description=(
-        "Full access to your Spotify music library. "
-        "Search tracks, manage playlists, save songs, view play history, and more."
-    ),
+    description="Full access to your Spotify music library. Search tracks, manage playlists, save songs, view play history, and more.",
     system_prompt=SYSTEM_PROMPT,
 )
 
-chat_registry.register(chat)
+# ─── Emitted events ───────────────────────────────────────────────────────── #
 
-
-# ── Schedule ──────────────────────────────────────────────────────────────────
-
-@ext.schedule("sync_now_playing", cron="*/1 * * * *")
-async def sync_now_playing(ctx):
-    """Poll current Spotify playback state and update cache every minute."""
-    try:
-        headers = await get_auth_headers(ctx)
-    except ValueError:
-        return
-    resp = await ctx.http.get(f"{SP_API_BASE}/me/player", headers=headers)
-    if resp.status_code == 204 or not resp.ok:
-        return
-    body = resp.json()
-    item = body.get("item")
-    if not item:
-        return
-    track = format_track(item)
-    track["is_playing"] = body.get("is_playing", False)
-    await ctx.cache.set(key="now_playing", value=NowPlayingModel(**track), ttl_seconds=90)
-
-
-# ── Lifecycle ──────────────────────────────────────────────────────────────────
-
-@ext.on_install
-async def on_install(ctx):
+@ext.emits("spotify-extension.connected")
+@ext.emits("spotify-extension.disconnected")
+@ext.emits("spotify-extension.track.liked")
+@ext.emits("spotify-extension.track.unliked")
+@ext.emits("spotify-extension.track.played")
+@ext.emits("spotify-extension.playlist.created")
+@ext.emits("spotify-extension.playlist.played")
+@ext.emits("spotify-extension.playback.paused")
+@ext.emits("spotify-extension.playback.resumed")
+@ext.emits("spotify-extension.playback.next")
+@ext.emits("spotify-extension.playback.previous")
+async def _declare_events() -> None:
     pass
 
-
-@ext.on_uninstall
-async def on_uninstall(ctx):
-    await clear_token(ctx)
-    state_page = await ctx.store.query(OAUTH_STATE_COLLECTION, where={"user_id": ctx.user.imperal_id})
-    for doc in state_page.data:
-        await ctx.store.delete(OAUTH_STATE_COLLECTION, doc.id)
-
+# ─── Lifecycle ────────────────────────────────────────────────────────────── #
 
 @ext.health_check
 async def health(ctx) -> HealthStatus:
     try:
-        await ctx.store.count(CRED_COLLECTION)
-        connected = (await get_access_token(ctx)) is not None
+        client_id = ctx.config.get("spotify.client_id", "")
+        if not client_id:
+            return HealthStatus.degraded("Spotify client_id not configured")
+
+        token = await _get_access_token(ctx)
+        connected = token is not None
         return HealthStatus.ok({"connected": connected})
     except Exception as exc:
+        log.error("health check failed: %s", exc)
         return HealthStatus.degraded(str(exc))
 
+@ext.on_install
+async def on_install(ctx) -> None:
+    user_id = ctx.user.imperal_id if hasattr(ctx, "user") and ctx.user else "system"
+    log.info("Spotify extension installed for user %s", user_id)
 
-# ── OAuth chat functions ───────────────────────────────────────────────────────
-
-class ConnectSpotifyParams(BaseModel):
-    """No parameters — generates the Spotify OAuth authorisation URL."""
-
-
-class DisconnectSpotifyParams(BaseModel):
-    """No parameters — removes stored Spotify credentials."""
-
-
-@chat.function(
-    "connect_spotify",
-    description="Connect your Spotify account via OAuth 2.0. Returns an authorisation URL.",
-    action_type="write",
-    chain_callable=True,
-    effects=["auth:connect"],
-    event="spotify.connected",
-)
-async def fn_connect_spotify(ctx, params: ConnectSpotifyParams) -> ActionResult:
-    """Generate a Spotify OAuth 2.0 authorisation URL for the current user."""
-    client_id = ctx.config.get("spotify.client_id", "")
-    if not client_id:
-        return ActionResult.error(
-            "spotify.client_id is not configured. Ask your administrator to add Spotify app credentials."
-        )
-    state = await create_oauth_state(ctx)
-    auth_url = build_auth_url(client_id, SP_REDIRECT_URI, state)
-    return ActionResult.success(
-        data={"auth_url": auth_url},
-        summary="Open the URL in your browser to authorise Spotify access",
-    )
-
-
-@chat.function(
-    "disconnect_spotify",
-    description="Disconnect your Spotify account and remove all stored credentials.",
-    action_type="write",
-    chain_callable=True,
-    effects=["auth:disconnect"],
-    event="spotify.disconnected",
-)
-async def fn_disconnect_spotify(ctx, params: DisconnectSpotifyParams) -> ActionResult:
-    """Remove all stored Spotify credentials for the current user."""
-    if (await get_stored_creds(ctx)) is None:
-        return ActionResult.success(data={"disconnected": False}, summary="Spotify was not connected")
-    await clear_token(ctx)
-    return ActionResult.success(data={"disconnected": True}, summary="Spotify account disconnected")
-
-
-# ── OAuth webhook ──────────────────────────────────────────────────────────────
-
-@ext.webhook("/oauth/callback", method="GET")
-async def oauth_callback(ctx, headers, body, query_params):
-    error = query_params.get("error", "")
-    code = query_params.get("code", "")
-    state = query_params.get("state", "")
-    if error:
-        return WebhookResponse.error(f"Spotify authorisation denied: {error}", 400)
-    if not code:
-        return WebhookResponse.error("Missing authorisation code", 400)
-    if not state:
-        return WebhookResponse.error("Missing state parameter", 400)
-    user_id = await consume_oauth_state(ctx, state)
-    if user_id is None:
-        return WebhookResponse.error("Invalid or expired state — please try connect_spotify() again.", 400)
+@ext.on_uninstall
+async def on_uninstall(ctx) -> None:
     try:
-        token_data = await exchange_code_for_token(ctx, code, SP_REDIRECT_URI)
-    except ValueError as exc:
-        return WebhookResponse.error(str(exc), 500)
-    await save_token_for_user(ctx, user_id, token_data)
-    return WebhookResponse.ok({"connected": True, "message": "Spotify connected. You can close this window."})
+        await _clear_all_credentials(ctx)
+    except Exception as e:
+        log.error("cleanup on uninstall failed: %s", e)
+
+# ─── Auth helpers (ctx-scoped, per-request) ────────────────────────────── #
+
+async def _get_access_token(ctx) -> str | None:
+    try:
+        page = await ctx.store.query(CRED_COLLECTION, where={"user_id": ctx.user.imperal_id})
+        if page.data:
+            return page.data[0].data.get("access_token")
+    except Exception as e:
+        log.error("get_access_token failed: %s", e)
+    return None
+
+async def _get_stored_creds(ctx) -> dict | None:
+    try:
+        page = await ctx.store.query(CRED_COLLECTION, where={"user_id": ctx.user.imperal_id})
+        return page.data[0].data if page.data else None
+    except Exception as e:
+        log.error("get_stored_creds failed: %s", e)
+    return None
+
+async def _save_token(ctx, user_id: str, token_data: dict) -> None:
+    try:
+        record = {
+            "user_id": user_id,
+            "access_token": token_data.get("access_token", ""),
+            "refresh_token": token_data.get("refresh_token", ""),
+            "scope": token_data.get("scope", ""),
+            "token_type": token_data.get("token_type", "Bearer"),
+        }
+        page = await ctx.store.query(CRED_COLLECTION, where={"user_id": user_id})
+        if page.data:
+            await ctx.store.update(CRED_COLLECTION, page.data[0].id, record)
+        else:
+            await ctx.store.create(CRED_COLLECTION, record)
+    except Exception as e:
+        log.error("save_token failed: %s", e)
+
+async def _refresh_access_token(ctx) -> str | None:
+    try:
+        creds = await _get_stored_creds(ctx)
+        if not creds or not creds.get("refresh_token"):
+            return None
+
+        client_id = ctx.config.get("spotify.client_id", "")
+        client_secret = ctx.config.get("spotify.client_secret", "")
+        if not client_id or not client_secret:
+            return None
+
+        import base64
+        credentials = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
+
+        resp = await ctx.http.post(
+            SP_TOKEN_URL,
+            headers={
+                "Authorization": f"Basic {credentials}",
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            data={"grant_type": "refresh_token", "refresh_token": creds.get("refresh_token")},
+        )
+
+        if not resp.ok:
+            return None
+
+        new_token_data = resp.json()
+        new_access = new_token_data.get("access_token")
+        if new_access:
+            updated = {**creds}
+            updated["access_token"] = new_access
+            if "refresh_token" in new_token_data:
+                updated["refresh_token"] = new_token_data["refresh_token"]
+            await _save_token(ctx, ctx.user.imperal_id, updated)
+        return new_access
+    except Exception as e:
+        log.error("refresh_access_token failed: %s", e)
+    return None
+
+async def _clear_all_credentials(ctx) -> None:
+    try:
+        collections = [CRED_COLLECTION, OAUTH_STATE_COLLECTION, DEMO_PLAYER_STATE, DEMO_PANEL_STATE]
+        for coll in collections:
+            page = await ctx.store.query(coll, where={"user_id": ctx.user.imperal_id})
+            for doc in page.data:
+                await ctx.store.delete(coll, doc.id)
+    except Exception as e:
+        log.error("clear_all_credentials failed: %s", e)
+
+async def _require_user_id(ctx) -> str | ActionResult:
+    if not hasattr(ctx, "user") or not ctx.user:
+        return ActionResult.error("No authenticated user on context.")
+    return ctx.user.imperal_id
+
+async def _require_auth(ctx) -> str | ActionResult:
+    token = await _get_access_token(ctx)
+    if not token:
+        return ActionResult.error("Not connected to Spotify. Use connect_spotify() to authorise.")
+    return token
+
+async def _get_auth_headers(ctx) -> dict | None:
+    token = await _get_access_token(ctx)
+    if token:
+        return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    return None
+
+def _spotify_error(status_code: int) -> str:
+    messages = {
+        400: "Invalid request parameters.",
+        401: "Not authorised — please reconnect via connect_spotify().",
+        403: "You do not have permission. Some features require Spotify Premium.",
+        404: "Resource not found on Spotify.",
+        429: "Spotify rate limit reached. Please wait a moment and try again.",
+        500: "Spotify server error. Please try again later.",
+    }
+    return messages.get(status_code, f"Unexpected Spotify error (HTTP {status_code}).")
