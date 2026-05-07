@@ -4,11 +4,11 @@ import logging
 from imperal_sdk import ui
 
 from app import (
-    ext, SP_API_BASE, DEMO_PLAYER_STATE,
+    ext, SP_API_BASE, DEMO_PLAYER_STATE, NowPlayingModel,
     _get_access_token, _refresh_access_token,
 )
 from utils import format_playlist, format_track
-from cache_models import NowPlayingModel, SearchModel, PlaylistsModel
+from cache_models import SearchModel, PlaylistsModel
 from demo_data import DEMO_TRACKS, DEMO_PLAYLIST_ID, DEMO_PLAYLIST_NAME
 
 log = logging.getLogger("spotify.panels.left")
@@ -221,7 +221,7 @@ async def _render_demo_state(ctx) -> ui.Stack:
         }])
     )
 
-    # Load demo player state — only from cache (session-scoped, no store fallback)
+    # Load demo player state — cache first (session), fallback to store (persistent)
     demo_now_playing = None
     is_demo_active = False
     demo_shuffle = False
@@ -232,13 +232,24 @@ async def _render_demo_state(ctx) -> ui.Stack:
     except Exception:
         pass
 
-    if is_demo_active:
+    # Fallback: if cache is empty but store has a track, restore from store
+    if not is_demo_active:
         try:
             page = await ctx.store.query(DEMO_PLAYER_STATE, where={"user_id": ctx.user.imperal_id})
             if page.data:
-                demo_shuffle = page.data[0].data.get("shuffle", False)
+                state = page.data[0].data
+                track_index = state.get("track_index", 0) % len(DEMO_TRACKS)
+                track = DEMO_TRACKS[track_index]
+                demo_now_playing = NowPlayingModel(**track, is_playing=state.get("is_playing", True))
+                is_demo_active = True
+                demo_shuffle = state.get("shuffle", False)
+                await ctx.cache.set(
+                    key="now_playing",
+                    value=demo_now_playing,
+                    ttl_seconds=3600,
+                )
         except Exception as e:
-            log.error("Failed to load demo shuffle state: %s", e)
+            log.error("Failed to load demo state from store: %s", e)
 
     now_playing = demo_now_playing.model_dump() if (demo_now_playing and is_demo_active) else None
 
