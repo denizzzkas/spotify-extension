@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from imperal_sdk import ActionResult
 
 from app import chat, DEMO_PLAYER_STATE
-from cache_models import DetailModel
+from cache_models import NowPlayingModel
 from demo_data import DEMO_TRACKS, DEMO_PLAYLIST_ID, DEMO_PLAYLIST_NAME
 
 log = logging.getLogger("spotify.demo")
@@ -36,10 +36,23 @@ async def _save_demo_state(ctx, state: dict) -> None:
         log.error("_save_demo_state failed: %s", e)
 
 
+async def _update_now_playing_cache(ctx, index: int, is_playing: bool) -> None:
+    track = DEMO_TRACKS[index]
+    try:
+        await ctx.cache.set(
+            key="now_playing",
+            value=NowPlayingModel(**track, is_playing=is_playing),
+            ttl_seconds=3600,
+        )
+    except Exception as e:
+        log.error("_update_now_playing_cache failed: %s", e)
+
+
 async def _set_demo_track(ctx, index: int) -> None:
     index = index % len(DEMO_TRACKS)
     state = await _get_demo_state(ctx)
-    await _save_demo_state(ctx, {**state, "track_index": index, "is_playing": True, "active": True})
+    await _save_demo_state(ctx, {**state, "track_index": index, "is_playing": True})
+    await _update_now_playing_cache(ctx, index, is_playing=True)
 
 
 class OpenDemoPlaylistParams(BaseModel):
@@ -70,11 +83,6 @@ class DemoShuffleParams(BaseModel):
 async def fn_open_demo_playlist(ctx, params: OpenDemoPlaylistParams) -> ActionResult:
     try:
         await _set_demo_track(ctx, 0)
-        await ctx.cache.set(
-            key="detail",
-            value=DetailModel(type="tracks", title=DEMO_PLAYLIST_NAME, tracks=DEMO_TRACKS),
-            ttl_seconds=120,
-        )
         return ActionResult.success(
             data={"count": len(DEMO_TRACKS), "tracks": DEMO_TRACKS},
             summary=f"Opened demo playlist ({len(DEMO_TRACKS)} tracks)",
@@ -150,9 +158,9 @@ async def fn_demo_prev_track(ctx, params: DemoPrevTrackParams) -> ActionResult:
 async def fn_demo_pause(ctx, params: DemoPauseParams) -> ActionResult:
     try:
         state = await _get_demo_state(ctx)
-        if not state.get("active"):
-            return ActionResult.error("Click the demo playlist first to activate demo mode.")
-        await _save_demo_state(ctx, {**state, "is_playing": not state.get("is_playing", True)})
+        new_is_playing = not state.get("is_playing", True)
+        await _save_demo_state(ctx, {**state, "is_playing": new_is_playing})
+        await _update_now_playing_cache(ctx, state.get("track_index", 0), is_playing=new_is_playing)
         return ActionResult.success(data={}, summary="Toggled playback", refresh_panels=["spotify"])
     except Exception as e:
         log.error("demo_pause failed: %s", e)
@@ -168,8 +176,6 @@ async def fn_demo_pause(ctx, params: DemoPauseParams) -> ActionResult:
 async def fn_demo_shuffle(ctx, params: DemoShuffleParams) -> ActionResult:
     try:
         state = await _get_demo_state(ctx)
-        if not state.get("active"):
-            return ActionResult.error("Click the demo playlist first to activate demo mode.")
         new_shuffle = not state.get("shuffle", False)
         await _save_demo_state(ctx, {**state, "shuffle": new_shuffle})
         label = "on" if new_shuffle else "off"

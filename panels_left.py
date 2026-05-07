@@ -8,7 +8,7 @@ from app import (
     _get_access_token, _refresh_access_token,
 )
 from utils import format_playlist, format_track
-from cache_models import NowPlayingModel, SearchModel, PlaylistsModel, QueueModel, DetailModel
+from cache_models import NowPlayingModel, SearchModel, PlaylistsModel
 from demo_data import DEMO_TRACKS, DEMO_PLAYLIST_ID, DEMO_PLAYLIST_NAME
 
 log = logging.getLogger("spotify.panels.left")
@@ -215,46 +215,30 @@ async def _render_demo_state(ctx) -> ui.Stack:
                     title=DEMO_PLAYLIST_NAME,
                     subtitle=f"{len(DEMO_TRACKS)} tracks",
                     avatar=ui.Avatar(src=DEMO_TRACKS[0]["album_art"], fallback="D"),
-                    on_click=ui.Call("__panel__spotify_detail", detail_type="tracks"),
+                    on_click=ui.Call("__panel__spotify_detail", detail_type="tracks", playlist_id=DEMO_PLAYLIST_ID, playlist_name=DEMO_PLAYLIST_NAME),
                 ),
             ])],
         }])
     )
 
-    # Load and render demo player state
+    # Load demo player state — only from cache (session-scoped, no store fallback)
     demo_now_playing = None
     is_demo_active = False
     demo_shuffle = False
 
     try:
         demo_now_playing = await ctx.cache.get(key="now_playing", model=NowPlayingModel)
-        demo_queue = await ctx.cache.get(key="queue", model=QueueModel)
-        is_demo_active = bool(demo_queue and demo_queue.playlist_id == DEMO_PLAYLIST_ID)
+        is_demo_active = demo_now_playing is not None
     except Exception:
         pass
 
-    if not is_demo_active:
+    if is_demo_active:
         try:
             page = await ctx.store.query(DEMO_PLAYER_STATE, where={"user_id": ctx.user.imperal_id})
             if page.data:
-                state = page.data[0].data
-                if state.get("active"):
-                    track = DEMO_TRACKS[state.get("track_index", 0)]
-                    demo_now_playing = NowPlayingModel(**track, is_playing=state.get("is_playing", True))
-                    is_demo_active = True
-                    demo_shuffle = state.get("shuffle", False)
+                demo_shuffle = page.data[0].data.get("shuffle", False)
         except Exception as e:
-            log.error("Failed to load demo player state: %s", e)
-
-    # Save demo playlist to cache
-    try:
-        await ctx.cache.set(
-            key="detail",
-            value=DetailModel(type="tracks", title=DEMO_PLAYLIST_NAME, tracks=DEMO_TRACKS),
-            ttl_seconds=120,
-        )
-    except Exception as e:
-        log.error("Failed to set demo detail cache: %s", e)
+            log.error("Failed to load demo shuffle state: %s", e)
 
     now_playing = demo_now_playing.model_dump() if (demo_now_playing and is_demo_active) else None
 
