@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from imperal_sdk import ActionResult
 
 from app import chat, DEMO_PLAYER_STATE
+from cache_models import DetailModel
 from demo_data import DEMO_TRACKS, DEMO_PLAYLIST_ID, DEMO_PLAYLIST_NAME
 
 log = logging.getLogger("spotify.demo")
@@ -69,6 +70,11 @@ class DemoShuffleParams(BaseModel):
 async def fn_open_demo_playlist(ctx, params: OpenDemoPlaylistParams) -> ActionResult:
     try:
         await _set_demo_track(ctx, 0)
+        await ctx.cache.set(
+            key="detail",
+            value=DetailModel(type="tracks", title=DEMO_PLAYLIST_NAME, tracks=DEMO_TRACKS),
+            ttl_seconds=120,
+        )
         return ActionResult.success(
             data={"count": len(DEMO_TRACKS), "tracks": DEMO_TRACKS},
             summary=f"Opened demo playlist ({len(DEMO_TRACKS)} tracks)",

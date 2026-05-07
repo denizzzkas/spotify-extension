@@ -82,7 +82,7 @@ async def panel_spotify(ctx, **kwargs):
         token = None
 
     if not token:
-        return _render_demo_state(ctx)
+        return await _render_demo_state(ctx)
 
     # Authenticated state: load cached search and playlists
     try:
@@ -184,7 +184,7 @@ async def panel_spotify(ctx, **kwargs):
     return ui.Stack(children, direction="v", gap=2)
 
 
-def _render_demo_state(ctx) -> ui.Stack:
+async def _render_demo_state(ctx) -> ui.Stack:
     """Render demo/unauthenticated state with demo player."""
     try:
         client_id = ctx.config.get("spotify.client_id", "")
@@ -215,7 +215,7 @@ def _render_demo_state(ctx) -> ui.Stack:
                     title=DEMO_PLAYLIST_NAME,
                     subtitle=f"{len(DEMO_TRACKS)} tracks",
                     avatar=ui.Avatar(src=DEMO_TRACKS[0]["album_art"], fallback="D"),
-                    on_click=ui.Call("open_demo_playlist"),
+                    on_click=ui.Call("__panel__spotify_detail", detail_type="tracks"),
                 ),
             ])],
         }])
@@ -227,19 +227,15 @@ def _render_demo_state(ctx) -> ui.Stack:
     demo_shuffle = False
 
     try:
-        import asyncio
-        loop = asyncio.get_event_loop()
-        demo_now_playing = loop.run_until_complete(ctx.cache.get(key="now_playing", model=NowPlayingModel))
-        demo_queue = loop.run_until_complete(ctx.cache.get(key="queue", model=QueueModel))
+        demo_now_playing = await ctx.cache.get(key="now_playing", model=NowPlayingModel)
+        demo_queue = await ctx.cache.get(key="queue", model=QueueModel)
         is_demo_active = bool(demo_queue and demo_queue.playlist_id == DEMO_PLAYLIST_ID)
     except Exception:
         pass
 
     if not is_demo_active:
         try:
-            import asyncio
-            loop = asyncio.get_event_loop()
-            page = loop.run_until_complete(ctx.store.query(DEMO_PLAYER_STATE, where={"user_id": ctx.user.imperal_id}))
+            page = await ctx.store.query(DEMO_PLAYER_STATE, where={"user_id": ctx.user.imperal_id})
             if page.data:
                 state = page.data[0].data
                 if state.get("active"):
@@ -252,13 +248,11 @@ def _render_demo_state(ctx) -> ui.Stack:
 
     # Save demo playlist to cache
     try:
-        import asyncio
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(ctx.cache.set(
+        await ctx.cache.set(
             key="detail",
             value=DetailModel(type="tracks", title=DEMO_PLAYLIST_NAME, tracks=DEMO_TRACKS),
             ttl_seconds=120,
-        ))
+        )
     except Exception as e:
         log.error("Failed to set demo detail cache: %s", e)
 

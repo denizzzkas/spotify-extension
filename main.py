@@ -1,4 +1,4 @@
-"""Spotify v1.0.0 · Music library extension for Imperal Cloud."""
+"""Spotify v2.0.0 · Music library extension for Imperal Cloud."""
 from __future__ import annotations
 
 import sys
@@ -8,7 +8,7 @@ _dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, _dir)
 
 for _m in [k for k in sys.modules if k in (
-    "app", "skeleton", "panels", "panels_detail", "spotify_config", "utils", "demo_data",
+    "app", "skeleton", "panels", "panels_left", "panels_right", "spotify_config", "utils", "demo_data",
     "handlers", "handlers.auth", "handlers.search",
     "handlers.playlists", "handlers.library", "handlers.playback",
     "handlers.demo", "handlers.lyrics",
@@ -25,4 +25,3 @@ import handlers.demo  # noqa: F401
 import handlers.lyrics  # noqa: F401
 import skeleton  # noqa: F401
 import panels  # noqa: F401
-import panels_detail  # noqa: F401
