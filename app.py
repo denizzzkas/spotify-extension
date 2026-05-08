@@ -105,6 +105,12 @@ class QueueModel(BaseModel):
     tracks: list[dict] = []
     index: int = 0
 
+@ext.cache_model("demo_state")
+class DemoStateModel(BaseModel):
+    track_index: int = 0
+    is_playing: bool = True
+    shuffle: bool = False
+
 # ─── ChatExtension ────────────────────────────────────────────────────────── #
 
 SYSTEM_PROMPT = (Path(__file__).parent / "system_prompt.txt").read_text()

@@ -1,4 +1,4 @@
-"""Demo mode handlers — no Spotify auth required, uses ctx.store for state."""
+"""Demo mode handlers — no Spotify auth required, uses ctx.cache for session state."""
 from __future__ import annotations
 
 import logging
@@ -8,8 +8,7 @@ from pydantic import BaseModel, Field
 
 from imperal_sdk import ActionResult
 
-from app import chat, DEMO_PLAYER_STATE
-from cache_models import NowPlayingModel
+from app import chat, NowPlayingModel, DemoStateModel
 from demo_data import DEMO_TRACKS, DEMO_PLAYLIST_ID, DEMO_PLAYLIST_NAME
 
 log = logging.getLogger("spotify.demo")
@@ -17,8 +16,8 @@ log = logging.getLogger("spotify.demo")
 
 async def _get_demo_state(ctx) -> dict:
     try:
-        page = await ctx.store.query(DEMO_PLAYER_STATE, where={"user_id": ctx.user.imperal_id})
-        return page.data[0].data if page.data else {}
+        cached = await ctx.cache.get(key="demo_state", model=DemoStateModel)
+        return cached.model_dump() if cached else {}
     except Exception as e:
         log.error("_get_demo_state failed: %s", e)
         return {}
@@ -26,12 +25,15 @@ async def _get_demo_state(ctx) -> dict:
 
 async def _save_demo_state(ctx, state: dict) -> None:
     try:
-        record = {"user_id": ctx.user.imperal_id, **state}
-        page = await ctx.store.query(DEMO_PLAYER_STATE, where={"user_id": ctx.user.imperal_id})
-        if page.data:
-            await ctx.store.update(DEMO_PLAYER_STATE, page.data[0].id, record)
-        else:
-            await ctx.store.create(DEMO_PLAYER_STATE, record)
+        await ctx.cache.set(
+            key="demo_state",
+            value=DemoStateModel(
+                track_index=state.get("track_index", 0),
+                is_playing=state.get("is_playing", True),
+                shuffle=state.get("shuffle", False),
+            ),
+            ttl_seconds=3600,
+        )
     except Exception as e:
         log.error("_save_demo_state failed: %s", e)
 
@@ -59,7 +61,7 @@ class OpenDemoPlaylistParams(BaseModel):
     pass
 
 class DemoPlayTrackParams(BaseModel):
-    track_id: str = Field(..., description="Demo track ID to play")
+    track_id: str = Field(..., description="Demo track ID or track name/artist to search for and play")
 
 class DemoNextTrackParams(BaseModel):
     pass
@@ -101,11 +103,27 @@ async def fn_open_demo_playlist(ctx, params: OpenDemoPlaylistParams) -> ActionRe
 )
 async def fn_demo_play_track(ctx, params: DemoPlayTrackParams) -> ActionResult:
     try:
-        index = next((i for i, t in enumerate(DEMO_TRACKS) if t["id"] == params.track_id), None)
+        query = params.track_id.lower()
+        index = None
+
+        # Try exact ID match first
+        index = next((i for i, t in enumerate(DEMO_TRACKS) if t["id"] == query), None)
+
+        # If not found, search by title or artist
         if index is None:
-            return ActionResult.error("Track not found in demo playlist.")
+            index = next((i for i, t in enumerate(DEMO_TRACKS)
+                         if query in t["title"].lower() or query in t["artist"].lower()), None)
+
+        if index is None:
+            return ActionResult.error(f"Track '{params.track_id}' not found in demo playlist.")
+
         await _set_demo_track(ctx, index)
-        return ActionResult.success(data={}, summary="Playing track", refresh_panels=["spotify"])
+        track = DEMO_TRACKS[index]
+        return ActionResult.success(
+            data={"track_id": track["id"], "title": track["title"], "artist": track["artist"]},
+            summary=f"▶ {track['artist']} — {track['title']}",
+            refresh_panels=["spotify"]
+        )
     except Exception as e:
         log.error("demo_play_track failed: %s", e)
         return ActionResult.error(f"Play failed: {str(e)}", retryable=True)

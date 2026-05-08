@@ -4,7 +4,7 @@ import logging
 from imperal_sdk import ui
 
 from app import (
-    ext, SP_API_BASE, DEMO_PLAYER_STATE, NowPlayingModel,
+    ext, SP_API_BASE, NowPlayingModel, DemoStateModel,
     _get_access_token, _refresh_access_token,
 )
 from utils import format_playlist, format_track
@@ -221,7 +221,7 @@ async def _render_demo_state(ctx) -> ui.Stack:
         }])
     )
 
-    # Load demo player state — cache first (session), fallback to store (persistent)
+    # Load demo player state from cache only (session-scoped with TTL)
     demo_now_playing = None
     is_demo_active = False
     demo_shuffle = False
@@ -232,24 +232,14 @@ async def _render_demo_state(ctx) -> ui.Stack:
     except Exception:
         pass
 
-    # Fallback: if cache is empty but store has a track, restore from store
-    if not is_demo_active:
+    # Read shuffle state from demo_state cache
+    if is_demo_active:
         try:
-            page = await ctx.store.query(DEMO_PLAYER_STATE, where={"user_id": ctx.user.imperal_id})
-            if page.data:
-                state = page.data[0].data
-                track_index = state.get("track_index", 0) % len(DEMO_TRACKS)
-                track = DEMO_TRACKS[track_index]
-                demo_now_playing = NowPlayingModel(**track, is_playing=state.get("is_playing", True))
-                is_demo_active = True
-                demo_shuffle = state.get("shuffle", False)
-                await ctx.cache.set(
-                    key="now_playing",
-                    value=demo_now_playing,
-                    ttl_seconds=3600,
-                )
-        except Exception as e:
-            log.error("Failed to load demo state from store: %s", e)
+            demo_state_cached = await ctx.cache.get(key="demo_state", model=DemoStateModel)
+            if demo_state_cached:
+                demo_shuffle = demo_state_cached.shuffle
+        except Exception:
+            pass
 
     now_playing = demo_now_playing.model_dump() if (demo_now_playing and is_demo_active) else None
 
