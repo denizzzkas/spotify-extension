@@ -103,14 +103,14 @@ async def fn_open_demo_playlist(ctx, params: OpenDemoPlaylistParams) -> ActionRe
 )
 async def fn_demo_play_track(ctx, params: DemoPlayTrackParams) -> ActionResult:
     try:
-        query = params.track_id.lower()
         index = None
 
-        # Try exact ID match first
-        index = next((i for i, t in enumerate(DEMO_TRACKS) if t["id"] == query), None)
+        # Try exact ID match first (case-sensitive for Spotify IDs)
+        index = next((i for i, t in enumerate(DEMO_TRACKS) if t["id"] == params.track_id), None)
 
-        # If not found, search by title or artist
+        # If not found, search by title or artist (case-insensitive)
         if index is None:
+            query = params.track_id.lower()
             index = next((i for i, t in enumerate(DEMO_TRACKS)
                          if query in t["title"].lower() or query in t["artist"].lower()), None)
 
