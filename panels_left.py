@@ -32,7 +32,7 @@ async def panel_search_tracks(ctx, query: str = "", limit: int = 20) -> dict:
         if not headers:
             return {}
 
-        resp = await ctx.http.get(
+        resp = await ctx.api.get(
             f"{SP_API_BASE}/search",
             headers=headers,
             params={"q": query, "type": "track", "limit": limit},
@@ -42,7 +42,7 @@ async def panel_search_tracks(ctx, query: str = "", limit: int = 20) -> dict:
             token = await _refresh_access_token(ctx)
             if token:
                 headers["Authorization"] = f"Bearer {token}"
-                resp = await ctx.http.get(
+                resp = await ctx.api.get(
                     f"{SP_API_BASE}/search",
                     headers=headers,
                     params={"q": query, "type": "track", "limit": limit},
@@ -103,7 +103,7 @@ async def panel_spotify(ctx, **kwargs):
         try:
             headers = await _get_auth_headers(ctx)
             if headers:
-                resp = await ctx.http.get(
+                resp = await ctx.api.get(
                     f"{SP_API_BASE}/me/playlists",
                     headers=headers,
                     params={"limit": 50},
@@ -223,17 +223,15 @@ async def _render_demo_state(ctx) -> ui.Stack:
 
     # Load demo player state from cache only (session-scoped with TTL)
     demo_now_playing = None
-    is_demo_active = False
     demo_shuffle = False
 
     try:
         demo_now_playing = await ctx.cache.get(key="now_playing", model=NowPlayingModel)
-        is_demo_active = demo_now_playing is not None
     except Exception:
         pass
 
     # Read shuffle state from demo_state cache
-    if is_demo_active:
+    if demo_now_playing:
         try:
             demo_state_cached = await ctx.cache.get(key="demo_state", model=DemoStateModel)
             if demo_state_cached:
@@ -241,7 +239,7 @@ async def _render_demo_state(ctx) -> ui.Stack:
         except Exception:
             pass
 
-    now_playing = demo_now_playing.model_dump() if (demo_now_playing and is_demo_active) else None
+    now_playing = demo_now_playing.model_dump() if demo_now_playing else None
 
     if now_playing:
         is_playing = now_playing.get("is_playing", True)
