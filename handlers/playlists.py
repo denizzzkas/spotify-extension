@@ -42,7 +42,7 @@ class RemoveTrackFromPlaylistParams(BaseModel):
 
 async def _get_my_spotify_id(ctx, headers: dict) -> str | None:
     try:
-        resp = await ctx.http.get(f"{SP_API_BASE}/me", headers=headers)
+        resp = await ctx.api.get(f"{SP_API_BASE}/me", headers=headers)
         if resp.ok:
             return resp.json().get("id")
     except Exception as e:
@@ -63,7 +63,7 @@ async def fn_get_playlists(ctx, params: GetPlaylistsParams) -> ActionResult:
 
     try:
         headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-        resp = await ctx.http.get(
+        resp = await ctx.api.get(
             f"{SP_API_BASE}/me/playlists",
             headers=headers,
             params={"limit": 50},
@@ -74,7 +74,7 @@ async def fn_get_playlists(ctx, params: GetPlaylistsParams) -> ActionResult:
             if not token:
                 return ActionResult.error("Spotify token expired. Please reconnect via connect_spotify().")
             headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-            resp = await ctx.http.get(f"{SP_API_BASE}/me/playlists", headers=headers, params={"limit": 50})
+            resp = await ctx.api.get(f"{SP_API_BASE}/me/playlists", headers=headers, params={"limit": 50})
 
         if not resp.ok:
             return ActionResult.error(_spotify_error(resp.status_code), retryable=(resp.status_code == 429))
@@ -102,7 +102,7 @@ async def fn_get_playlist_tracks(ctx, params: GetPlaylistTracksParams) -> Action
 
     try:
         headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-        resp = await ctx.http.get(
+        resp = await ctx.api.get(
             f"{SP_API_BASE}/playlists/{params.playlist_id}/tracks",
             headers=headers,
         )
@@ -112,7 +112,7 @@ async def fn_get_playlist_tracks(ctx, params: GetPlaylistTracksParams) -> Action
             if not token:
                 return ActionResult.error("Spotify token expired. Please reconnect via connect_spotify().")
             headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-            resp = await ctx.http.get(f"{SP_API_BASE}/playlists/{params.playlist_id}/tracks", headers=headers)
+            resp = await ctx.api.get(f"{SP_API_BASE}/playlists/{params.playlist_id}/tracks", headers=headers)
 
         if not resp.ok:
             return ActionResult.error(_spotify_error(resp.status_code), retryable=(resp.status_code == 429))
@@ -149,7 +149,7 @@ async def fn_create_playlist(ctx, params: CreatePlaylistParams) -> ActionResult:
         if not my_id:
             return ActionResult.error("Could not get Spotify user ID. Please reconnect via connect_spotify().")
 
-        resp = await ctx.http.post(
+        resp = await ctx.api.post(
             f"{SP_API_BASE}/users/{my_id}/playlists",
             headers=headers,
             json={
@@ -164,7 +164,7 @@ async def fn_create_playlist(ctx, params: CreatePlaylistParams) -> ActionResult:
             if not token:
                 return ActionResult.error("Spotify token expired. Please reconnect via connect_spotify().")
             headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-            resp = await ctx.http.post(
+            resp = await ctx.api.post(
                 f"{SP_API_BASE}/users/{my_id}/playlists",
                 headers=headers,
                 json={"name": params.name, "description": params.description, "public": params.is_public},
@@ -178,7 +178,7 @@ async def fn_create_playlist(ctx, params: CreatePlaylistParams) -> ActionResult:
 
         if params.tracks:
             uris = [to_spotify_uri(tid) for tid in params.tracks]
-            await ctx.http.post(
+            await ctx.api.post(
                 f"{SP_API_BASE}/playlists/{playlist_id}/tracks",
                 headers=headers,
                 json={"uris": uris},
@@ -215,7 +215,7 @@ async def fn_add_track_to_playlist(ctx, params: AddTrackToPlaylistParams) -> Act
         headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
         uri = to_spotify_uri(params.track_id)
 
-        resp = await ctx.http.post(
+        resp = await ctx.api.post(
             f"{SP_API_BASE}/playlists/{params.playlist_id}/tracks",
             headers=headers,
             json={"uris": [uri]},
@@ -226,7 +226,7 @@ async def fn_add_track_to_playlist(ctx, params: AddTrackToPlaylistParams) -> Act
             if not token:
                 return ActionResult.error("Spotify token expired. Please reconnect via connect_spotify().")
             headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-            resp = await ctx.http.post(
+            resp = await ctx.api.post(
                 f"{SP_API_BASE}/playlists/{params.playlist_id}/tracks",
                 headers=headers,
                 json={"uris": [uri]},
@@ -261,7 +261,7 @@ async def fn_remove_track_from_playlist(ctx, params: RemoveTrackFromPlaylistPara
         headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
         uri = to_spotify_uri(params.track_id)
 
-        resp = await ctx.http.delete(
+        resp = await ctx.api.delete(
             f"{SP_API_BASE}/playlists/{params.playlist_id}/tracks",
             headers=headers,
             json={"tracks": [{"uri": uri}]},
@@ -272,7 +272,7 @@ async def fn_remove_track_from_playlist(ctx, params: RemoveTrackFromPlaylistPara
             if not token:
                 return ActionResult.error("Spotify token expired. Please reconnect via connect_spotify().")
             headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-            resp = await ctx.http.delete(
+            resp = await ctx.api.delete(
                 f"{SP_API_BASE}/playlists/{params.playlist_id}/tracks",
                 headers=headers,
                 json={"tracks": [{"uri": uri}]},

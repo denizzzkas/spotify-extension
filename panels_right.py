@@ -26,7 +26,7 @@ async def _fetch_playlist_tracks(ctx, playlist_id: str) -> list[dict]:
             return []
 
         fields = "items(track(id,name,artists,album,duration_ms,preview_url,external_urls,popularity))"
-        resp = await ctx.http.get(
+        resp = await ctx.api.get(
             f"{SP_API_BASE}/playlists/{playlist_id}/tracks",
             headers=headers,
             params={"limit": 50, "fields": fields},
@@ -36,7 +36,7 @@ async def _fetch_playlist_tracks(ctx, playlist_id: str) -> list[dict]:
             token = await _refresh_access_token(ctx)
             if token:
                 headers["Authorization"] = f"Bearer {token}"
-                resp = await ctx.http.get(
+                resp = await ctx.api.get(
                     f"{SP_API_BASE}/playlists/{playlist_id}/tracks",
                     headers=headers,
                     params={"limit": 50, "fields": fields},

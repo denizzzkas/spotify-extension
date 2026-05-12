@@ -32,7 +32,7 @@ async def _save_demo_state(ctx, state: dict) -> None:
                 is_playing=state.get("is_playing", True),
                 shuffle=state.get("shuffle", False),
             ),
-            ttl_seconds=3600,
+            ttl_seconds=300,
         )
     except Exception as e:
         log.error("_save_demo_state failed: %s", e)
@@ -44,7 +44,7 @@ async def _update_now_playing_cache(ctx, index: int, is_playing: bool) -> None:
         await ctx.cache.set(
             key="now_playing",
             value=NowPlayingModel(**track, is_playing=is_playing),
-            ttl_seconds=3600,
+            ttl_seconds=300,
         )
     except Exception as e:
         log.error("_update_now_playing_cache failed: %s", e)

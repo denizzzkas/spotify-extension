@@ -35,7 +35,7 @@ async def fn_search_tracks(ctx, params: SearchTracksParams) -> ActionResult:
 
     try:
         headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-        resp = await ctx.http.get(
+        resp = await ctx.api.get(
             f"{SP_API_BASE}/search",
             headers=headers,
             params={"q": params.query, "type": "track", "limit": params.limit},
@@ -46,7 +46,7 @@ async def fn_search_tracks(ctx, params: SearchTracksParams) -> ActionResult:
             if not token:
                 return ActionResult.error("Spotify token expired. Please reconnect via connect_spotify().")
             headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-            resp = await ctx.http.get(
+            resp = await ctx.api.get(
                 f"{SP_API_BASE}/search",
                 headers=headers,
                 params={"q": params.query, "type": "track", "limit": params.limit},

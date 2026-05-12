@@ -15,14 +15,10 @@ log = logging.getLogger("spotify")
 
 # ─── Config ───────────────────────────────────────────────────────────────── #
 
-SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID", "")
-SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET", "")
-GENIUS_ACCESS_TOKEN = os.getenv("GENIUS_ACCESS_TOKEN", "")
-
 SP_API_BASE = "https://api.spotify.com/v1"
 SP_AUTH_URL = "https://accounts.spotify.com/authorize"
 SP_TOKEN_URL = "https://accounts.spotify.com/api/token"
-SP_REDIRECT_URI = "https://imperal.cloud/v1/ext/spotify/webhook/oauth/callback"
+SP_REDIRECT_URI = "https://imperal.cloud/v1/ext/spotify-extension/webhook/callback"
 
 SP_SCOPES = " ".join([
     "user-read-private",
@@ -60,11 +56,35 @@ ext = Extension(
     version="2.0.0",
     capabilities=[],
     actions_explicit=True,
-    config_defaults={
-        "spotify.client_id": SPOTIFY_CLIENT_ID,
-        "spotify.client_secret": SPOTIFY_CLIENT_SECRET,
-    },
+    system=False,
+    config_defaults={},
 )
+
+# ─── Secrets (SDK 4.2.2 EXT-SECRETS-V1) ────────────────────────────────────── #
+
+ext.secret(
+    name="spotify_client_id",
+    description="Spotify OAuth Client ID from developer.spotify.com",
+    required=True,
+    write_mode="user",
+    max_bytes=256,
+)(lambda: None)
+
+ext.secret(
+    name="spotify_client_secret",
+    description="Spotify OAuth Client Secret from developer.spotify.com",
+    required=True,
+    write_mode="user",
+    max_bytes=512,
+)(lambda: None)
+
+ext.secret(
+    name="genius_access_token",
+    description="Genius API access token for lyrics lookup (optional)",
+    required=False,
+    write_mode="user",
+    max_bytes=256,
+)(lambda: None)
 
 # ─── Cache models ─────────────────────────────────────────────────────────── #
 
@@ -129,6 +149,8 @@ chat = ChatExtension(
 @ext.emits("spotify-extension.track.liked")
 @ext.emits("spotify-extension.track.unliked")
 @ext.emits("spotify-extension.track.played")
+@ext.emits("spotify-extension.track.added_to_playlist")
+@ext.emits("spotify-extension.track.removed_from_playlist")
 @ext.emits("spotify-extension.playlist.created")
 @ext.emits("spotify-extension.playlist.played")
 @ext.emits("spotify-extension.playback.paused")
@@ -143,9 +165,9 @@ async def _declare_events() -> None:
 @ext.health_check
 async def health(ctx) -> HealthStatus:
     try:
-        client_id = ctx.config.get("spotify.client_id", "")
+        client_id = await ctx.secrets.get("spotify_client_id")
         if not client_id:
-            return HealthStatus.degraded("Spotify client_id not configured")
+            return HealthStatus.degraded("Spotify credentials not configured")
 
         token = await _get_access_token(ctx)
         connected = token is not None
@@ -208,15 +230,15 @@ async def _refresh_access_token(ctx) -> str | None:
         if not creds or not creds.get("refresh_token"):
             return None
 
-        client_id = ctx.config.get("spotify.client_id", "")
-        client_secret = ctx.config.get("spotify.client_secret", "")
+        client_id = await ctx.secrets.get("spotify_client_id")
+        client_secret = await ctx.secrets.get("spotify_client_secret")
         if not client_id or not client_secret:
             return None
 
         import base64
         credentials = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
 
-        resp = await ctx.http.post(
+        resp = await ctx.api.post(
             SP_TOKEN_URL,
             headers={
                 "Authorization": f"Basic {credentials}",

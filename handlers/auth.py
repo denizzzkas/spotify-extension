@@ -45,10 +45,10 @@ async def fn_connect_spotify(ctx, params: ConnectSpotifyParams) -> ActionResult:
         return user_id
 
     try:
-        client_id = ctx.config.get("spotify.client_id", "")
+        client_id = await ctx.secrets.get("spotify_client_id")
         if not client_id:
             return ActionResult.error(
-                "spotify.client_id is not configured. Ask your administrator to add Spotify app credentials."
+                "Spotify client_id not configured. Set it in extension settings."
             )
 
         state = str(uuid.uuid4())
@@ -130,7 +130,7 @@ async def fn_check_connection(ctx, params: CheckConnectionParams) -> ActionResul
 
 # ─── OAuth webhook callback ────────────────────────────────────────────────── #
 
-@ext.webhook("/oauth/callback", method="GET")
+@ext.webhook("/callback", method="GET")
 async def oauth_callback(ctx, headers, body, query_params) -> dict:
     from imperal_sdk import WebhookResponse
 
@@ -153,14 +153,14 @@ async def oauth_callback(ctx, headers, body, query_params) -> dict:
         user_id = page.data[0].data.get("user_id")
         await ctx.store.delete(OAUTH_STATE_COLLECTION, page.data[0].id)
 
-        client_id = ctx.config.get("spotify.client_id", "")
-        client_secret = ctx.config.get("spotify.client_secret", "")
+        client_id = await ctx.secrets.get("spotify_client_id")
+        client_secret = await ctx.secrets.get("spotify_client_secret")
         if not client_id or not client_secret:
-            return WebhookResponse.error("Server not configured for Spotify OAuth", 500)
+            return WebhookResponse.error("Spotify credentials not configured", 500)
 
         credentials = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
 
-        resp = await ctx.http.post(
+        resp = await ctx.api.post(
             SP_TOKEN_URL,
             headers={
                 "Authorization": f"Basic {credentials}",

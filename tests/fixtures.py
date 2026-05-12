@@ -1,13 +1,6 @@
 """Shared test fixtures for Spotify extension tests."""
-from imperal_sdk.testing import MockContext
+from imperal_sdk.testing import MockContext, MockSecretStore, MockHTTP
 from app import _save_token
-
-SP_CONFIG = {
-    "spotify": {
-        "client_id": "test_client_id",
-        "client_secret": "test_client_secret",
-    }
-}
 
 SAMPLE_TRACK = {
     "id": "4iV5W9uYEdYUVa79Axb7Rh",
@@ -68,7 +61,15 @@ class MockCache:
 
 
 async def ctx_with_token(token: str = "test_token") -> MockContext:
-    ctx = MockContext(user_id="user1", config=SP_CONFIG)
+    secrets_store = MockSecretStore(initial={
+        "spotify_client_id": "test_client_id",
+        "spotify_client_secret": "test_client_secret",
+        "genius_access_token": "test_genius_token",
+    })
+
+    ctx = MockContext(user_id="user1")
+    ctx._secrets = secrets_store
+    ctx.api = MockHTTP()
     ctx._cache = MockCache()
     await _save_token(ctx, "user1", {"access_token": token, "refresh_token": "refresh_abc"})
     return ctx

@@ -19,7 +19,7 @@ log = logging.getLogger("spotify.playback")
 # ── Param models ──────────────────────────────────────────────────────────────
 
 class PlayTrackParams(BaseModel):
-    track_id: str = Field(..., description="Spotify track ID to play")
+    track_id: str = Field(..., description="Spotify track ID or track name/artist to search for and play")
 
 
 class PlayPlaylistParams(BaseModel):
@@ -44,9 +44,39 @@ async def fn_play_track(ctx, params: PlayTrackParams) -> ActionResult:
 
     try:
         headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        track_id = params.track_id
 
-        resp = await ctx.http.get(
-            f"{SP_API_BASE}/tracks/{params.track_id}",
+        # If track_id looks like a Spotify ID (starts with number), use it directly
+        # Otherwise, search for the track by name/artist
+        if not track_id.startswith(("spotify:", "http")):
+            search_resp = await ctx.api.get(
+                f"{SP_API_BASE}/search",
+                headers=headers,
+                params={"q": track_id, "type": "track", "limit": 1},
+            )
+
+            if search_resp.status_code == 401:
+                token = await _refresh_access_token(ctx)
+                if not token:
+                    return ActionResult.error("Spotify token expired. Please reconnect via connect_spotify().")
+                headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+                search_resp = await ctx.api.get(
+                    f"{SP_API_BASE}/search",
+                    headers=headers,
+                    params={"q": track_id, "type": "track", "limit": 1},
+                )
+
+            if search_resp.ok:
+                tracks = search_resp.json().get("tracks", {}).get("items", [])
+                if tracks:
+                    track_id = tracks[0]["id"]
+                else:
+                    return ActionResult.error(f"No tracks found matching '{params.track_id}'.", retryable=False)
+            else:
+                return ActionResult.error(_spotify_error(search_resp.status_code), retryable=False)
+
+        resp = await ctx.api.get(
+            f"{SP_API_BASE}/tracks/{track_id}",
             headers=headers,
         )
 
@@ -55,8 +85,8 @@ async def fn_play_track(ctx, params: PlayTrackParams) -> ActionResult:
             if not token:
                 return ActionResult.error("Spotify token expired. Please reconnect via connect_spotify().")
             headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-            resp = await ctx.http.get(
-                f"{SP_API_BASE}/tracks/{params.track_id}",
+            resp = await ctx.api.get(
+                f"{SP_API_BASE}/tracks/{track_id}",
                 headers=headers,
             )
 
@@ -72,7 +102,7 @@ async def fn_play_track(ctx, params: PlayTrackParams) -> ActionResult:
 
         return ActionResult.success(
             data={
-                "track_id": params.track_id,
+                "track_id": track_id,
                 "track": track_data,
                 "preview_url": track_data["preview_url"],
             },
@@ -101,7 +131,7 @@ async def fn_play_playlist(ctx, params: PlayPlaylistParams) -> ActionResult:
     try:
         headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 
-        resp = await ctx.http.get(
+        resp = await ctx.api.get(
             f"{SP_API_BASE}/playlists/{params.playlist_id}/tracks",
             headers=headers,
         )
@@ -111,7 +141,7 @@ async def fn_play_playlist(ctx, params: PlayPlaylistParams) -> ActionResult:
             if not token:
                 return ActionResult.error("Spotify token expired. Please reconnect via connect_spotify().")
             headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-            resp = await ctx.http.get(
+            resp = await ctx.api.get(
                 f"{SP_API_BASE}/playlists/{params.playlist_id}/tracks",
                 headers=headers,
             )
