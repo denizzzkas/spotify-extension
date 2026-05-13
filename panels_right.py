@@ -56,12 +56,10 @@ async def _fetch_playlist_tracks(ctx, playlist_id: str) -> list[dict]:
 
 @ext.panel(
     "spotify_detail",
-    slot="right",
+    slot="center",
+    center_overlay=True,
     title="Spotify",
     icon="Music",
-    default_width=320,
-    min_width=260,
-    max_width=480,
 )
 async def panel_spotify_detail(ctx, detail_type: str = "", playlist_id: str = "", playlist_name: str = "", **kwargs):
     """Right panel: loads playlist/profile data from parameters, not from pre-populated cache."""
