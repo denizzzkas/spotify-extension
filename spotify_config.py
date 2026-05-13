@@ -4,7 +4,7 @@
 SP_API_BASE = "https://api.spotify.com/v1"
 SP_AUTH_URL = "https://accounts.spotify.com/authorize"
 SP_TOKEN_URL = "https://accounts.spotify.com/api/token"
-SP_REDIRECT_URI = "https://imperal.cloud/v1/ext/spotify-extension/webhook/callback"
+SP_REDIRECT_URI = "https://panel.imperal.io/v1/ext/spotify-extension/webhook/callback"
 
 # OAuth scopes
 SP_SCOPES = " ".join([
