@@ -48,7 +48,7 @@ async def fn_play_track(ctx, params: PlayTrackParams) -> ActionResult:
         # If track_id looks like a Spotify ID (starts with number), use it directly
         # Otherwise, search for the track by name/artist
         if not track_id.startswith(("spotify:", "http")):
-            search_resp = await ctx.api.get(
+            search_resp = await ctx.http.get(
                 f"{SP_API_BASE}/search",
                 headers=headers,
                 params={"q": track_id, "type": "track", "limit": 1},
@@ -59,7 +59,7 @@ async def fn_play_track(ctx, params: PlayTrackParams) -> ActionResult:
                 if not token:
                     return ActionResult.error("Spotify token expired. Please reconnect via connect_spotify().")
                 headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-                search_resp = await ctx.api.get(
+                search_resp = await ctx.http.get(
                     f"{SP_API_BASE}/search",
                     headers=headers,
                     params={"q": track_id, "type": "track", "limit": 1},
@@ -74,7 +74,7 @@ async def fn_play_track(ctx, params: PlayTrackParams) -> ActionResult:
             else:
                 return ActionResult.error(_spotify_error(search_resp.status_code), retryable=False)
 
-        resp = await ctx.api.get(
+        resp = await ctx.http.get(
             f"{SP_API_BASE}/tracks/{track_id}",
             headers=headers,
         )
@@ -84,7 +84,7 @@ async def fn_play_track(ctx, params: PlayTrackParams) -> ActionResult:
             if not token:
                 return ActionResult.error("Spotify token expired. Please reconnect via connect_spotify().")
             headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-            resp = await ctx.api.get(
+            resp = await ctx.http.get(
                 f"{SP_API_BASE}/tracks/{track_id}",
                 headers=headers,
             )
@@ -130,7 +130,7 @@ async def fn_play_playlist(ctx, params: PlayPlaylistParams) -> ActionResult:
     try:
         headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 
-        resp = await ctx.api.get(
+        resp = await ctx.http.get(
             f"{SP_API_BASE}/playlists/{params.playlist_id}/tracks",
             headers=headers,
         )
@@ -140,7 +140,7 @@ async def fn_play_playlist(ctx, params: PlayPlaylistParams) -> ActionResult:
             if not token:
                 return ActionResult.error("Spotify token expired. Please reconnect via connect_spotify().")
             headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-            resp = await ctx.api.get(
+            resp = await ctx.http.get(
                 f"{SP_API_BASE}/playlists/{params.playlist_id}/tracks",
                 headers=headers,
             )

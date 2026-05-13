@@ -1,6 +1,6 @@
 {
   "manifest_schema_version": 3,
-  "sdk_version": "4.2.5",
+  "sdk_version": "4.2.6",
   "app_id": "spotify-extension",
   "version": "2.0.0",
   "name": "Spotify",
@@ -9,6 +9,29 @@
   "actions_explicit": true,
   "system": false,
   "capabilities": [],
+  "secrets": [
+    {
+      "name": "spotify_client_id",
+      "description": "Spotify OAuth Client ID from developer.spotify.com",
+      "required": true,
+      "write_mode": "user",
+      "max_bytes": 256
+    },
+    {
+      "name": "spotify_client_secret",
+      "description": "Spotify OAuth Client Secret from developer.spotify.com",
+      "required": true,
+      "write_mode": "user",
+      "max_bytes": 512
+    },
+    {
+      "name": "genius_access_token",
+      "description": "Genius API access token for lyrics lookup (optional)",
+      "required": false,
+      "write_mode": "user",
+      "max_bytes": 256
+    }
+  ],
   "tools": [
     {
       "name": "spotify",

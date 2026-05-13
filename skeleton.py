@@ -30,14 +30,14 @@ async def skeleton_refresh_spotify(ctx) -> dict:
         fresh = await _refresh_access_token(ctx)
         headers = {"Authorization": f"Bearer {fresh or token}"}
 
-        liked_resp = await ctx.api.get(
+        liked_resp = await ctx.http.get(
             f"{SP_API_BASE}/me/tracks",
             headers=headers,
             params={"limit": 1},
         )
         liked_total = liked_resp.json().get("total", 0) if liked_resp.ok else 0
 
-        playlists_resp = await ctx.api.get(
+        playlists_resp = await ctx.http.get(
             f"{SP_API_BASE}/me/playlists",
             headers=headers,
             params={"limit": 1},

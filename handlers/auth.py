@@ -161,7 +161,7 @@ async def oauth_callback(ctx, headers, body, query_params) -> dict:
 
         credentials = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
 
-        resp = await ctx.api.post(
+        resp = await ctx.http.post(
             SP_TOKEN_URL,
             headers={
                 "Authorization": f"Basic {credentials}",

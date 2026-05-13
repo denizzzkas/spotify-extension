@@ -34,7 +34,7 @@ async def fn_get_lyrics(ctx, params: GetLyricsParams) -> ActionResult:
 
     try:
         headers = {"Authorization": f"Bearer {genius_token}"}
-        search_resp = await ctx.api.get(
+        search_resp = await ctx.http.get(
             "https://api.genius.com/search",
             params={"q": query},
             headers=headers,

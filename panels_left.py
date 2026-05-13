@@ -31,7 +31,7 @@ async def panel_search_tracks(ctx, query: str = "", limit: int = 20) -> dict:
         if not headers:
             return {}
 
-        resp = await ctx.api.get(
+        resp = await ctx.http.get(
             f"{SP_API_BASE}/search",
             headers=headers,
             params={"q": query, "type": "track", "limit": limit},
@@ -41,7 +41,7 @@ async def panel_search_tracks(ctx, query: str = "", limit: int = 20) -> dict:
             token = await _refresh_access_token(ctx)
             if token:
                 headers["Authorization"] = f"Bearer {token}"
-                resp = await ctx.api.get(
+                resp = await ctx.http.get(
                     f"{SP_API_BASE}/search",
                     headers=headers,
                     params={"q": query, "type": "track", "limit": limit},
@@ -102,7 +102,7 @@ async def panel_spotify(ctx, **kwargs):
         try:
             headers = await _get_auth_headers(ctx)
             if headers:
-                resp = await ctx.api.get(
+                resp = await ctx.http.get(
                     f"{SP_API_BASE}/me/playlists",
                     headers=headers,
                     params={"limit": 50},

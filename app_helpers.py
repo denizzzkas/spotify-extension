@@ -59,7 +59,7 @@ async def _refresh_access_token(ctx) -> str | None:
 
         credentials = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
 
-        resp = await ctx.api.post(
+        resp = await ctx.http.post(
             SP_TOKEN_URL,
             headers={
                 "Authorization": f"Basic {credentials}",
