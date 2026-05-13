@@ -1,5 +1,5 @@
 """Shared test fixtures for Spotify extension tests."""
-from imperal_sdk.testing import MockContext, MockHTTP
+from imperal_sdk.testing import MockContext
 
 from app_helpers import _save_token
 
@@ -37,19 +37,6 @@ SAMPLE_USER = {
 }
 
 
-class MockSecretStore:
-    """In-memory ctx.secrets stub for unit tests."""
-
-    def __init__(self, initial=None):
-        self._data = initial or {}
-
-    async def get(self, name: str):
-        return self._data.get(name)
-
-    async def set(self, name: str, value: str) -> None:
-        self._data[name] = value
-
-
 class MockCache:
     """In-memory ctx.cache stub for unit tests."""
 
@@ -75,12 +62,14 @@ class MockCache:
 
 
 async def ctx_with_token(token: str = "test_token") -> MockContext:
-    ctx = MockContext(user_id="user1")
-    ctx.secrets = MockSecretStore(initial={
-        "spotify_client_id": "test_client_id",
-        "spotify_client_secret": "test_client_secret",
-        "genius_access_token": "test_genius_token",
-    })
+    ctx = MockContext(
+        user_id="user1",
+        config={
+            "spotify_client_id": "test_client_id",
+            "spotify_client_secret": "test_client_secret",
+            "genius_access_token": "test_genius_token",
+        },
+    )
     ctx._cache = MockCache()
     await _save_token(ctx, "user1", {"access_token": token, "refresh_token": "refresh_abc"})
     return ctx

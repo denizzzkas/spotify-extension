@@ -185,23 +185,15 @@ async def panel_spotify(ctx, **kwargs):
 
 async def _render_demo_state(ctx) -> ui.Stack:
     """Render demo/unauthenticated state with demo player."""
-    client_id = ""
-    _secrets_error = ""
-    try:
-        secret = await ctx.secrets.get("spotify_client_id")
-        if secret:
-            client_id = secret
-    except Exception as e:
-        _secrets_error = f"{type(e).__name__}: {e}"
-        log.error("ctx.secrets.get failed: %s", _secrets_error)
+    client_id = ctx.config.get("spotify_client_id", "")
 
     children = [ui.Header("Spotify", level=3)]
 
     if not client_id:
-        msg = "Spotify credentials are not configured. Add client_id and client_secret in extension settings."
-        if _secrets_error:
-            msg += f" [debug: {_secrets_error}]"
-        children.append(ui.Alert(msg, type="error"))
+        children.append(ui.Alert(
+            "Spotify credentials are not configured. Add client_id and client_secret in extension settings.",
+            type="error",
+        ))
     else:
         children += [
             ui.Alert("Not connected. Click below to link your Spotify account.", type="warn"),
