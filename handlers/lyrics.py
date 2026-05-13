@@ -23,7 +23,7 @@ class GetLyricsParams(BaseModel):
     description="Search for song lyrics on Genius. Returns URL to full lyrics page.",
 )
 async def fn_get_lyrics(ctx, params: GetLyricsParams) -> ActionResult:
-    genius_token = ctx.config.get("genius_access_token")
+    genius_token = await ctx.secrets.get("genius_access_token")
     if not genius_token:
         return ActionResult.error(
             "Genius API token not configured. Set it in extension settings.",

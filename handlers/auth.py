@@ -46,7 +46,7 @@ async def fn_connect_spotify(ctx, params: ConnectSpotifyParams) -> ActionResult:
         return user_id
 
     try:
-        client_id = ctx.config.get("spotify_client_id")
+        client_id = await ctx.secrets.get("spotify_client_id")
         if not client_id:
             return ActionResult.error(
                 "Spotify client_id not configured. Set it in extension settings."
@@ -154,8 +154,8 @@ async def oauth_callback(ctx, headers, body, query_params) -> dict:
         user_id = page.data[0].data.get("user_id")
         await ctx.store.delete(OAUTH_STATE_COLLECTION, page.data[0].id)
 
-        client_id = ctx.config.get("spotify_client_id")
-        client_secret = ctx.config.get("spotify_client_secret")
+        client_id = await ctx.secrets.get("spotify_client_id")
+        client_secret = await ctx.secrets.get("spotify_client_secret")
         if not client_id or not client_secret:
             return WebhookResponse.error("Spotify credentials not configured", 500)
 

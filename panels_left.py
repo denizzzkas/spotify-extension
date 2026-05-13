@@ -185,7 +185,11 @@ async def panel_spotify(ctx, **kwargs):
 
 async def _render_demo_state(ctx) -> ui.Stack:
     """Render demo/unauthenticated state with demo player."""
-    client_id = ctx.config.get("spotify_client_id", "")
+    client_id = ""
+    try:
+        client_id = await ctx.secrets.get("spotify_client_id") or ""
+    except Exception:
+        pass
 
     children = [ui.Header("Spotify", level=3)]
 

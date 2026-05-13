@@ -34,11 +34,7 @@ ext = Extension(
     capabilities=[],
     actions_explicit=True,
     system=False,
-    config_defaults={
-        "spotify_client_id": "",
-        "spotify_client_secret": "",
-        "genius_access_token": "",
-    },
+    config_defaults={},
 )
 
 # ─── Secrets (SDK 4.2.2 EXT-SECRETS-V1) ────────────────────────────────────── #
@@ -146,7 +142,7 @@ async def _declare_events() -> None:
 @ext.health_check
 async def health(ctx) -> HealthStatus:
     try:
-        client_id = ctx.config.get("spotify_client_id")
+        client_id = await ctx.secrets.get("spotify_client_id")
         if not client_id:
             return HealthStatus.degraded("Spotify credentials not configured")
 
@@ -211,8 +207,8 @@ async def _refresh_access_token(ctx) -> str | None:
         if not creds or not creds.get("refresh_token"):
             return None
 
-        client_id = ctx.config.get("spotify_client_id")
-        client_secret = ctx.config.get("spotify_client_secret")
+        client_id = await ctx.secrets.get("spotify_client_id")
+        client_secret = await ctx.secrets.get("spotify_client_secret")
         if not client_id or not client_secret:
             return None
 
