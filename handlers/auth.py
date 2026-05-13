@@ -15,7 +15,7 @@ from spotify_config import (
     SP_AUTH_URL, SP_TOKEN_URL, SP_SCOPES,
     OAUTH_STATE_COLLECTION, CRED_COLLECTION,
 )
-from app_helpers import _get_access_token, _save_token, _require_user_id
+from app_helpers import _get_access_token, _save_token, _save_token_to_store, _require_user_id
 
 log = logging.getLogger("spotify.auth")
 
@@ -56,9 +56,17 @@ async def fn_connect_spotify(ctx, params: ConnectSpotifyParams) -> ActionResult:
         state = str(uuid.uuid4())
         redirect_uri = ctx.webhook_url("callback")
 
-        # Store credentials temporarily in state so the webhook callback
-        # (which runs in __webhook__ context without user secrets) can use them.
-        await ctx.store.create(OAUTH_STATE_COLLECTION, {
+        # OAuth state must be stored under user_id="__webhook__" so the
+        # callback (which runs under __webhook__ context) can query it.
+        from imperal_sdk.store.client import StoreClient
+        webhook_store = StoreClient(
+            gateway_url=ctx.store._gateway_url,
+            service_token=ctx.store._auth_token,
+            extension_id=ctx.store._extension_id,
+            user_id="__webhook__",
+            tenant_id=ctx.store._tenant_id,
+        )
+        await webhook_store.create(OAUTH_STATE_COLLECTION, {
             "user_id": user_id,
             "state": state,
             "client_id": client_id,
@@ -185,7 +193,17 @@ async def oauth_callback(ctx, headers, body, query_params) -> dict:
             return WebhookResponse.error(f"Token exchange failed (HTTP {resp.status_code}).", 500)
 
         token_data = resp.json()
-        await _save_token(ctx, user_id, token_data)
+
+        # Save token under the real user_id (not __webhook__)
+        from imperal_sdk.store.client import StoreClient
+        user_store = StoreClient(
+            gateway_url=ctx.store._gateway_url,
+            service_token=ctx.store._auth_token,
+            extension_id=ctx.store._extension_id,
+            user_id=user_id,
+            tenant_id=ctx.store._tenant_id,
+        )
+        await _save_token_to_store(user_store, user_id, token_data)
 
         return WebhookResponse.ok({"connected": True, "message": "Spotify connected. You can close this window."})
     except Exception as e:

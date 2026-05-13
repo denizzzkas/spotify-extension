@@ -28,6 +28,25 @@ async def _get_stored_creds(ctx) -> dict | None:
     return None
 
 
+async def _save_token_to_store(store, user_id: str, token_data: dict) -> None:
+    """Save token using a provided store client (for webhook context)."""
+    try:
+        record = {
+            "user_id": user_id,
+            "access_token": token_data.get("access_token", ""),
+            "refresh_token": token_data.get("refresh_token", ""),
+            "scope": token_data.get("scope", ""),
+            "token_type": token_data.get("token_type", "Bearer"),
+        }
+        page = await store.query(CRED_COLLECTION, where={"user_id": user_id})
+        if page.data:
+            await store.update(CRED_COLLECTION, page.data[0].id, record)
+        else:
+            await store.create(CRED_COLLECTION, record)
+    except Exception as e:
+        log.error("save_token_to_store failed: %s", e)
+
+
 async def _save_token(ctx, user_id: str, token_data: dict) -> None:
     try:
         record = {
