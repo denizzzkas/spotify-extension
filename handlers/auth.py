@@ -47,20 +47,27 @@ async def fn_connect_spotify(ctx, params: ConnectSpotifyParams) -> ActionResult:
 
     try:
         client_id = await ctx.secrets.get("spotify_client_id")
-        if not client_id:
+        client_secret = await ctx.secrets.get("spotify_client_secret")
+        if not client_id or not client_secret:
             return ActionResult.error(
-                "Spotify client_id not configured. Set it in extension settings."
+                "Spotify credentials not configured. Set client_id and client_secret in extension settings."
             )
 
         state = str(uuid.uuid4())
+        redirect_uri = ctx.webhook_url("callback")
+
+        # Store credentials temporarily in state so the webhook callback
+        # (which runs in __webhook__ context without user secrets) can use them.
         await ctx.store.create(OAUTH_STATE_COLLECTION, {
             "user_id": user_id,
             "state": state,
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "redirect_uri": redirect_uri,
             "created_at": datetime.now(timezone.utc).isoformat(),
         })
 
         import urllib.parse
-        redirect_uri = ctx.webhook_url("/callback")
         auth_url = SP_AUTH_URL + "?" + urllib.parse.urlencode({
             "client_id": client_id,
             "redirect_uri": redirect_uri,
@@ -95,10 +102,8 @@ async def fn_disconnect_spotify(ctx, params: DisconnectSpotifyParams) -> ActionR
         page = await ctx.store.query(CRED_COLLECTION, where={"user_id": user_id})
         if not page.data:
             return ActionResult.success(data={"disconnected": False}, summary="Spotify was not connected")
-
         for doc in page.data:
             await ctx.store.delete(CRED_COLLECTION, doc.id)
-
         return ActionResult.success(data={"disconnected": True}, summary="Spotify account disconnected")
     except Exception as e:
         log.error("disconnect_spotify failed: %s", e)
@@ -114,18 +119,11 @@ async def fn_check_connection(ctx, params: CheckConnectionParams) -> ActionResul
     user_id = await _require_user_id(ctx)
     if isinstance(user_id, ActionResult):
         return user_id
-
     try:
         token = await _get_access_token(ctx)
         if not token:
-            return ActionResult.success(
-                data={"connected": False},
-                summary="Not connected to Spotify",
-            )
-        return ActionResult.success(
-            data={"connected": True, "token_available": True},
-            summary="Connected to Spotify",
-        )
+            return ActionResult.success(data={"connected": False}, summary="Not connected to Spotify")
+        return ActionResult.success(data={"connected": True}, summary="Connected to Spotify")
     except Exception as e:
         log.error("check_connection failed: %s", e)
         return ActionResult.error(f"Status check failed: {str(e)}")
@@ -133,7 +131,8 @@ async def fn_check_connection(ctx, params: CheckConnectionParams) -> ActionResul
 
 # ─── OAuth webhook callback ────────────────────────────────────────────────── #
 
-@ext.webhook("/callback", method="GET")
+# Path without leading slash → tool name = __webhook__callback (matches platform dispatch)
+@ext.webhook("callback", method="GET")
 async def oauth_callback(ctx, headers, body, query_params) -> dict:
     from imperal_sdk import WebhookResponse
 
@@ -149,26 +148,26 @@ async def oauth_callback(ctx, headers, body, query_params) -> dict:
         if not state:
             return WebhookResponse.error("Missing state parameter", 400)
 
-        # Look up which user started this OAuth flow
+        # Look up the OAuth state record which contains user_id + credentials
         page = await ctx.store.query(OAUTH_STATE_COLLECTION, where={"state": state})
         if not page.data:
             return WebhookResponse.error("Invalid or expired state — please try connect_spotify() again.", 400)
 
-        user_id = page.data[0].data.get("user_id")
+        record = page.data[0].data
+        user_id = record.get("user_id")
+        client_id = record.get("client_id")
+        client_secret = record.get("client_secret")
+        redirect_uri = record.get("redirect_uri")
+
+        # Delete state record immediately (credentials should not linger)
         await ctx.store.delete(OAUTH_STATE_COLLECTION, page.data[0].id)
 
-        # Get user-scoped context to access secrets and store tokens
-        user_ctx = ctx.as_user(user_id)
-
-        client_id = await user_ctx.secrets.get("spotify_client_id")
-        client_secret = await user_ctx.secrets.get("spotify_client_secret")
         if not client_id or not client_secret:
-            return WebhookResponse.error("Spotify credentials not configured", 500)
+            return WebhookResponse.error("Spotify credentials missing from state", 500)
 
         credentials = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
-        redirect_uri = user_ctx.webhook_url("/callback")
 
-        resp = await user_ctx.http.post(
+        resp = await ctx.http.post(
             SP_TOKEN_URL,
             headers={
                 "Authorization": f"Basic {credentials}",
@@ -186,7 +185,7 @@ async def oauth_callback(ctx, headers, body, query_params) -> dict:
             return WebhookResponse.error(f"Token exchange failed (HTTP {resp.status_code}).", 500)
 
         token_data = resp.json()
-        await _save_token(user_ctx, user_id, token_data)
+        await _save_token(ctx, user_id, token_data)
 
         return WebhookResponse.ok({"connected": True, "message": "Spotify connected. You can close this window."})
     except Exception as e:
