@@ -10,11 +10,12 @@ from pydantic import BaseModel, Field
 
 from imperal_sdk import ActionResult
 
-from app import (
-    ext, chat, SP_AUTH_URL, SP_TOKEN_URL, SP_REDIRECT_URI, SP_SCOPES,
+from app import ext, chat
+from spotify_config import (
+    SP_AUTH_URL, SP_TOKEN_URL, SP_REDIRECT_URI, SP_SCOPES,
     OAUTH_STATE_COLLECTION, CRED_COLLECTION,
-    _get_access_token, _save_token, _require_user_id,
 )
+from app_helpers import _get_access_token, _save_token, _require_user_id
 
 log = logging.getLogger("spotify.auth")
 

@@ -1,50 +1,27 @@
-"""Spotify extension — config, helpers, Extension setup."""
+"""Spotify extension — Extension setup, lifecycle, and cache models."""
 from __future__ import annotations
 
 import logging
-import os
 from pathlib import Path
 
 from pydantic import BaseModel
 
 from imperal_sdk import Extension
-from imperal_sdk.chat import ChatExtension, ActionResult
+from imperal_sdk.chat import ChatExtension
 from imperal_sdk.types.health import HealthStatus
 
+from spotify_config import (
+    SP_API_BASE, SP_AUTH_URL, SP_TOKEN_URL, SP_REDIRECT_URI, SP_SCOPES,
+    CRED_COLLECTION, OAUTH_STATE_COLLECTION, DEMO_PLAYER_STATE, DEMO_PANEL_STATE,
+    DEFAULT_SEARCH_LIMIT, DEFAULT_HISTORY_LIMIT, DEFAULT_LIKES_LIMIT, MAX_LIMIT,
+)
+from app_helpers import (
+    _get_access_token, _get_stored_creds, _save_token, _refresh_access_token,
+    _clear_all_credentials, _require_user_id, _require_auth, _get_auth_headers,
+    _spotify_error,
+)
+
 log = logging.getLogger("spotify")
-
-# ─── Config ───────────────────────────────────────────────────────────────── #
-
-SP_API_BASE = "https://api.spotify.com/v1"
-SP_AUTH_URL = "https://accounts.spotify.com/authorize"
-SP_TOKEN_URL = "https://accounts.spotify.com/api/token"
-SP_REDIRECT_URI = "https://imperal.cloud/v1/ext/spotify-extension/webhook/callback"
-
-SP_SCOPES = " ".join([
-    "user-read-private",
-    "user-read-email",
-    "user-library-read",
-    "user-library-modify",
-    "user-read-recently-played",
-    "playlist-read-private",
-    "playlist-read-collaborative",
-    "playlist-modify-public",
-    "playlist-modify-private",
-])
-
-# ─── Store collections ───────────────────────────────────────────────────── #
-
-CRED_COLLECTION = "sp_credentials"
-OAUTH_STATE_COLLECTION = "sp_oauth_states"
-DEMO_PLAYER_STATE = "sp_demo_player"
-DEMO_PANEL_STATE = "sp_demo_panel"
-
-# ─── Cache defaults ────────────────────────────────────────────────────── #
-
-DEFAULT_SEARCH_LIMIT = 20
-DEFAULT_HISTORY_LIMIT = 50
-DEFAULT_LIKES_LIMIT = 50
-MAX_LIMIT = 50
 
 # ─── Extension ────────────────────────────────────────────────────────────── #
 

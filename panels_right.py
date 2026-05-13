@@ -3,7 +3,9 @@ import logging
 
 from imperal_sdk import ui
 
-from app import ext, SP_API_BASE, _get_access_token, _refresh_access_token
+from app import ext
+from spotify_config import SP_API_BASE
+from app_helpers import _get_access_token, _refresh_access_token
 from cache_models import DetailModel
 from demo_data import DEMO_TRACKS, DEMO_PLAYLIST_ID, DEMO_PLAYLIST_NAME
 from utils import format_track

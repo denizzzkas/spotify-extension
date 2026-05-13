@@ -1,10 +1,10 @@
-"""Spotify API constants and Imperal store collection names."""
+"""Spotify API constants, OAuth config, and Imperal store collection names."""
 
-# Spotify API
+# Spotify API endpoints
 SP_API_BASE = "https://api.spotify.com/v1"
 SP_AUTH_URL = "https://accounts.spotify.com/authorize"
 SP_TOKEN_URL = "https://accounts.spotify.com/api/token"
-SP_REDIRECT_URI = "https://imperal.cloud/v1/ext/spotify/webhook/oauth/callback"
+SP_REDIRECT_URI = "https://imperal.cloud/v1/ext/spotify-extension/webhook/callback"
 
 # OAuth scopes
 SP_SCOPES = " ".join([
@@ -22,10 +22,11 @@ SP_SCOPES = " ".join([
 # Store collections
 CRED_COLLECTION = "sp_credentials"
 OAUTH_STATE_COLLECTION = "sp_oauth_states"
-DEMO_STATE_COLLECTION = "sp_demo_state"
+DEMO_PLAYER_STATE = "sp_demo_player"
+DEMO_PANEL_STATE = "sp_demo_panel"
 
 # Pagination defaults
 DEFAULT_SEARCH_LIMIT = 20
 DEFAULT_HISTORY_LIMIT = 50
 DEFAULT_LIKES_LIMIT = 50
-MAX_LIMIT = 50  # Spotify max per request
+MAX_LIMIT = 50

@@ -1,7 +1,7 @@
 """Tests for search, playlists, and library handlers."""
 from imperal_sdk.testing import MockContext
 
-from app import _save_token
+from app_helpers import _save_token
 from handlers.search import fn_search_tracks, SearchTracksParams
 from handlers.playlists import (
     fn_get_playlists, GetPlaylistsParams,

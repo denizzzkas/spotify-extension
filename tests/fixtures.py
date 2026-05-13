@@ -1,6 +1,6 @@
 """Shared test fixtures for Spotify extension tests."""
 from imperal_sdk.testing import MockContext, MockSecretStore, MockHTTP
-from app import _save_token
+from app_helpers import _save_token
 
 SAMPLE_TRACK = {
     "id": "4iV5W9uYEdYUVa79Axb7Rh",

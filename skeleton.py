@@ -1,7 +1,9 @@
 """Spotify · Skeleton tools — library statistics and now playing for LLM classifier."""
 import logging
 
-from app import ext, _get_access_token, _refresh_access_token, SP_API_BASE, NowPlayingModel
+from app import ext, NowPlayingModel
+from spotify_config import SP_API_BASE
+from app_helpers import _get_access_token, _refresh_access_token
 
 log = logging.getLogger("spotify")
 

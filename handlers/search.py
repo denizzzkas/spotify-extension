@@ -7,10 +7,9 @@ from pydantic import BaseModel, Field
 
 from imperal_sdk import ActionResult
 
-from app import (
-    chat, SP_API_BASE, DEFAULT_SEARCH_LIMIT, MAX_LIMIT,
-    _require_auth, _refresh_access_token, _spotify_error,
-)
+from app import chat
+from spotify_config import SP_API_BASE, DEFAULT_SEARCH_LIMIT, MAX_LIMIT
+from app_helpers import _require_auth, _refresh_access_token, _spotify_error
 from utils import format_track
 
 log = logging.getLogger("spotify.search")
