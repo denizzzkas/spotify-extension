@@ -11,7 +11,7 @@ from imperal_sdk.chat import ChatExtension
 from imperal_sdk.types.health import HealthStatus
 
 from spotify_config import (
-    SP_API_BASE, SP_AUTH_URL, SP_TOKEN_URL, SP_REDIRECT_URI, SP_SCOPES,
+    SP_API_BASE, SP_AUTH_URL, SP_TOKEN_URL, SP_SCOPES,
     CRED_COLLECTION, OAUTH_STATE_COLLECTION, DEMO_PLAYER_STATE, DEMO_PANEL_STATE,
     DEFAULT_SEARCH_LIMIT, DEFAULT_HISTORY_LIMIT, DEFAULT_LIKES_LIMIT, MAX_LIMIT,
 )

@@ -6,13 +6,13 @@ import logging
 import uuid
 from datetime import datetime, timezone
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from imperal_sdk import ActionResult
 
 from app import ext, chat
 from spotify_config import (
-    SP_AUTH_URL, SP_TOKEN_URL, SP_REDIRECT_URI, SP_SCOPES,
+    SP_AUTH_URL, SP_TOKEN_URL, SP_SCOPES,
     OAUTH_STATE_COLLECTION, CRED_COLLECTION,
 )
 from app_helpers import _get_access_token, _save_token, _require_user_id
@@ -59,15 +59,15 @@ async def fn_connect_spotify(ctx, params: ConnectSpotifyParams) -> ActionResult:
             "created_at": datetime.now(timezone.utc).isoformat(),
         })
 
-        params_dict = {
+        import urllib.parse
+        redirect_uri = ctx.webhook_url("/callback")
+        auth_url = SP_AUTH_URL + "?" + urllib.parse.urlencode({
             "client_id": client_id,
-            "redirect_uri": SP_REDIRECT_URI,
+            "redirect_uri": redirect_uri,
             "response_type": "code",
             "scope": SP_SCOPES,
             "state": state,
-        }
-        import urllib.parse
-        auth_url = SP_AUTH_URL + "?" + urllib.parse.urlencode(params_dict)
+        })
 
         return ActionResult.success(
             data={"auth_url": auth_url},
@@ -76,6 +76,7 @@ async def fn_connect_spotify(ctx, params: ConnectSpotifyParams) -> ActionResult:
     except Exception as e:
         log.error("connect_spotify failed: %s", e)
         return ActionResult.error(f"Connection failed: {str(e)}")
+
 
 @chat.function(
     "disconnect_spotify",
@@ -103,6 +104,7 @@ async def fn_disconnect_spotify(ctx, params: DisconnectSpotifyParams) -> ActionR
         log.error("disconnect_spotify failed: %s", e)
         return ActionResult.error(f"Disconnect failed: {str(e)}")
 
+
 @chat.function(
     "check_spotify_connection",
     action_type="read",
@@ -120,7 +122,6 @@ async def fn_check_connection(ctx, params: CheckConnectionParams) -> ActionResul
                 data={"connected": False},
                 summary="Not connected to Spotify",
             )
-
         return ActionResult.success(
             data={"connected": True, "token_available": True},
             summary="Connected to Spotify",
@@ -128,6 +129,7 @@ async def fn_check_connection(ctx, params: CheckConnectionParams) -> ActionResul
     except Exception as e:
         log.error("check_connection failed: %s", e)
         return ActionResult.error(f"Status check failed: {str(e)}")
+
 
 # ─── OAuth webhook callback ────────────────────────────────────────────────── #
 
@@ -147,6 +149,7 @@ async def oauth_callback(ctx, headers, body, query_params) -> dict:
         if not state:
             return WebhookResponse.error("Missing state parameter", 400)
 
+        # Look up which user started this OAuth flow
         page = await ctx.store.query(OAUTH_STATE_COLLECTION, where={"state": state})
         if not page.data:
             return WebhookResponse.error("Invalid or expired state — please try connect_spotify() again.", 400)
@@ -154,14 +157,18 @@ async def oauth_callback(ctx, headers, body, query_params) -> dict:
         user_id = page.data[0].data.get("user_id")
         await ctx.store.delete(OAUTH_STATE_COLLECTION, page.data[0].id)
 
-        client_id = await ctx.secrets.get("spotify_client_id")
-        client_secret = await ctx.secrets.get("spotify_client_secret")
+        # Get user-scoped context to access secrets and store tokens
+        user_ctx = ctx.as_user(user_id)
+
+        client_id = await user_ctx.secrets.get("spotify_client_id")
+        client_secret = await user_ctx.secrets.get("spotify_client_secret")
         if not client_id or not client_secret:
             return WebhookResponse.error("Spotify credentials not configured", 500)
 
         credentials = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
+        redirect_uri = user_ctx.webhook_url("/callback")
 
-        resp = await ctx.http.post(
+        resp = await user_ctx.http.post(
             SP_TOKEN_URL,
             headers={
                 "Authorization": f"Basic {credentials}",
@@ -170,7 +177,7 @@ async def oauth_callback(ctx, headers, body, query_params) -> dict:
             data={
                 "grant_type": "authorization_code",
                 "code": code,
-                "redirect_uri": SP_REDIRECT_URI,
+                "redirect_uri": redirect_uri,
             },
         )
 
@@ -179,7 +186,7 @@ async def oauth_callback(ctx, headers, body, query_params) -> dict:
             return WebhookResponse.error(f"Token exchange failed (HTTP {resp.status_code}).", 500)
 
         token_data = resp.json()
-        await _save_token(ctx, user_id, token_data)
+        await _save_token(user_ctx, user_id, token_data)
 
         return WebhookResponse.ok({"connected": True, "message": "Spotify connected. You can close this window."})
     except Exception as e:
