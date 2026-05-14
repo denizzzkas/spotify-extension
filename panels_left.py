@@ -3,7 +3,7 @@ import logging
 
 from imperal_sdk import ui
 
-from app import ext
+from app import ext, NowPlayingModel
 from panels_demo import render_demo_state
 from spotify_config import SP_API_BASE
 from app_helpers import _get_access_token, _refresh_access_token
@@ -232,5 +232,20 @@ setTimeout(function() {{
             },
         ])
     )
+
+    # Spotify Embed player — shown when a track is selected
+    try:
+        now_playing = await ctx.cache.get(key="now_playing", model=NowPlayingModel)
+        if now_playing and now_playing.id:
+            embed_url = f"https://open.spotify.com/embed/track/{now_playing.id}?utm_source=generator&theme=0"
+            embed_html = (
+                f'<iframe src="{embed_url}" width="100%" height="152" frameborder="0" '
+                f'allowtransparency="true" allow="encrypted-media" '
+                f'style="border-radius:12px;display:block;"></iframe>'
+            )
+            children.append(ui.Divider())
+            children.append(ui.Html(content=embed_html, sandbox=False))
+    except Exception as e:
+        log.error("Spotify embed failed: %s", e)
 
     return ui.Stack(children, direction="v", gap=2)
