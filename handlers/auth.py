@@ -41,13 +41,14 @@ class CheckConnectionParams(BaseModel):
     description="Connect your Spotify account via OAuth 2.0. Returns an authorisation URL to visit.",
 )
 async def fn_connect_spotify(ctx, params: ConnectSpotifyParams) -> ActionResult:
+    """Connect your Spotify account via OAuth 2.0. Returns an authorisation URL to visit."""
     user_id = await _require_user_id(ctx)
     if isinstance(user_id, ActionResult):
         return user_id
 
     try:
-        client_id = await ctx.secrets.get("spotify_client_id")
-        client_secret = await ctx.secrets.get("spotify_client_secret")
+        client_id = ctx.config.get("spotify_client_id")
+        client_secret = ctx.config.get("spotify_client_secret")
         if not client_id or not client_secret:
             return ActionResult.error(
                 "Spotify credentials not configured. Set client_id and client_secret in extension settings."
@@ -102,6 +103,7 @@ async def fn_connect_spotify(ctx, params: ConnectSpotifyParams) -> ActionResult:
     description="Disconnect your Spotify account and remove all stored credentials.",
 )
 async def fn_disconnect_spotify(ctx, params: DisconnectSpotifyParams) -> ActionResult:
+    """Disconnect your Spotify account and remove all stored credentials."""
     user_id = await _require_user_id(ctx)
     if isinstance(user_id, ActionResult):
         return user_id
@@ -124,6 +126,7 @@ async def fn_disconnect_spotify(ctx, params: DisconnectSpotifyParams) -> ActionR
     description="Check if you are connected to Spotify and get your profile info.",
 )
 async def fn_check_connection(ctx, params: CheckConnectionParams) -> ActionResult:
+    """Check if you are connected to Spotify and get your profile info."""
     user_id = await _require_user_id(ctx)
     if isinstance(user_id, ActionResult):
         return user_id
@@ -205,7 +208,20 @@ async def oauth_callback(ctx, headers, body, query_params) -> dict:
         )
         await _save_token_to_store(user_store, user_id, token_data)
 
-        return WebhookResponse.ok({"connected": True, "message": "Spotify connected. You can close this window."})
+        # Emit event to trigger panel refresh for the connected user
+        try:
+            await ctx.extensions.emit("spotify-extension.connected", {"user_id": user_id})
+        except Exception as e:
+            log.warning("could not emit connected event: %s", e)
+
+        # Return HTML page that auto-closes the OAuth popup window
+        html = """<!DOCTYPE html><html><head><title>Spotify Connected</title>
+<style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#191414;color:#1DB954;}
+h1{font-size:24px;}p{color:#fff;margin-top:8px;}</style></head>
+<body><div style="text-align:center"><h1>✓ Spotify Connected</h1>
+<p>You can close this window and go back to the app.</p></div>
+<script>setTimeout(()=>window.close(),2000);</script></body></html>"""
+        return WebhookResponse(status_code=200, body=html, headers={"Content-Type": "text/html"})
     except Exception as e:
         log.error("oauth_callback failed: %s", e)
         return WebhookResponse.error(f"Callback failed: {str(e)}", 500)

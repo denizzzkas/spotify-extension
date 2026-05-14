@@ -80,9 +80,11 @@ class DemoShuffleParams(BaseModel):
     "open_demo_playlist",
     action_type="write",
     effects=["demo:active"],
+    event="spotify-extension.open_demo_playlist",
     description="Open demo playlist (no Spotify login required). Returns demo tracks for testing.",
 )
 async def fn_open_demo_playlist(ctx, params: OpenDemoPlaylistParams) -> ActionResult:
+    """Open demo playlist (no Spotify login required). Returns demo tracks for testing."""
     try:
         await _set_demo_track(ctx, 0)
         return ActionResult.success(
@@ -99,9 +101,11 @@ async def fn_open_demo_playlist(ctx, params: OpenDemoPlaylistParams) -> ActionRe
     "demo_play_track",
     action_type="write",
     effects=["demo:play"],
+    event="spotify-extension.demo_play_track",
     description="Play a specific track from demo playlist.",
 )
 async def fn_demo_play_track(ctx, params: DemoPlayTrackParams) -> ActionResult:
+    """Play a specific track from demo playlist."""
     try:
         index = None
 
@@ -133,9 +137,11 @@ async def fn_demo_play_track(ctx, params: DemoPlayTrackParams) -> ActionResult:
     "demo_next_track",
     action_type="write",
     effects=["demo:next"],
+    event="spotify-extension.demo_next_track",
     description="Skip to next track in demo playlist.",
 )
 async def fn_demo_next_track(ctx, params: DemoNextTrackParams) -> ActionResult:
+    """Skip to next track in demo playlist."""
     try:
         state = await _get_demo_state(ctx)
         if state.get("shuffle", False):
@@ -155,9 +161,11 @@ async def fn_demo_next_track(ctx, params: DemoNextTrackParams) -> ActionResult:
     "demo_prev_track",
     action_type="write",
     effects=["demo:prev"],
+    event="spotify-extension.demo_prev_track",
     description="Go to previous track in demo playlist.",
 )
 async def fn_demo_prev_track(ctx, params: DemoPrevTrackParams) -> ActionResult:
+    """Go to previous track in demo playlist."""
     try:
         state = await _get_demo_state(ctx)
         await _set_demo_track(ctx, state.get("track_index", 0) - 1)
@@ -171,9 +179,11 @@ async def fn_demo_prev_track(ctx, params: DemoPrevTrackParams) -> ActionResult:
     "demo_pause",
     action_type="write",
     effects=["demo:pause"],
+    event="spotify-extension.demo_pause",
     description="Toggle playback pause/resume in demo mode.",
 )
 async def fn_demo_pause(ctx, params: DemoPauseParams) -> ActionResult:
+    """Toggle playback pause/resume in demo mode."""
     try:
         state = await _get_demo_state(ctx)
         new_is_playing = not state.get("is_playing", True)
@@ -189,9 +199,11 @@ async def fn_demo_pause(ctx, params: DemoPauseParams) -> ActionResult:
     "demo_shuffle",
     action_type="write",
     effects=["demo:shuffle"],
+    event="spotify-extension.demo_shuffle",
     description="Toggle shuffle mode in demo playlist.",
 )
 async def fn_demo_shuffle(ctx, params: DemoShuffleParams) -> ActionResult:
+    """Toggle shuffle mode in demo playlist."""
     try:
         state = await _get_demo_state(ctx)
         new_shuffle = not state.get("shuffle", False)

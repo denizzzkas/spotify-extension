@@ -75,6 +75,8 @@ async def panel_search_tracks(ctx, query: str = "", limit: int = 20) -> dict:
 )
 async def panel_spotify(ctx, **kwargs):
     """Left sidebar panel showing authentication state, playlists, and search."""
+    query_param = kwargs.get("query", "")
+
     try:
         token = await _get_access_token(ctx)
     except Exception:
@@ -83,7 +85,10 @@ async def panel_spotify(ctx, **kwargs):
     if not token:
         return await _render_demo_state(ctx)
 
-    # Authenticated state: load cached search and playlists
+    # Authenticated state: run search if query param provided, then load cache
+    if query_param:
+        await panel_search_tracks(ctx, query=query_param)
+
     try:
         search_cache = await ctx.cache.get(key="search", model=SearchModel)
     except Exception:
@@ -107,12 +112,21 @@ async def panel_spotify(ctx, **kwargs):
                     headers=headers,
                     params={"limit": 50},
                 )
+                if resp.status_code == 401:
+                    token = await _refresh_access_token(ctx)
+                    if token:
+                        headers["Authorization"] = f"Bearer {token}"
+                        resp = await ctx.http.get(
+                            f"{SP_API_BASE}/me/playlists",
+                            headers=headers,
+                            params={"limit": 50},
+                        )
                 if resp.ok:
                     playlists = [format_playlist(p) for p in (resp.json().get("items") or [])]
                     await ctx.cache.set(
                         key="playlists",
                         value=PlaylistsModel(items=playlists),
-                        ttl_seconds=120,
+                        ttl_seconds=600,
                     )
         except Exception as e:
             log.error("Failed to fetch playlists: %s", e)
@@ -146,7 +160,7 @@ async def panel_spotify(ctx, **kwargs):
         ui.Input(
             placeholder="Search tracks...",
             param_name="query",
-            on_submit=ui.Call("panel_search_tracks"),
+            on_submit=ui.Call("__panel__spotify"),
         ),
     ]
 
@@ -165,17 +179,17 @@ async def panel_spotify(ctx, **kwargs):
             {
                 "id": "liked_tracks",
                 "title": "Liked Tracks",
-                "children": [ui.Button("Open", size="sm", on_click=ui.Call("open_liked_tracks"))],
+                "children": [ui.Button("Open", size="sm", on_click=ui.Call("__panel__spotify_detail", detail_type="liked_tracks"))],
             },
             {
                 "id": "recent_tracks",
                 "title": "Recent Tracks",
-                "children": [ui.Button("Open", size="sm", on_click=ui.Call("open_recent_tracks"))],
+                "children": [ui.Button("Open", size="sm", on_click=ui.Call("__panel__spotify_detail", detail_type="recent_tracks"))],
             },
             {
                 "id": "profile",
                 "title": "My Profile",
-                "children": [ui.Button("Open", size="sm", on_click=ui.Call("open_profile"))],
+                "children": [ui.Button("Open", size="sm", on_click=ui.Call("__panel__spotify_detail", detail_type="profile"))],
             },
         ])
     )
@@ -185,25 +199,12 @@ async def panel_spotify(ctx, **kwargs):
 
 async def _render_demo_state(ctx) -> ui.Stack:
     """Render demo/unauthenticated state with demo player."""
-    client_id = ""
-    try:
-        client_id = await ctx.secrets.get("spotify_client_id") or ""
-    except Exception:
-        pass
-
-    children = [ui.Header("Spotify", level=3)]
-
-    if not client_id:
-        children.append(ui.Alert(
-            "Spotify credentials are not configured. Add client_id and client_secret in extension settings.",
-            type="error",
-        ))
-    else:
-        children += [
-            ui.Alert("Not connected. Click below to link your Spotify account.", type="warn"),
-            ui.Button("Connect Spotify", variant="primary", icon="Music",
-                      on_click=ui.Call("connect_spotify")),
-        ]
+    children = [
+        ui.Header("Spotify", level=3),
+        ui.Alert("Connect your Spotify account to get started.", type="info"),
+        ui.Button("Connect Spotify", variant="primary", icon="Music",
+                  on_click=ui.Call("connect_spotify")),
+    ]
 
     children.append(
         ui.Accordion(sections=[{

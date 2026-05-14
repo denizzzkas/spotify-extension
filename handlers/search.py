@@ -28,6 +28,7 @@ class SearchTracksParams(BaseModel):
     description="Search Spotify catalogue for tracks by title or artist (requires Spotify login). Returns up to 50 matching tracks with id, title, artist, duration, preview_url, album_art.",
 )
 async def fn_search_tracks(ctx, params: SearchTracksParams) -> ActionResult:
+    """Search Spotify catalogue for tracks by title or artist (requires Spotify login). Returns up to 50 matching tracks with id, title, artist, duration, preview_url, album_art."""
     token = await _require_auth(ctx)
     if isinstance(token, ActionResult):
         return token

@@ -37,6 +37,7 @@ class PlayPlaylistParams(BaseModel):
     description="Get track info and trigger playback. Returns track metadata with preview URL.",
 )
 async def fn_play_track(ctx, params: PlayTrackParams) -> ActionResult:
+    """Get track info and trigger playback. Returns track metadata with preview URL."""
     token = await _require_auth(ctx)
     if isinstance(token, ActionResult):
         return token
@@ -123,6 +124,7 @@ async def fn_play_track(ctx, params: PlayTrackParams) -> ActionResult:
     description="Get playlist tracks and trigger playback. Returns list of tracks in the playlist.",
 )
 async def fn_play_playlist(ctx, params: PlayPlaylistParams) -> ActionResult:
+    """Get playlist tracks and trigger playback. Returns list of tracks in the playlist."""
     token = await _require_auth(ctx)
     if isinstance(token, ActionResult):
         return token

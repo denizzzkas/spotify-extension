@@ -51,6 +51,7 @@ class GetUserProfileParams(BaseModel):
     description="Get the user's recently played tracks (requires Spotify Premium). Returns list of tracks with full details.",
 )
 async def fn_get_recent_tracks(ctx, params: GetRecentTracksParams) -> ActionResult:
+    """Get the user's recently played tracks (requires Spotify Premium). Returns list of tracks with full details."""
     token = await _require_auth(ctx)
     if isinstance(token, ActionResult):
         return token
@@ -102,6 +103,7 @@ async def fn_get_recent_tracks(ctx, params: GetRecentTracksParams) -> ActionResu
     description="Get all tracks saved/liked in the user's Spotify library. Returns list of liked tracks with full details.",
 )
 async def fn_get_liked_tracks(ctx, params: GetLikedTracksParams) -> ActionResult:
+    """Get all tracks saved/liked in the user's Spotify library. Returns list of liked tracks with full details."""
     token = await _require_auth(ctx)
     if isinstance(token, ActionResult):
         return token
@@ -154,6 +156,7 @@ async def fn_get_liked_tracks(ctx, params: GetLikedTracksParams) -> ActionResult
     description="Save a track to the user's Spotify library (like it).",
 )
 async def fn_like_track(ctx, params: LikeTrackParams) -> ActionResult:
+    """Save a track to the user's Spotify library (like it)."""
     token = await _require_auth(ctx)
     if isinstance(token, ActionResult):
         return token
@@ -201,6 +204,7 @@ async def fn_like_track(ctx, params: LikeTrackParams) -> ActionResult:
     description="Remove a track from the user's Spotify library (unlike it).",
 )
 async def fn_unlike_track(ctx, params: UnlikeTrackParams) -> ActionResult:
+    """Remove a track from the user's Spotify library (unlike it)."""
     token = await _require_auth(ctx)
     if isinstance(token, ActionResult):
         return token
@@ -244,6 +248,7 @@ async def fn_unlike_track(ctx, params: UnlikeTrackParams) -> ActionResult:
     description="Get the authenticated user's Spotify profile information including username, followers, and subscription type.",
 )
 async def fn_get_user_profile(ctx, params: GetUserProfileParams) -> ActionResult:
+    """Get the authenticated user's Spotify profile information including username, followers, and subscription type."""
     token = await _require_auth(ctx)
     if isinstance(token, ActionResult):
         return token

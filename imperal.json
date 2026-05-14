@@ -1,6 +1,6 @@
 {
   "manifest_schema_version": 3,
-  "sdk_version": "4.2.9",
+  "sdk_version": "4.2.15",
   "app_id": "spotify-extension",
   "version": "2.0.0",
   "name": "Spotify",
@@ -481,7 +481,7 @@
         "type": "object"
       },
       "return_schema": {},
-      "event": "",
+      "event": "spotify-extension.open_demo_playlist",
       "scopes": [],
       "owner_chat_tool": "spotify"
     },
@@ -509,7 +509,7 @@
         "type": "object"
       },
       "return_schema": {},
-      "event": "",
+      "event": "spotify-extension.demo_play_track",
       "scopes": [],
       "owner_chat_tool": "spotify"
     },
@@ -528,7 +528,7 @@
         "type": "object"
       },
       "return_schema": {},
-      "event": "",
+      "event": "spotify-extension.demo_next_track",
       "scopes": [],
       "owner_chat_tool": "spotify"
     },
@@ -547,7 +547,7 @@
         "type": "object"
       },
       "return_schema": {},
-      "event": "",
+      "event": "spotify-extension.demo_prev_track",
       "scopes": [],
       "owner_chat_tool": "spotify"
     },
@@ -566,7 +566,7 @@
         "type": "object"
       },
       "return_schema": {},
-      "event": "",
+      "event": "spotify-extension.demo_pause",
       "scopes": [],
       "owner_chat_tool": "spotify"
     },
@@ -585,7 +585,7 @@
         "type": "object"
       },
       "return_schema": {},
-      "event": "",
+      "event": "spotify-extension.demo_shuffle",
       "scopes": [],
       "owner_chat_tool": "spotify"
     },
@@ -636,6 +636,24 @@
   "events": {
     "subscribes": [],
     "emits": [
+      {
+        "type": "spotify-extension.demo_shuffle"
+      },
+      {
+        "type": "spotify-extension.demo_pause"
+      },
+      {
+        "type": "spotify-extension.demo_prev_track"
+      },
+      {
+        "type": "spotify-extension.demo_next_track"
+      },
+      {
+        "type": "spotify-extension.demo_play_track"
+      },
+      {
+        "type": "spotify-extension.open_demo_playlist"
+      },
       {
         "type": "spotify-extension.playback.previous"
       },
@@ -692,27 +710,9 @@
       "signature": "(ctx) -> 'None'"
     }
   },
-  "secrets": [
-    {
-      "name": "spotify_client_id",
-      "description": "Spotify OAuth Client ID from developer.spotify.com",
-      "required": true,
-      "write_mode": "user",
-      "max_bytes": 256
-    },
-    {
-      "name": "spotify_client_secret",
-      "description": "Spotify OAuth Client Secret from developer.spotify.com",
-      "required": true,
-      "write_mode": "user",
-      "max_bytes": 512
-    },
-    {
-      "name": "genius_access_token",
-      "description": "Genius API access token for lyrics lookup (optional)",
-      "required": false,
-      "write_mode": "user",
-      "max_bytes": 256
-    }
-  ]
+  "config_defaults": {
+    "spotify_client_id": "",
+    "spotify_client_secret": "",
+    "genius_access_token": ""
+  }
 }

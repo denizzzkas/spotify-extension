@@ -11,6 +11,7 @@ from imperal_sdk import ActionResult
 from app import chat
 from spotify_config import SP_API_BASE, MAX_LIMIT
 from app_helpers import _require_auth, _refresh_access_token, _spotify_error
+from cache_models import PlaylistsModel
 from utils import format_track, format_playlist, to_spotify_uri
 
 log = logging.getLogger("spotify.playlists")
@@ -56,6 +57,7 @@ async def _get_my_spotify_id(ctx, headers: dict) -> str | None:
     description="Get all playlists owned or followed by the authenticated user. Returns list of playlists with id, title, track_count, image_url.",
 )
 async def fn_get_playlists(ctx, params: GetPlaylistsParams) -> ActionResult:
+    """Get all playlists owned or followed by the authenticated user. Returns list of playlists with id, title, track_count, image_url."""
     token = await _require_auth(ctx)
     if isinstance(token, ActionResult):
         return token
@@ -81,6 +83,11 @@ async def fn_get_playlists(ctx, params: GetPlaylistsParams) -> ActionResult:
         raw_list = resp.json().get("items") or []
         playlists = [format_playlist(p) for p in raw_list]
 
+        try:
+            await ctx.cache.set(key="playlists", value=PlaylistsModel(items=playlists), ttl_seconds=600)
+        except Exception as e:
+            log.error("Failed to cache playlists: %s", e)
+
         return ActionResult.success(
             data={"playlists": playlists, "count": len(playlists)},
             summary=f"Found {len(playlists)} playlist(s)",
@@ -95,6 +102,7 @@ async def fn_get_playlists(ctx, params: GetPlaylistsParams) -> ActionResult:
     description="Get all tracks in a specific Spotify playlist. Returns list of tracks with full details.",
 )
 async def fn_get_playlist_tracks(ctx, params: GetPlaylistTracksParams) -> ActionResult:
+    """Get all tracks in a specific Spotify playlist. Returns list of tracks with full details."""
     token = await _require_auth(ctx)
     if isinstance(token, ActionResult):
         return token
@@ -137,6 +145,7 @@ async def fn_get_playlist_tracks(ctx, params: GetPlaylistTracksParams) -> Action
     description="Create a new playlist on the user's Spotify account. Returns playlist_id and playlist details.",
 )
 async def fn_create_playlist(ctx, params: CreatePlaylistParams) -> ActionResult:
+    """Create a new playlist on the user's Spotify account. Returns playlist_id and playlist details."""
     token = await _require_auth(ctx)
     if isinstance(token, ActionResult):
         return token
@@ -206,6 +215,7 @@ async def fn_create_playlist(ctx, params: CreatePlaylistParams) -> ActionResult:
     description="Add a track to an existing Spotify playlist. Returns updated playlist info.",
 )
 async def fn_add_track_to_playlist(ctx, params: AddTrackToPlaylistParams) -> ActionResult:
+    """Add a track to an existing Spotify playlist. Returns updated playlist info."""
     token = await _require_auth(ctx)
     if isinstance(token, ActionResult):
         return token
@@ -252,6 +262,7 @@ async def fn_add_track_to_playlist(ctx, params: AddTrackToPlaylistParams) -> Act
     description="Remove a track from a Spotify playlist. Returns updated playlist info.",
 )
 async def fn_remove_track_from_playlist(ctx, params: RemoveTrackFromPlaylistParams) -> ActionResult:
+    """Remove a track from a Spotify playlist. Returns updated playlist info."""
     token = await _require_auth(ctx)
     if isinstance(token, ActionResult):
         return token
