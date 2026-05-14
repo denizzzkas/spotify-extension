@@ -136,6 +136,32 @@ async def _get_auth_headers(ctx) -> dict | None:
     return None
 
 
+async def _spotify_call(ctx, method: str, url: str, **kwargs):
+    """Authenticated Spotify API call with automatic 401 refresh-and-retry. Returns (resp, err)."""
+    token = await _require_auth(ctx)
+    if isinstance(token, ActionResult):
+        return None, token
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    resp = await getattr(ctx.http, method)(url, headers=headers, **kwargs)
+    if resp.status_code == 401:
+        token = await _refresh_access_token(ctx)
+        if not token:
+            return None, ActionResult.error("Spotify token expired. Please reconnect via connect_spotify().")
+        headers["Authorization"] = f"Bearer {token}"
+        resp = await getattr(ctx.http, method)(url, headers=headers, **kwargs)
+    return resp, None
+
+
+def _spotify_err(resp) -> ActionResult:
+    """Build ActionResult from a failed Spotify response, including Spotify's own message."""
+    try:
+        detail = resp.json().get("error", {}).get("message", "")
+    except Exception:
+        detail = resp.text or ""
+    msg = _spotify_error(resp.status_code)
+    return ActionResult.error(f"{msg} Spotify says: {detail}" if detail else msg, retryable=(resp.status_code == 429))
+
+
 def _spotify_error(status_code: int) -> str:
     messages = {
         400: "Invalid request parameters.",
