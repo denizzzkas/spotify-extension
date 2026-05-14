@@ -91,24 +91,12 @@ async def fn_get_liked_tracks(ctx, params: GetLikedTracksParams) -> ActionResult
 async def fn_like_track(ctx, params: LikeTrackParams) -> ActionResult:
     """Save a track to the user's Spotify library (like it)."""
     try:
-        import json as _json
-        from app_helpers import _require_auth, _get_stored_creds
-        token = await _require_auth(ctx)
-        if isinstance(token, ActionResult):
-            return token
-        url = f"{SP_API_BASE}/me/tracks"
-        body = {"ids": [params.track_id]}
-        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-        resp = await ctx.http.put(url, headers=headers, data=_json.dumps(body))
-        try:
-            resp_body = resp.json()
-        except Exception:
-            resp_body = resp.text
+        resp, err = await _spotify_call(ctx, "put", f"{SP_API_BASE}/me/tracks",
+                                        json={"ids": [params.track_id]})
+        if err:
+            return err
         if not resp.ok:
-            return ActionResult.error(
-                f"HTTP {resp.status_code} — track_id={params.track_id!r} body_sent={body} spotify_response={resp_body}",
-                retryable=False,
-            )
+            return _spotify_err(resp)
         return ActionResult.success(data={"track_id": params.track_id, "liked": True},
                                     summary="Track saved to your library",
                                     refresh_panels=["spotify"])
