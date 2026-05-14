@@ -53,6 +53,8 @@
       },
       "return_schema": {},
       "event": "spotify-extension.connected",
+      "background": false,
+      "long_running": false,
       "scopes": [],
       "owner_chat_tool": "spotify"
     },
@@ -72,6 +74,8 @@
       },
       "return_schema": {},
       "event": "spotify-extension.disconnected",
+      "background": false,
+      "long_running": false,
       "scopes": [],
       "owner_chat_tool": "spotify"
     },
@@ -79,7 +83,7 @@
       "name": "check_spotify_connection",
       "description": "Check if you are connected to Spotify and get your profile info.",
       "action_type": "read",
-      "chain_callable": false,
+      "chain_callable": true,
       "effects": [],
       "id_projection": "",
       "params_schema": {
@@ -89,6 +93,8 @@
       },
       "return_schema": {},
       "event": "",
+      "background": false,
+      "long_running": false,
       "scopes": [],
       "owner_chat_tool": "spotify"
     },
@@ -96,7 +102,7 @@
       "name": "search_tracks",
       "description": "Search Spotify catalogue for tracks by title or artist (requires Spotify login). Returns up to 50 matching tracks with id, title, artist, duration, preview_url, album_art.",
       "action_type": "read",
-      "chain_callable": false,
+      "chain_callable": true,
       "effects": [],
       "id_projection": "",
       "params_schema": {
@@ -123,6 +129,8 @@
       },
       "return_schema": {},
       "event": "",
+      "background": false,
+      "long_running": false,
       "scopes": [],
       "owner_chat_tool": "spotify"
     },
@@ -130,7 +138,7 @@
       "name": "get_playlists",
       "description": "Get all playlists owned or followed by the authenticated user. Returns list of playlists with id, title, track_count, image_url.",
       "action_type": "read",
-      "chain_callable": false,
+      "chain_callable": true,
       "effects": [],
       "id_projection": "",
       "params_schema": {
@@ -140,6 +148,8 @@
       },
       "return_schema": {},
       "event": "",
+      "background": false,
+      "long_running": false,
       "scopes": [],
       "owner_chat_tool": "spotify"
     },
@@ -147,7 +157,7 @@
       "name": "get_playlist_tracks",
       "description": "Get all tracks in a specific Spotify playlist. Returns list of tracks with full details.",
       "action_type": "read",
-      "chain_callable": false,
+      "chain_callable": true,
       "effects": [],
       "id_projection": "",
       "params_schema": {
@@ -166,6 +176,8 @@
       },
       "return_schema": {},
       "event": "",
+      "background": false,
+      "long_running": false,
       "scopes": [],
       "owner_chat_tool": "spotify"
     },
@@ -214,6 +226,8 @@
       },
       "return_schema": {},
       "event": "spotify-extension.playlist.created",
+      "background": false,
+      "long_running": false,
       "scopes": [],
       "owner_chat_tool": "spotify"
     },
@@ -248,6 +262,8 @@
       },
       "return_schema": {},
       "event": "spotify-extension.track.added_to_playlist",
+      "background": false,
+      "long_running": false,
       "scopes": [],
       "owner_chat_tool": "spotify"
     },
@@ -282,6 +298,8 @@
       },
       "return_schema": {},
       "event": "spotify-extension.track.removed_from_playlist",
+      "background": false,
+      "long_running": false,
       "scopes": [],
       "owner_chat_tool": "spotify"
     },
@@ -289,7 +307,7 @@
       "name": "get_recent_tracks",
       "description": "Get the user's recently played tracks (requires Spotify Premium). Returns list of tracks with full details.",
       "action_type": "read",
-      "chain_callable": false,
+      "chain_callable": true,
       "effects": [],
       "id_projection": "",
       "params_schema": {
@@ -308,6 +326,8 @@
       },
       "return_schema": {},
       "event": "",
+      "background": false,
+      "long_running": false,
       "scopes": [],
       "owner_chat_tool": "spotify"
     },
@@ -315,7 +335,7 @@
       "name": "get_liked_tracks",
       "description": "Get all tracks saved/liked in the user's Spotify library. Returns list of liked tracks with full details.",
       "action_type": "read",
-      "chain_callable": false,
+      "chain_callable": true,
       "effects": [],
       "id_projection": "",
       "params_schema": {
@@ -334,6 +354,8 @@
       },
       "return_schema": {},
       "event": "",
+      "background": false,
+      "long_running": false,
       "scopes": [],
       "owner_chat_tool": "spotify"
     },
@@ -362,6 +384,8 @@
       },
       "return_schema": {},
       "event": "spotify-extension.track.liked",
+      "background": false,
+      "long_running": false,
       "scopes": [],
       "owner_chat_tool": "spotify"
     },
@@ -390,6 +414,8 @@
       },
       "return_schema": {},
       "event": "spotify-extension.track.unliked",
+      "background": false,
+      "long_running": false,
       "scopes": [],
       "owner_chat_tool": "spotify"
     },
@@ -397,7 +423,7 @@
       "name": "get_user_profile",
       "description": "Get the authenticated user's Spotify profile information including username, followers, and subscription type.",
       "action_type": "read",
-      "chain_callable": false,
+      "chain_callable": true,
       "effects": [],
       "id_projection": "",
       "params_schema": {
@@ -407,6 +433,8 @@
       },
       "return_schema": {},
       "event": "",
+      "background": false,
+      "long_running": false,
       "scopes": [],
       "owner_chat_tool": "spotify"
     },
@@ -435,6 +463,8 @@
       },
       "return_schema": {},
       "event": "spotify-extension.track.played",
+      "background": false,
+      "long_running": false,
       "scopes": [],
       "owner_chat_tool": "spotify"
     },
@@ -463,6 +493,8 @@
       },
       "return_schema": {},
       "event": "spotify-extension.playlist.played",
+      "background": false,
+      "long_running": false,
       "scopes": [],
       "owner_chat_tool": "spotify"
     },
@@ -482,6 +514,8 @@
       },
       "return_schema": {},
       "event": "spotify-extension.open_demo_playlist",
+      "background": false,
+      "long_running": false,
       "scopes": [],
       "owner_chat_tool": "spotify"
     },
@@ -510,6 +544,8 @@
       },
       "return_schema": {},
       "event": "spotify-extension.demo_play_track",
+      "background": false,
+      "long_running": false,
       "scopes": [],
       "owner_chat_tool": "spotify"
     },
@@ -529,6 +565,8 @@
       },
       "return_schema": {},
       "event": "spotify-extension.demo_next_track",
+      "background": false,
+      "long_running": false,
       "scopes": [],
       "owner_chat_tool": "spotify"
     },
@@ -548,6 +586,8 @@
       },
       "return_schema": {},
       "event": "spotify-extension.demo_prev_track",
+      "background": false,
+      "long_running": false,
       "scopes": [],
       "owner_chat_tool": "spotify"
     },
@@ -567,6 +607,8 @@
       },
       "return_schema": {},
       "event": "spotify-extension.demo_pause",
+      "background": false,
+      "long_running": false,
       "scopes": [],
       "owner_chat_tool": "spotify"
     },
@@ -586,6 +628,8 @@
       },
       "return_schema": {},
       "event": "spotify-extension.demo_shuffle",
+      "background": false,
+      "long_running": false,
       "scopes": [],
       "owner_chat_tool": "spotify"
     },
@@ -593,7 +637,7 @@
       "name": "get_lyrics",
       "description": "Search for song lyrics on Genius. Returns URL to full lyrics page.",
       "action_type": "read",
-      "chain_callable": false,
+      "chain_callable": true,
       "effects": [],
       "id_projection": "",
       "params_schema": {
@@ -618,6 +662,8 @@
       },
       "return_schema": {},
       "event": "",
+      "background": false,
+      "long_running": false,
       "scopes": [],
       "owner_chat_tool": "spotify"
     }
@@ -628,7 +674,7 @@
   "icon_size_bytes": 905,
   "webhooks": [
     {
-      "path": "/callback",
+      "path": "callback",
       "method": "GET",
       "secret_header": ""
     }
