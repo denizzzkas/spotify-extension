@@ -134,29 +134,38 @@ async def panel_spotify(ctx, **kwargs):
     # Inject Web Playback SDK — creates a virtual Spotify device in this browser tab
     webhook_url = ctx.webhook_url("player-ready")
     user_id = ctx.user.imperal_id
-    player_html = f"""<!DOCTYPE html><html><body>
+    player_html = f"""<!DOCTYPE html><html><body style="margin:0;font-family:sans-serif;">
+<div id="sp-status" style="font-size:10px;color:#888;padding:2px 4px;">Initializing Spotify player...</div>
 <script src="https://sdk.scdn.co/spotify-player.js"></script>
 <script>
+function setStatus(msg) {{ document.getElementById('sp-status').textContent = msg; }}
 window.onSpotifyWebPlaybackSDKReady = function() {{
   if (window._spotifyPlayer) return;
+  setStatus('SDK ready, connecting...');
   var player = new Spotify.Player({{
     name: 'Imperal Spotify',
     getOAuthToken: function(cb) {{ cb('{token}'); }},
     volume: 0.8
   }});
   player.addListener('ready', function(data) {{
+    setStatus('Player ready ✓');
     fetch('{webhook_url}', {{
       method: 'POST',
       headers: {{'Content-Type': 'application/json'}},
       body: JSON.stringify({{ device_id: data.device_id, user_id: '{user_id}' }})
-    }});
+    }}).then(function(r) {{ setStatus(r.ok ? 'Device registered ✓' : 'Webhook error: ' + r.status); }})
+      .catch(function(e) {{ setStatus('Webhook failed: ' + e.message); }});
   }});
-  player.addListener('initialization_error', function(e) {{ console.warn('Spotify init error', e.message); }});
-  player.addListener('authentication_error', function(e) {{ console.warn('Spotify auth error', e.message); }});
-  player.addListener('account_error', function(e) {{ console.warn('Spotify account error', e.message); }});
+  player.addListener('not_ready', function() {{ setStatus('Player disconnected'); }});
+  player.addListener('initialization_error', function(e) {{ setStatus('Init error: ' + e.message); }});
+  player.addListener('authentication_error', function(e) {{ setStatus('Auth error: ' + e.message); }});
+  player.addListener('account_error', function(e) {{ setStatus('Account error: ' + e.message); }});
   player.connect();
   window._spotifyPlayer = player;
 }};
+setTimeout(function() {{
+  if (!window._spotifyPlayer) setStatus('SDK failed to load');
+}}, 8000);
 </script>
 </body></html>"""
 
