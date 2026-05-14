@@ -182,7 +182,12 @@ async def fn_like_track(ctx, params: LikeTrackParams) -> ActionResult:
             )
 
         if not resp.ok:
-            return ActionResult.error(_spotify_error(resp.status_code), retryable=False)
+            try:
+                detail = resp.json().get("error", {}).get("message", "")
+            except Exception:
+                detail = resp.text or ""
+            msg = _spotify_error(resp.status_code)
+            return ActionResult.error(f"{msg} Spotify says: {detail}" if detail else msg, retryable=False)
 
         return ActionResult.success(
             data={"track_id": params.track_id, "liked": True},
@@ -230,7 +235,12 @@ async def fn_unlike_track(ctx, params: UnlikeTrackParams) -> ActionResult:
             )
 
         if not resp.ok:
-            return ActionResult.error(_spotify_error(resp.status_code), retryable=False)
+            try:
+                detail = resp.json().get("error", {}).get("message", "")
+            except Exception:
+                detail = resp.text or ""
+            msg = _spotify_error(resp.status_code)
+            return ActionResult.error(f"{msg} Spotify says: {detail}" if detail else msg, retryable=False)
 
         return ActionResult.success(
             data={"track_id": params.track_id, "liked": False},

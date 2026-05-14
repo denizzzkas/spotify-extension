@@ -242,7 +242,12 @@ async def fn_add_track_to_playlist(ctx, params: AddTrackToPlaylistParams) -> Act
             )
 
         if not resp.ok:
-            return ActionResult.error(_spotify_error(resp.status_code), retryable=False)
+            try:
+                detail = resp.json().get("error", {}).get("message", "")
+            except Exception:
+                detail = resp.text or ""
+            msg = _spotify_error(resp.status_code)
+            return ActionResult.error(f"{msg} Spotify says: {detail}" if detail else msg, retryable=False)
 
         return ActionResult.success(
             data={"playlist_id": params.playlist_id, "track_id": params.track_id, "added": True},
@@ -289,7 +294,12 @@ async def fn_remove_track_from_playlist(ctx, params: RemoveTrackFromPlaylistPara
             )
 
         if not resp.ok:
-            return ActionResult.error(_spotify_error(resp.status_code), retryable=False)
+            try:
+                detail = resp.json().get("error", {}).get("message", "")
+            except Exception:
+                detail = resp.text or ""
+            msg = _spotify_error(resp.status_code)
+            return ActionResult.error(f"{msg} Spotify says: {detail}" if detail else msg, retryable=False)
 
         return ActionResult.success(
             data={"playlist_id": params.playlist_id, "track_id": params.track_id, "removed": True},
