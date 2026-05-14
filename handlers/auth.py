@@ -47,8 +47,8 @@ async def fn_connect_spotify(ctx, params: ConnectSpotifyParams) -> ActionResult:
         return user_id
 
     try:
-        client_id = ctx.config.get("spotify_client_id")
-        client_secret = ctx.config.get("spotify_client_secret")
+        client_id = await ctx.secrets.get("spotify_client_id")
+        client_secret = await ctx.secrets.get("spotify_client_secret")
         if not client_id or not client_secret:
             return ActionResult.error(
                 "Spotify credentials not configured. Set client_id and client_secret in extension settings."

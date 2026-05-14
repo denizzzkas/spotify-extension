@@ -34,15 +34,32 @@ ext = Extension(
     capabilities=[],
     actions_explicit=True,
     system=False,
-    # App-level credentials set once by admin — shared across all users.
-    # Per docs: "Don't use @ext.secret for platform-level secrets shared
-    # by every user — those live in config."
-    config_defaults={
-        "spotify_client_id": "",
-        "spotify_client_secret": "",
-        "genius_access_token": "",
-    },
+    config_defaults={},
 )
+
+ext.secret(
+    name="spotify_client_id",
+    description="Spotify OAuth Client ID from developer.spotify.com",
+    required=True,
+    write_mode="user",
+    max_bytes=256,
+)(lambda: None)
+
+ext.secret(
+    name="spotify_client_secret",
+    description="Spotify OAuth Client Secret from developer.spotify.com",
+    required=True,
+    write_mode="user",
+    max_bytes=512,
+)(lambda: None)
+
+ext.secret(
+    name="genius_access_token",
+    description="Genius API access token for lyrics lookup (optional)",
+    required=False,
+    write_mode="user",
+    max_bytes=256,
+)(lambda: None)
 
 # ─── Cache models ─────────────────────────────────────────────────────────── #
 
