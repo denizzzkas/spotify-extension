@@ -106,6 +106,10 @@ class DemoStateModel(BaseModel):
     is_playing: bool = True
     shuffle: bool = False
 
+@ext.cache_model("player_device")
+class PlayerDeviceModel(BaseModel):
+    device_id: str = ""
+
 # ─── ChatExtension ────────────────────────────────────────────────────────── #
 
 SYSTEM_PROMPT = (Path(__file__).parent / "system_prompt.txt").read_text()

@@ -677,6 +677,11 @@
       "path": "callback",
       "method": "GET",
       "secret_header": ""
+    },
+    {
+      "path": "player-ready",
+      "method": "POST",
+      "secret_header": ""
     }
   ],
   "events": {

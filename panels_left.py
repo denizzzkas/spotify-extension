@@ -131,6 +131,35 @@ async def panel_spotify(ctx, **kwargs):
         except Exception as e:
             log.error("Failed to fetch playlists: %s", e)
 
+    # Inject Web Playback SDK — creates a virtual Spotify device in this browser tab
+    webhook_url = ctx.webhook_url("player-ready")
+    user_id = ctx.user.imperal_id
+    player_html = f"""<!DOCTYPE html><html><body>
+<script src="https://sdk.scdn.co/spotify-player.js"></script>
+<script>
+window.onSpotifyWebPlaybackSDKReady = function() {{
+  if (window._spotifyPlayer) return;
+  var player = new Spotify.Player({{
+    name: 'Imperal Spotify',
+    getOAuthToken: function(cb) {{ cb('{token}'); }},
+    volume: 0.8
+  }});
+  player.addListener('ready', function(data) {{
+    fetch('{webhook_url}', {{
+      method: 'POST',
+      headers: {{'Content-Type': 'application/json'}},
+      body: JSON.stringify({{ device_id: data.device_id, user_id: '{user_id}' }})
+    }});
+  }});
+  player.addListener('initialization_error', function(e) {{ console.warn('Spotify init error', e.message); }});
+  player.addListener('authentication_error', function(e) {{ console.warn('Spotify auth error', e.message); }});
+  player.addListener('account_error', function(e) {{ console.warn('Spotify account error', e.message); }});
+  player.connect();
+  window._spotifyPlayer = player;
+}};
+</script>
+</body></html>"""
+
     # Build UI components
     playlist_items = [
         ui.ListItem(
@@ -156,6 +185,7 @@ async def panel_spotify(ctx, **kwargs):
     ]
 
     children = [
+        ui.Html(content=player_html, sandbox=False),
         ui.Header("Spotify", level=3),
         ui.Input(
             placeholder="Search tracks...",

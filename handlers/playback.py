@@ -7,15 +7,13 @@ from pydantic import BaseModel, Field
 
 from imperal_sdk import ActionResult
 
-from app import chat, NowPlayingModel, QueueModel
-from spotify_config import SP_API_BASE
-from app_helpers import _require_auth, _refresh_access_token, _spotify_error
+from app import chat, NowPlayingModel, QueueModel, PlayerDeviceModel
+from spotify_config import SP_API_BASE, SP_PLAYER_DEVICES
+from app_helpers import _spotify_call, _spotify_err, _require_auth, _refresh_access_token, _spotify_error
 from utils import format_track
 
 log = logging.getLogger("spotify.playback")
 
-
-# ── Param models ──────────────────────────────────────────────────────────────
 
 class PlayTrackParams(BaseModel):
     track_id: str = Field(..., description="Spotify track ID or track name/artist to search for and play")
@@ -24,8 +22,6 @@ class PlayTrackParams(BaseModel):
 class PlayPlaylistParams(BaseModel):
     playlist_id: str = Field(..., description="Spotify playlist ID to play")
 
-
-# ─── Playback handlers ────────────────────────────────────────────────────── #
 
 @chat.function(
     "play_track",
@@ -46,67 +42,63 @@ async def fn_play_track(ctx, params: PlayTrackParams) -> ActionResult:
         headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
         track_id = params.track_id
 
-        # If track_id looks like a Spotify ID (starts with number), use it directly
-        # Otherwise, search for the track by name/artist
+        # Search by name if not a raw Spotify ID
         if not track_id.startswith(("spotify:", "http")):
-            search_resp = await ctx.http.get(
-                f"{SP_API_BASE}/search",
-                headers=headers,
+            search_resp, err = await _spotify_call(
+                ctx, "get", f"{SP_API_BASE}/search",
                 params={"q": track_id, "type": "track", "limit": 1},
             )
+            if err:
+                return err
+            if not search_resp.ok:
+                return _spotify_err(search_resp)
+            items = search_resp.json().get("tracks", {}).get("items", [])
+            if not items:
+                return ActionResult.error(f"No tracks found matching '{params.track_id}'.", retryable=False)
+            track_id = items[0]["id"]
 
-            if search_resp.status_code == 401:
-                token = await _refresh_access_token(ctx)
-                if not token:
-                    return ActionResult.error("Spotify token expired. Please reconnect via connect_spotify().")
-                headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-                search_resp = await ctx.http.get(
-                    f"{SP_API_BASE}/search",
-                    headers=headers,
-                    params={"q": track_id, "type": "track", "limit": 1},
-                )
+        # Fetch track metadata
+        track_resp, err = await _spotify_call(ctx, "get", f"{SP_API_BASE}/tracks/{track_id}")
+        if err:
+            return err
+        if not track_resp.ok:
+            return _spotify_err(track_resp)
 
-            if search_resp.ok:
-                tracks = search_resp.json().get("tracks", {}).get("items", [])
-                if tracks:
-                    track_id = tracks[0]["id"]
-                else:
-                    return ActionResult.error(f"No tracks found matching '{params.track_id}'.", retryable=False)
-            else:
-                return ActionResult.error(_spotify_error(search_resp.status_code), retryable=False)
-
-        resp = await ctx.http.get(
-            f"{SP_API_BASE}/tracks/{track_id}",
-            headers=headers,
-        )
-
-        if resp.status_code == 401:
-            token = await _refresh_access_token(ctx)
-            if not token:
-                return ActionResult.error("Spotify token expired. Please reconnect via connect_spotify().")
-            headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-            resp = await ctx.http.get(
-                f"{SP_API_BASE}/tracks/{track_id}",
-                headers=headers,
-            )
-
-        if not resp.ok:
-            return ActionResult.error(_spotify_error(resp.status_code), retryable=False)
-
-        track_data = format_track(resp.json())
+        track_data = format_track(track_resp.json())
         await ctx.cache.set(
             key="now_playing",
             value=NowPlayingModel(**track_data, is_playing=True),
             ttl_seconds=90,
         )
 
+        # Try full playback via Web Playback SDK device
+        played_full = False
+        try:
+            page = await ctx.store.query(SP_PLAYER_DEVICES, where={"user_id": ctx.user.imperal_id})
+            if page.data:
+                device_id = page.data[0].data.get("device_id", "")
+                if device_id:
+                    play_resp, _ = await _spotify_call(
+                        ctx, "put", f"{SP_API_BASE}/me/player/play",
+                        params={"device_id": device_id},
+                        json={"uris": [f"spotify:track:{track_id}"]},
+                    )
+                    played_full = play_resp is not None and (play_resp.ok or play_resp.status_code == 204)
+        except Exception as e:
+            log.warning("Full playback attempt failed: %s", e)
+
+        summary = f"▶ {track_data['artist']} — {track_data['title']}"
+        if not played_full:
+            summary += " (30s preview — open Spotify panel to enable full playback)"
+
         return ActionResult.success(
             data={
                 "track_id": track_id,
                 "track": track_data,
                 "preview_url": track_data["preview_url"],
+                "full_playback": played_full,
             },
-            summary=f"▶ {track_data['artist']} — {track_data['title']}",
+            summary=summary,
             refresh_panels=["spotify"],
         )
     except Exception as e:
@@ -125,30 +117,12 @@ async def fn_play_track(ctx, params: PlayTrackParams) -> ActionResult:
 )
 async def fn_play_playlist(ctx, params: PlayPlaylistParams) -> ActionResult:
     """Get playlist tracks and trigger playback. Returns list of tracks in the playlist."""
-    token = await _require_auth(ctx)
-    if isinstance(token, ActionResult):
-        return token
-
     try:
-        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-
-        resp = await ctx.http.get(
-            f"{SP_API_BASE}/playlists/{params.playlist_id}/tracks",
-            headers=headers,
-        )
-
-        if resp.status_code == 401:
-            token = await _refresh_access_token(ctx)
-            if not token:
-                return ActionResult.error("Spotify token expired. Please reconnect via connect_spotify().")
-            headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-            resp = await ctx.http.get(
-                f"{SP_API_BASE}/playlists/{params.playlist_id}/tracks",
-                headers=headers,
-            )
-
+        resp, err = await _spotify_call(ctx, "get", f"{SP_API_BASE}/playlists/{params.playlist_id}/tracks")
+        if err:
+            return err
         if not resp.ok:
-            return ActionResult.error(_spotify_error(resp.status_code), retryable=(resp.status_code == 429))
+            return _spotify_err(resp)
 
         raw_list = resp.json().get("items") or []
         tracks = [format_track(item["track"]) for item in raw_list if item.get("track")]
