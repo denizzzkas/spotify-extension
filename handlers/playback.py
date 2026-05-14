@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import re
 
 from pydantic import BaseModel, Field
 
@@ -42,8 +43,9 @@ async def fn_play_track(ctx, params: PlayTrackParams) -> ActionResult:
         headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
         track_id = params.track_id
 
-        # Search by name if not a raw Spotify ID
-        if not track_id.startswith(("spotify:", "http")):
+        # Search by name only if not a raw Spotify ID or URI
+        _is_spotify_id = bool(re.match(r'^[A-Za-z0-9]{22}$', track_id))
+        if not track_id.startswith(("spotify:", "http")) and not _is_spotify_id:
             search_resp, err = await _spotify_call(
                 ctx, "get", f"{SP_API_BASE}/search",
                 params={"q": track_id, "type": "track", "limit": 1},
