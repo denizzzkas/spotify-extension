@@ -131,10 +131,16 @@ async def fn_check_connection(ctx, params: CheckConnectionParams) -> ActionResul
     if isinstance(user_id, ActionResult):
         return user_id
     try:
+        from spotify_config import CRED_COLLECTION
         token = await _get_access_token(ctx)
         if not token:
             return ActionResult.success(data={"connected": False}, summary="Not connected to Spotify")
-        return ActionResult.success(data={"connected": True}, summary="Connected to Spotify")
+        page = await ctx.store.query(CRED_COLLECTION, where={"user_id": user_id})
+        scope = page.data[0].data.get("scope", "NOT STORED") if page.data else "NO RECORD"
+        return ActionResult.success(
+            data={"connected": True, "token_scopes": scope},
+            summary=f"Connected. Scopes: {scope}",
+        )
     except Exception as e:
         log.error("check_connection failed: %s", e)
         return ActionResult.error(f"Status check failed: {str(e)}")
