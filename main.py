@@ -8,7 +8,7 @@ _dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, _dir)
 
 for _m in [k for k in sys.modules if k in (
-    "app", "skeleton", "panels", "panels_left", "panels_right", "spotify_config", "utils", "demo_data",
+    "app", "skeleton", "panels", "panels_left", "panels_right", "panels_demo", "spotify_config", "utils", "demo_data",
     "handlers", "handlers.auth", "handlers.search",
     "handlers.playlists", "handlers.library", "handlers.playback",
     "handlers.demo", "handlers.lyrics", "handlers.player_webhook",
