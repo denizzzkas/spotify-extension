@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 
 from pydantic import BaseModel
 
@@ -108,13 +107,10 @@ class DemoStateModel(BaseModel):
 
 # ─── ChatExtension ────────────────────────────────────────────────────────── #
 
-SYSTEM_PROMPT = (Path(__file__).parent / "system_prompt.txt").read_text()
-
 chat = ChatExtension(
     ext,
     tool_name="spotify",
     description="Full access to your Spotify music library. Search tracks, manage playlists, save songs, view play history, and more.",
-    system_prompt=SYSTEM_PROMPT,
 )
 
 # ─── Emitted events ───────────────────────────────────────────────────────── #
