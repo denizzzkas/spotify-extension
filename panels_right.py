@@ -206,6 +206,7 @@ async def _render_profile(ctx) -> ui.Stack:
         return ui.Stack([
             ui.Header("My Profile", level=3),
             ui.List(items=items),
+            ui.Button("Disconnect Spotify", variant="danger", icon="LogOut", on_click=ui.Call("disconnect_spotify")),
         ], direction="v", gap=2)
 
     except Exception as e:
