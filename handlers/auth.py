@@ -54,11 +54,22 @@ async def fn_connect_spotify(ctx, params: ConnectSpotifyParams) -> ActionResult:
                 "Spotify credentials not configured. Set client_id and client_secret in extension settings."
             )
 
-        # Embed user_id in state so the callback can switch to the right user context
-        state = f"{user_id}:{uuid.uuid4()}"
+        state = str(uuid.uuid4())
         redirect_uri = ctx.webhook_url("callback")
 
-        await ctx.store.create(OAUTH_STATE_COLLECTION, {
+        # Store OAuth state under __webhook__ user scope so the callback
+        # (which runs as __webhook__ context) can query it directly via ctx.store.
+        # SDK 4.2.16: ctx.as_user() requires __system__ context, not available in webhooks.
+        from imperal_sdk.store.client import StoreClient
+        webhook_store = StoreClient(
+            gateway_url=ctx.store._gateway_url,
+            service_token=ctx.store._auth_token,
+            extension_id=ctx.store._extension_id,
+            user_id="__webhook__",
+            tenant_id=ctx.store._tenant_id,
+        )
+        await webhook_store.create(OAUTH_STATE_COLLECTION, {
+            "user_id": user_id,
             "state": state,
             "client_id": client_id,
             "client_secret": client_secret,
@@ -121,7 +132,6 @@ async def fn_check_connection(ctx, params: CheckConnectionParams) -> ActionResul
     if isinstance(user_id, ActionResult):
         return user_id
     try:
-        from spotify_config import CRED_COLLECTION
         token = await _get_access_token(ctx)
         if not token:
             return ActionResult.success(data={"connected": False}, summary="Not connected to Spotify")
@@ -138,7 +148,6 @@ async def fn_check_connection(ctx, params: CheckConnectionParams) -> ActionResul
 
 # ─── OAuth webhook callback ────────────────────────────────────────────────── #
 
-# Path without leading slash → tool name = __webhook__callback (matches platform dispatch)
 @ext.webhook("callback", method="GET")
 async def oauth_callback(ctx, headers, body, query_params) -> dict:
     from imperal_sdk import WebhookResponse
@@ -155,26 +164,21 @@ async def oauth_callback(ctx, headers, body, query_params) -> dict:
         if not state:
             return WebhookResponse.error("Missing state parameter", 400)
 
-        # Extract user_id from state (format: "user_id:uuid")
-        if ":" not in state:
-            return WebhookResponse.error("Invalid state format — please try connect_spotify() again.", 400)
-        user_id, _ = state.split(":", 1)
-
-        # Switch to the user's context to access their state record
-        user_ctx = ctx.as_user(user_id)
-        page = await user_ctx.store.query(OAUTH_STATE_COLLECTION, where={"state": state})
+        # ctx.store in webhook context is scoped to __webhook__ user_id —
+        # matches how connect_spotify stored the state record.
+        page = await ctx.store.query(OAUTH_STATE_COLLECTION, where={"state": state})
         if not page.data:
             return WebhookResponse.error("Invalid or expired state — please try connect_spotify() again.", 400)
 
         record = page.data[0].data
+        user_id = record.get("user_id")
         client_id = record.get("client_id")
         client_secret = record.get("client_secret")
         redirect_uri = record.get("redirect_uri")
 
-        # Delete state record immediately (credentials should not linger)
-        await user_ctx.store.delete(OAUTH_STATE_COLLECTION, page.data[0].id)
+        await ctx.store.delete(OAUTH_STATE_COLLECTION, page.data[0].id)
 
-        if not client_id or not client_secret:
+        if not client_id or not client_secret or not user_id:
             return WebhookResponse.error("Spotify credentials missing from state", 500)
 
         credentials = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
@@ -198,16 +202,22 @@ async def oauth_callback(ctx, headers, body, query_params) -> dict:
 
         token_data = resp.json()
 
-        # Save token under the real user's context
-        await _save_token_to_store(user_ctx.store, user_id, token_data)
+        # Save token under the real user_id via a user-scoped StoreClient.
+        from imperal_sdk.store.client import StoreClient
+        user_store = StoreClient(
+            gateway_url=ctx.store._gateway_url,
+            service_token=ctx.store._auth_token,
+            extension_id=ctx.store._extension_id,
+            user_id=user_id,
+            tenant_id=ctx.store._tenant_id,
+        )
+        await _save_token_to_store(user_store, user_id, token_data)
 
-        # Emit event to trigger panel refresh for the connected user
         try:
             await ctx.extensions.emit("spotify-extension.connected", {"user_id": user_id})
         except Exception as e:
             log.warning("could not emit connected event: %s", e)
 
-        # Return HTML page that auto-closes the OAuth popup window
         html = """<!DOCTYPE html><html><head><title>Spotify Connected</title>
 <style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#191414;color:#1DB954;}
 h1{font-size:24px;}p{color:#fff;margin-top:8px;}</style></head>
