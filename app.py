@@ -113,30 +113,6 @@ chat = ChatExtension(
     description="Full access to your Spotify music library. Search tracks, manage playlists, save songs, view play history, and more.",
 )
 
-# SDK 5.0.0 removed orchestrator-tool auto-registration from ChatExtension,
-# but the platform kernel still requires a registered tool entry to route
-# chat commands to this extension. All @chat.function handlers use
-# chain_callable=True so the kernel dispatches them directly — this shim
-# exists purely for kernel compatibility until kernel upgrades to 5.0.0.
-from imperal_sdk import ActionResult as _ActionResult
-
-@ext.tool(
-    "spotify",
-    scopes=[],
-    description="Full access to your Spotify music library. Search tracks, manage playlists, save songs, view play history, and more.",
-)
-async def _spotify_orchestrator_shim(ctx, message: str = "", **kwargs):
-    # SDK 5.0.0 chain_callable dispatch: kernel passes function name + params in kwargs.
-    fn_name = kwargs.get("function") or kwargs.get("fn") or kwargs.get("function_name")
-    fn_params = kwargs.get("params") or kwargs.get("arguments") or {}
-    if fn_name and fn_name in chat._functions:
-        fn_def = chat._functions[fn_name]
-        if fn_def._pydantic_model and fn_def._pydantic_param:
-            instance = fn_def._pydantic_model(**fn_params)
-            return await fn_def.func(ctx, **{fn_def._pydantic_param: instance})
-        return await fn_def.func(ctx, **fn_params)
-    return _ActionResult.error("No function specified. Use commands like: connect spotify, disconnect spotify, play track, etc.")
-
 # ─── Emitted events ───────────────────────────────────────────────────────── #
 
 @ext.emits("spotify-extension.connected")
