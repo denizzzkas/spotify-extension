@@ -21,7 +21,6 @@ SP_SCOPES = " ".join([
 
 # Store collections
 CRED_COLLECTION = "sp_credentials"
-SP_PLAYER_DEVICES = "sp_player_devices"
 OAUTH_STATE_COLLECTION = "sp_oauth_states"
 DEMO_PLAYER_STATE = "sp_demo_player"
 DEMO_PANEL_STATE = "sp_demo_panel"

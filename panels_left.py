@@ -3,7 +3,7 @@ import logging
 
 from imperal_sdk import ui
 
-from app import ext, NowPlayingModel
+from app import ext
 from panels_demo import render_demo_state
 from spotify_config import SP_API_BASE
 from app_helpers import _get_access_token, _refresh_access_token
@@ -71,7 +71,7 @@ async def panel_search_tracks(ctx, query: str = "", limit: int = 20) -> dict:
     default_width=280,
     min_width=220,
     max_width=400,
-    refresh="on_event:spotify-extension.connected,spotify-extension.disconnected,spotify-extension.track.liked,spotify-extension.track.unliked,spotify-extension.playlist.created,spotify-extension.track.played,spotify-extension.playlist.played",
+    refresh="on_event:spotify-extension.connected,spotify-extension.disconnected,spotify-extension.track.liked,spotify-extension.track.unliked,spotify-extension.playlist.created",
 )
 async def panel_spotify(ctx, **kwargs):
     """Left sidebar panel showing authentication state, playlists, and search."""
@@ -131,43 +131,77 @@ async def panel_spotify(ctx, **kwargs):
         except Exception as e:
             log.error("Failed to fetch playlists: %s", e)
 
-    # Inject Web Playback SDK — creates a virtual Spotify device in this browser tab
-    webhook_url = ctx.webhook_url("player-ready")
-    user_id = ctx.user.imperal_id
-    player_html = f"""<!DOCTYPE html><html><body style="margin:0;font-family:sans-serif;">
-<div id="sp-status" style="font-size:10px;color:#888;padding:2px 4px;">Initializing Spotify player...</div>
+    # Web Playback SDK — инициализирует виртуальное Spotify-устройство "Imperal Spotify" в браузере.
+    # sandbox=False: HTML инжектируется прямо в страницу (не iframe), JS выполняется в page context.
+    # Если панель перерисовывается, window._spotifyPlayer уже существует — восстанавливаем статус без повторной инициализации.
+    player_html = f"""<div style="padding:4px 2px;">
+<div id="sp-status" style="font-size:10px;color:#888;"></div>
+<div id="sp-now-playing" style="display:none;margin-top:6px;">
+  <div id="sp-track" style="font-size:12px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px;"></div>
+  <div id="sp-artist" style="font-size:11px;color:#aaa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px;"></div>
+</div>
+</div>
 <script src="https://sdk.scdn.co/spotify-player.js"></script>
 <script>
-function setStatus(msg) {{ document.getElementById('sp-status').textContent = msg; }}
-window.onSpotifyWebPlaybackSDKReady = function() {{
-  if (window._spotifyPlayer) return;
-  setStatus('SDK ready, connecting...');
-  var player = new Spotify.Player({{
-    name: 'Imperal Spotify',
-    getOAuthToken: function(cb) {{ cb('{token}'); }},
-    volume: 0.8
-  }});
-  player.addListener('ready', function(data) {{
+(function() {{
+  function setStatus(msg) {{
+    var el = document.getElementById('sp-status');
+    if (el) el.textContent = msg;
+  }}
+  function updateNowPlaying(state) {{
+    if (!state) return;
+    var track = state.track_window && state.track_window.current_track;
+    if (!track) return;
+    var artists = track.artists.map(function(a) {{ return a.name; }}).join(', ');
+    var prefix = state.paused ? '⏸ ' : '▶ ';
+    var trackEl = document.getElementById('sp-track');
+    var artistEl = document.getElementById('sp-artist');
+    var npEl = document.getElementById('sp-now-playing');
+    if (trackEl) trackEl.textContent = prefix + track.name;
+    if (artistEl) artistEl.textContent = artists;
+    if (npEl) npEl.style.display = 'block';
+  }}
+  if (window._spotifyPlayer) {{
     setStatus('Player ready ✓');
-    fetch('{webhook_url}', {{
-      method: 'POST',
-      headers: {{'Content-Type': 'application/json'}},
-      body: JSON.stringify({{ device_id: data.device_id, user_id: '{user_id}' }})
-    }}).then(function(r) {{ setStatus(r.ok ? 'Device registered ✓' : 'Webhook error: ' + r.status); }})
-      .catch(function(e) {{ setStatus('Webhook failed: ' + e.message); }});
-  }});
-  player.addListener('not_ready', function() {{ setStatus('Player disconnected'); }});
-  player.addListener('initialization_error', function(e) {{ setStatus('Init error: ' + e.message); }});
-  player.addListener('authentication_error', function(e) {{ setStatus('Auth error: ' + e.message); }});
-  player.addListener('account_error', function(e) {{ setStatus('Account error: ' + e.message); }});
-  player.connect();
-  window._spotifyPlayer = player;
-}};
-setTimeout(function() {{
-  if (!window._spotifyPlayer) setStatus('SDK failed to load');
-}}, 8000);
-</script>
-</body></html>"""
+    window._spotifyPlayer.getCurrentState().then(function(state) {{
+      if (state) updateNowPlaying(state);
+    }});
+    return;
+  }}
+  setStatus('Connecting...');
+  window.onSpotifyWebPlaybackSDKReady = function() {{
+    var player = new Spotify.Player({{
+      name: 'Imperal Spotify',
+      getOAuthToken: function(cb) {{ cb('{token}'); }},
+      volume: 0.8
+    }});
+    player.addListener('ready', function() {{
+      setStatus('Player ready ✓');
+    }});
+    player.addListener('not_ready', function() {{
+      setStatus('Player disconnected');
+      window._spotifyPlayer = null;
+    }});
+    player.addListener('initialization_error', function(e) {{
+      setStatus('Init error: ' + e.message);
+    }});
+    player.addListener('authentication_error', function(e) {{
+      setStatus('Auth error: ' + e.message);
+    }});
+    player.addListener('account_error', function() {{
+      setStatus('Spotify Premium required');
+    }});
+    player.addListener('player_state_changed', function(state) {{
+      updateNowPlaying(state);
+    }});
+    player.connect();
+    window._spotifyPlayer = player;
+  }};
+  setTimeout(function() {{
+    if (!window._spotifyPlayer) setStatus('SDK failed to load');
+  }}, 8000);
+}})();
+</script>"""
 
     # Build UI components
     playlist_items = [
@@ -232,20 +266,5 @@ setTimeout(function() {{
             },
         ])
     )
-
-    # Spotify Embed player — shown when a track is selected
-    try:
-        now_playing = await ctx.cache.get(key="now_playing", model=NowPlayingModel)
-        if now_playing and now_playing.id:
-            embed_url = f"https://open.spotify.com/embed/track/{now_playing.id}?utm_source=generator&theme=0"
-            embed_html = (
-                f'<iframe src="{embed_url}" width="100%" height="152" frameborder="0" '
-                f'allowtransparency="true" allow="encrypted-media" '
-                f'style="border-radius:12px;display:block;"></iframe>'
-            )
-            children.append(ui.Divider())
-            children.append(ui.Html(content=embed_html, sandbox=False))
-    except Exception as e:
-        log.error("Spotify embed failed: %s", e)
 
     return ui.Stack(children, direction="v", gap=2)

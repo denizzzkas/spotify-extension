@@ -8,8 +8,8 @@ from pydantic import BaseModel, Field
 
 from imperal_sdk import ActionResult
 
-from app import chat, NowPlayingModel, QueueModel, PlayerDeviceModel
-from spotify_config import SP_API_BASE, SP_PLAYER_DEVICES
+from app import chat, NowPlayingModel, QueueModel
+from spotify_config import SP_API_BASE
 from app_helpers import _spotify_call, _spotify_err, _require_auth, _refresh_access_token, _spotify_error
 from utils import format_track
 
@@ -73,25 +73,28 @@ async def fn_play_track(ctx, params: PlayTrackParams) -> ActionResult:
             ttl_seconds=90,
         )
 
-        # Try full playback via Web Playback SDK device
+        # Try playback via Spotify Connect — prefer the in-browser "Imperal Spotify" device
         played_full = False
         try:
-            page = await ctx.store.query(SP_PLAYER_DEVICES, where={"user_id": ctx.user.imperal_id})
-            if page.data:
-                device_id = page.data[0].data.get("device_id", "")
-                if device_id:
+            devices_resp, _ = await _spotify_call(ctx, "get", f"{SP_API_BASE}/me/player/devices")
+            if devices_resp and devices_resp.ok:
+                devices = devices_resp.json().get("devices", [])
+                active = next((d for d in devices if d.get("name") == "Imperal Spotify"), None)
+                if not active:
+                    active = next((d for d in devices if not d.get("is_restricted")), None)
+                if active:
                     play_resp, _ = await _spotify_call(
                         ctx, "put", f"{SP_API_BASE}/me/player/play",
-                        params={"device_id": device_id},
+                        params={"device_id": active["id"]},
                         json={"uris": [f"spotify:track:{track_id}"]},
                     )
                     played_full = play_resp is not None and (play_resp.ok or play_resp.status_code == 204)
         except Exception as e:
-            log.warning("Full playback attempt failed: %s", e)
+            log.warning("Spotify Connect playback attempt failed: %s", e)
 
         summary = f"▶ {track_data['artist']} — {track_data['title']}"
         if not played_full:
-            summary += " (30s preview — open Spotify panel to enable full playback)"
+            summary += " (preview only — open Spotify app on any device to enable full playback)"
 
         return ActionResult.success(
             data={
