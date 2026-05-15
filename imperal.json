@@ -11,6 +11,21 @@
   "capabilities": [],
   "tools": [
     {
+      "name": "spotify",
+      "description": "Full access to your Spotify music library. Search tracks, manage playlists, save songs, view play history, and more.",
+      "scopes": [],
+      "parameters": {
+        "message": {
+          "type": "string",
+          "required": false
+        },
+        "kwargs": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
       "name": "skeleton_refresh_spotify_stats",
       "description": "Spotify library stats: liked track count and playlist count for classifier",
       "scopes": [],
