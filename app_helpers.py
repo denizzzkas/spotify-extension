@@ -219,16 +219,22 @@ def _spotify_err(resp) -> ActionResult:
     try:
         detail = resp.json().get("error", {}).get("message", "")
     except Exception:
-        detail = resp.text or ""
-    msg = _spotify_error(resp.status_code)
+        try:
+            detail = resp.text()
+        except Exception:
+            detail = ""
+    msg = _spotify_error(resp.status_code, detail)
     return ActionResult.error(f"{msg} Spotify says: {detail}" if detail else msg, retryable=(resp.status_code == 429))
 
 
-def _spotify_error(status_code: int) -> str:
+def _spotify_error(status_code: int, detail: str = "") -> str:
+    if status_code == 403:
+        if detail and "not registered" in detail.lower():
+            return "This Spotify account is not registered as a test user for this application. Add the account email in the Spotify Developer Dashboard → User Management."
+        return "You do not have permission. Some features require Spotify Premium."
     messages = {
         400: "Invalid request parameters.",
         401: "Not authorised — please reconnect via connect_spotify().",
-        403: "You do not have permission. Some features require Spotify Premium.",
         404: "Resource not found on Spotify.",
         429: "Spotify rate limit reached. Please wait a moment and try again.",
         500: "Spotify server error. Please try again later.",

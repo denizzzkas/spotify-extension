@@ -156,6 +156,12 @@ async def _render_fetched_tracks(ctx, url: str, title: str, item_key: str = "tra
                 resp = await ctx.http.get(url, headers=headers, params={"limit": 50})
 
         if resp.status_code == 403:
+            try:
+                body = resp.text()
+            except Exception:
+                body = ""
+            if "not registered" in body.lower():
+                return ui.Empty("Account not registered for this app. Add it in Spotify Developer Dashboard → User Management.", icon="Lock")
             return ui.Empty("This feature requires Spotify Premium.", icon="Lock")
 
         if not resp.ok:
