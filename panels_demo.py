@@ -4,17 +4,23 @@ import logging
 from imperal_sdk import ui
 
 from app import NowPlayingModel, DemoStateModel
+from app_helpers import prepare_oauth_url
 from demo_data import DEMO_TRACKS, DEMO_PLAYLIST_ID, DEMO_PLAYLIST_NAME
 
 log = logging.getLogger("spotify.panels.demo")
 
 
 async def render_demo_state(ctx) -> ui.Stack:
+    auth_url = await prepare_oauth_url(ctx)
+    connect_button = ui.Button(
+        "Connect Spotify", variant="primary", icon="Music",
+        on_click=ui.Open(auth_url) if auth_url else ui.Call("connect_spotify"),
+    )
+
     children = [
         ui.Header("Spotify", level=3),
         ui.Alert("Connect your Spotify account to get started.", type="info"),
-        ui.Button("Connect Spotify", variant="primary", icon="Music",
-                  on_click=ui.Call("connect_spotify")),
+        connect_button,
     ]
 
     children.append(

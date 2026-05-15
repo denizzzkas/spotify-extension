@@ -84,6 +84,7 @@ async def fn_connect_spotify(ctx, params: ConnectSpotifyParams) -> ActionResult:
             "response_type": "code",
             "scope": SP_SCOPES,
             "state": state,
+            "show_dialog": "true",
         })
 
         from imperal_sdk import ui

@@ -116,6 +116,68 @@ async def _clear_all_credentials(ctx) -> None:
         log.error("clear_all_credentials failed: %s", e)
 
 
+async def prepare_oauth_url(ctx) -> str | None:
+    """Build a Spotify OAuth URL for panel button use.
+
+    Stores the CSRF state token in the __webhook__ store scope (same pattern
+    used by fn_connect_spotify) so the callback can verify it. Cleans up any
+    previous pending state for this user to avoid orphaned records.
+
+    Returns None if credentials are not configured or on any error.
+    """
+    import uuid
+    import urllib.parse
+    from datetime import datetime, timezone
+    from spotify_config import SP_AUTH_URL, SP_SCOPES, OAUTH_STATE_COLLECTION
+    from imperal_sdk.store.client import StoreClient
+
+    try:
+        if not ctx.store:
+            return None
+        client_id = await ctx.secrets.get("spotify_client_id")
+        client_secret = await ctx.secrets.get("spotify_client_secret")
+        if not client_id or not client_secret:
+            return None
+
+        user_id = ctx.user.imperal_id
+        state = str(uuid.uuid4())
+        redirect_uri = ctx.webhook_url("callback")
+
+        webhook_store = StoreClient(
+            gateway_url=ctx.store._gateway_url,
+            service_token=ctx.store._auth_token,
+            extension_id=ctx.store._extension_id,
+            user_id="__webhook__",
+            tenant_id=ctx.store._tenant_id,
+        )
+
+        # Remove any pending state records for this user before creating a new one.
+        old = await webhook_store.query(OAUTH_STATE_COLLECTION, where={"user_id": user_id})
+        for doc in old.data:
+            await webhook_store.delete(OAUTH_STATE_COLLECTION, doc.id)
+
+        await webhook_store.create(OAUTH_STATE_COLLECTION, {
+            "user_id": user_id,
+            "state": state,
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "redirect_uri": redirect_uri,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        })
+
+        return SP_AUTH_URL + "?" + urllib.parse.urlencode({
+            "client_id": client_id,
+            "redirect_uri": redirect_uri,
+            "response_type": "code",
+            "scope": SP_SCOPES,
+            "state": state,
+            "show_dialog": "true",
+        })
+    except Exception as e:
+        log.error("prepare_oauth_url failed: %s", e)
+        return None
+
+
 async def _require_user_id(ctx) -> str | ActionResult:
     if not hasattr(ctx, "user") or not ctx.user:
         return ActionResult.error("No authenticated user on context.")
