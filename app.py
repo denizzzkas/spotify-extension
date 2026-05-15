@@ -113,6 +113,21 @@ chat = ChatExtension(
     description="Full access to your Spotify music library. Search tracks, manage playlists, save songs, view play history, and more.",
 )
 
+# SDK 5.0.0 removed orchestrator-tool auto-registration from ChatExtension,
+# but the platform kernel still requires a registered tool entry to route
+# chat commands to this extension. All @chat.function handlers use
+# chain_callable=True so the kernel dispatches them directly — this shim
+# exists purely for kernel compatibility until kernel upgrades to 5.0.0.
+from imperal_sdk import ActionResult as _ActionResult
+
+@ext.tool(
+    "spotify",
+    scopes=[],
+    description="Full access to your Spotify music library. Search tracks, manage playlists, save songs, view play history, and more.",
+)
+async def _spotify_orchestrator_shim(ctx, message: str = "", **kwargs):
+    return _ActionResult.success(data={}, summary="")
+
 # ─── Emitted events ───────────────────────────────────────────────────────── #
 
 @ext.emits("spotify-extension.connected")
