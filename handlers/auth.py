@@ -86,9 +86,11 @@ async def fn_connect_spotify(ctx, params: ConnectSpotifyParams) -> ActionResult:
             "state": state,
         })
 
+        from imperal_sdk import ui
         return ActionResult.success(
             data={"auth_url": auth_url},
-            summary="Open the URL in your browser to authorise Spotify access",
+            summary="Click the link below to connect your Spotify account:",
+            ui=ui.Link(label="Connect Spotify →", href=auth_url),
         )
     except Exception as e:
         log.error("connect_spotify failed: %s", e)
