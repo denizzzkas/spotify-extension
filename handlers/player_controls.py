@@ -66,19 +66,20 @@ async def fn_sp_next(ctx, params: EmptyParams) -> ActionResult:
 async def fn_sp_play_pause(ctx, params: EmptyParams) -> ActionResult:
     """Toggle play or pause on the active Spotify device."""
     try:
-        try:
-            now_playing = await ctx.cache.get(key="now_playing", model=NowPlayingModel)
-        except Exception:
-            now_playing = None
-
-        is_playing = now_playing.is_playing if now_playing else False
-        endpoint = "pause" if is_playing else "play"
-
-        resp, err = await _spotify_call(ctx, "put", f"{SP_API_BASE}/me/player/{endpoint}")
+        resp, err = await _spotify_call(ctx, "get", f"{SP_API_BASE}/me/player")
         if err:
             return err
-        if not resp.ok and resp.status_code != 204:
+        if not resp.ok:
             return _spotify_err(resp)
+
+        is_playing = resp.json().get("is_playing", False)
+        endpoint = "pause" if is_playing else "play"
+
+        resp2, err = await _spotify_call(ctx, "put", f"{SP_API_BASE}/me/player/{endpoint}")
+        if err:
+            return err
+        if not resp2.ok and resp2.status_code != 204:
+            return _spotify_err(resp2)
         return ActionResult.success(data={}, summary="Paused" if is_playing else "Resumed")
     except Exception as e:
         log.error("sp_play_pause failed: %s", e)
