@@ -41,7 +41,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "spotify"
+      "owner_chat_tool": "tool_spotify_chat"
     },
     {
       "name": "disconnect_spotify",
@@ -62,7 +62,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "spotify"
+      "owner_chat_tool": "tool_spotify_chat"
     },
     {
       "name": "check_spotify_connection",
@@ -81,7 +81,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "spotify"
+      "owner_chat_tool": "tool_spotify_chat"
     },
     {
       "name": "search_tracks",
@@ -117,7 +117,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "spotify"
+      "owner_chat_tool": "tool_spotify_chat"
     },
     {
       "name": "get_playlists",
@@ -136,7 +136,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "spotify"
+      "owner_chat_tool": "tool_spotify_chat"
     },
     {
       "name": "get_playlist_tracks",
@@ -164,7 +164,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "spotify"
+      "owner_chat_tool": "tool_spotify_chat"
     },
     {
       "name": "create_playlist",
@@ -214,7 +214,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "spotify"
+      "owner_chat_tool": "tool_spotify_chat"
     },
     {
       "name": "add_track_to_playlist",
@@ -250,7 +250,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "spotify"
+      "owner_chat_tool": "tool_spotify_chat"
     },
     {
       "name": "remove_track_from_playlist",
@@ -286,7 +286,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "spotify"
+      "owner_chat_tool": "tool_spotify_chat"
     },
     {
       "name": "get_recent_tracks",
@@ -314,7 +314,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "spotify"
+      "owner_chat_tool": "tool_spotify_chat"
     },
     {
       "name": "get_liked_tracks",
@@ -342,7 +342,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "spotify"
+      "owner_chat_tool": "tool_spotify_chat"
     },
     {
       "name": "like_track",
@@ -372,7 +372,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "spotify"
+      "owner_chat_tool": "tool_spotify_chat"
     },
     {
       "name": "unlike_track",
@@ -402,7 +402,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "spotify"
+      "owner_chat_tool": "tool_spotify_chat"
     },
     {
       "name": "get_user_profile",
@@ -421,7 +421,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "spotify"
+      "owner_chat_tool": "tool_spotify_chat"
     },
     {
       "name": "play_track",
@@ -451,7 +451,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "spotify"
+      "owner_chat_tool": "tool_spotify_chat"
     },
     {
       "name": "play_playlist",
@@ -481,7 +481,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "spotify"
+      "owner_chat_tool": "tool_spotify_chat"
     },
     {
       "name": "open_demo_playlist",
@@ -502,7 +502,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "spotify"
+      "owner_chat_tool": "tool_spotify_chat"
     },
     {
       "name": "demo_play_track",
@@ -532,7 +532,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "spotify"
+      "owner_chat_tool": "tool_spotify_chat"
     },
     {
       "name": "demo_next_track",
@@ -553,7 +553,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "spotify"
+      "owner_chat_tool": "tool_spotify_chat"
     },
     {
       "name": "demo_prev_track",
@@ -574,7 +574,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "spotify"
+      "owner_chat_tool": "tool_spotify_chat"
     },
     {
       "name": "demo_pause",
@@ -595,7 +595,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "spotify"
+      "owner_chat_tool": "tool_spotify_chat"
     },
     {
       "name": "demo_shuffle",
@@ -616,7 +616,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "spotify"
+      "owner_chat_tool": "tool_spotify_chat"
     },
     {
       "name": "get_lyrics",
@@ -650,7 +650,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "spotify"
+      "owner_chat_tool": "tool_spotify_chat"
     }
   ],
   "signals": [],
@@ -659,8 +659,13 @@
   "icon_size_bytes": 905,
   "webhooks": [
     {
-      "path": "callback",
+      "path": "/callback",
       "method": "GET",
+      "secret_header": ""
+    },
+    {
+      "path": "/player-ready",
+      "method": "POST",
       "secret_header": ""
     }
   ],

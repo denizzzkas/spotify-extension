@@ -108,8 +108,8 @@ class DemoStateModel(BaseModel):
 # ─── ChatExtension ────────────────────────────────────────────────────────── #
 
 chat = ChatExtension(
-    ext,
-    tool_name="spotify",
+    ext=ext,
+    tool_name="tool_spotify_chat",
     description="Full access to your Spotify music library. Search tracks, manage playlists, save songs, view play history, and more.",
 )
 

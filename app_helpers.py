@@ -141,7 +141,7 @@ async def prepare_oauth_url(ctx) -> str | None:
 
         user_id = ctx.user.imperal_id
         state = str(uuid.uuid4())
-        redirect_uri = ctx.webhook_url("callback")
+        redirect_uri = ctx.webhook_url("/callback")
 
         webhook_store = StoreClient(
             gateway_url=ctx.store._gateway_url,
