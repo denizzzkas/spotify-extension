@@ -11,7 +11,7 @@ for _m in [k for k in sys.modules if k in (
     "app", "skeleton", "panels", "panels_left", "panels_right", "panels_demo", "spotify_config", "utils", "demo_data",
     "handlers", "handlers.auth", "handlers.search",
     "handlers.playlists", "handlers.library", "handlers.playback",
-    "handlers.demo", "handlers.lyrics",
+    "handlers.demo", "handlers.lyrics", "handlers.player_webhook",
 )]:
     del sys.modules[_m]
 
@@ -23,5 +23,6 @@ import handlers.library  # noqa: F401
 import handlers.playback  # noqa: F401
 import handlers.demo  # noqa: F401
 import handlers.lyrics  # noqa: F401
+import handlers.player_webhook  # noqa: F401
 import skeleton  # noqa: F401
 import panels  # noqa: F401

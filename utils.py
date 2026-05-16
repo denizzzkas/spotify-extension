@@ -41,7 +41,7 @@ def format_playlist(raw: dict) -> dict:
     return {
         "id": raw.get("id", ""),
         "title": raw.get("name", "Unknown"),
-        "track_count": tracks.get("total", 0) if isinstance(tracks, dict) else 0,
+        "track_count": (tracks.get("total") or 0) if isinstance(tracks, dict) else 0,
         "url": (raw.get("external_urls") or {}).get("spotify", ""),
         "description": raw.get("description") or "",
         "is_public": raw.get("public") or False,
