@@ -13,6 +13,7 @@ from demo_data import DEMO_TRACKS, DEMO_PLAYLIST_ID, DEMO_PLAYLIST_NAME
 from utils import format_track
 
 
+@ext.cache_model("detail_params")
 class _DetailParams(BaseModel):
     detail_type: str = ""
     playlist_id: str = ""
@@ -91,7 +92,7 @@ async def panel_spotify_detail(ctx, detail_type: str = "", playlist_id: str = ""
         await ctx.cache.set(
             key="detail_params",
             value=_DetailParams(detail_type=detail_type, playlist_id=playlist_id, playlist_name=playlist_name),
-            ttl_seconds=3600,
+            ttl_seconds=300,
         )
     except Exception:
         pass

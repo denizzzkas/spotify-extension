@@ -53,7 +53,7 @@ async def fn_get_playlists(ctx, params: GetPlaylistsParams) -> ActionResult:
             return _spotify_err(resp)
         playlists = [format_playlist(p) for p in (resp.json().get("items") or [])]
         try:
-            await ctx.cache.set(key="playlists", value=PlaylistsModel(items=playlists), ttl_seconds=600)
+            await ctx.cache.set(key="playlists", value=PlaylistsModel(items=playlists), ttl_seconds=300)
         except Exception as e:
             log.error("Failed to cache playlists: %s", e)
         return ActionResult.success(data={"playlists": playlists, "count": len(playlists)},

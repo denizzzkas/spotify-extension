@@ -126,7 +126,7 @@ async def panel_spotify(ctx, **kwargs):
                     await ctx.cache.set(
                         key="playlists",
                         value=PlaylistsModel(items=playlists),
-                        ttl_seconds=600,
+                        ttl_seconds=300,
                     )
         except Exception as e:
             log.error("Failed to fetch playlists: %s", e)
