@@ -36,11 +36,10 @@ async def _fetch_playlist_tracks(ctx, playlist_id: str) -> list[dict]:
         if not headers:
             return []
 
-        fields = "items(track(id,name,artists,album,duration_ms,preview_url,external_urls,popularity))"
         resp = await ctx.http.get(
             f"{SP_API_BASE}/playlists/{playlist_id}/tracks",
             headers=headers,
-            params={"limit": 50, "fields": fields},
+            params={"limit": 50},
         )
 
         if resp.status_code == 401:
@@ -50,7 +49,7 @@ async def _fetch_playlist_tracks(ctx, playlist_id: str) -> list[dict]:
                 resp = await ctx.http.get(
                     f"{SP_API_BASE}/playlists/{playlist_id}/tracks",
                     headers=headers,
-                    params={"limit": 50, "fields": fields},
+                    params={"limit": 50},
                 )
 
         if resp.ok:
