@@ -154,7 +154,6 @@ async def panel_spotify(ctx, **kwargs):
         np_artist=np_artist,
         np_display=np_display,
         art_display=art_display,
-        play_icon=play_icon,
     )
 
     # Build UI components
@@ -181,8 +180,17 @@ async def panel_spotify(ctx, **kwargs):
         for t in search_tracks
     ]
 
+    controls = ui.Stack([
+        ui.Button("♡", size="sm", on_click=ui.Call("sp_like")),
+        ui.Button("⏮", size="sm", on_click=ui.Call("sp_prev")),
+        ui.Button(play_icon, size="sm", on_click=ui.Call("sp_play_pause")),
+        ui.Button("⏭", size="sm", on_click=ui.Call("sp_next")),
+        ui.Button("⇄", size="sm", on_click=ui.Call("sp_shuffle")),
+    ], direction="h", gap=1)
+
     children = [
         ui.Html(content=player_html, sandbox=False),
+        controls,
         ui.Header("Spotify", level=3),
         ui.Input(
             placeholder="Search tracks...",

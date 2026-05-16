@@ -9,7 +9,6 @@ def build_player_html(
     np_artist: str,
     np_display: str,
     art_display: str,
-    play_icon: str,
 ) -> str:
     return f"""<div style="padding:4px 0;">
 <div id="sp-status" style="font-size:10px;color:#888;min-height:14px;"></div>
@@ -20,18 +19,7 @@ def build_player_html(
        style="font-size:13px;font-weight:600;color:#fff;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{np_title}</div>
   <div id="sp-artist-name"
        style="font-size:11px;color:#aaa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{np_artist}</div>
-  <div style="display:flex;justify-content:center;align-items:center;gap:10px;margin-top:10px;">
-    <button id="sp-like-btn" onclick="spLike();"
-            style="background:none;border:none;color:#aaa;cursor:pointer;font-size:18px;padding:4px;line-height:1;">&#9825;</button>
-    <button onclick="spPrev();"
-            style="background:none;border:none;color:#aaa;cursor:pointer;font-size:20px;padding:4px;line-height:1;">&#9198;</button>
-    <button id="sp-play-btn" onclick="spPlayPause();"
-            style="background:#1DB954;border:none;color:#000;cursor:pointer;border-radius:50%;width:38px;height:38px;font-size:16px;display:inline-flex;align-items:center;justify-content:center;">{play_icon}</button>
-    <button onclick="spNext();"
-            style="background:none;border:none;color:#aaa;cursor:pointer;font-size:20px;padding:4px;line-height:1;">&#9197;</button>
-    <button id="sp-shuffle-btn" onclick="spShuffle();"
-            style="background:none;border:none;color:#aaa;cursor:pointer;font-size:18px;padding:4px;line-height:1;">&#8644;</button>
-  </div>
+
 </div>
 </div>
 <script src="https://sdk.scdn.co/spotify-player.js"></script>
