@@ -16,6 +16,7 @@ SP_SCOPES = " ".join([
     "playlist-modify-public",
     "playlist-modify-private",
     "streaming",
+    "user-read-playback-state",
     "user-modify-playback-state",
 ])
 
@@ -23,6 +24,7 @@ SP_SCOPES = " ".join([
 CRED_COLLECTION = "sp_credentials"
 OAUTH_STATE_COLLECTION = "sp_oauth_states"
 DEMO_PLAYER_STATE = "sp_demo_player"
+SP_PLAYER_DEVICES = "sp_player_devices"
 DEMO_PANEL_STATE = "sp_demo_panel"
 
 # Pagination defaults
