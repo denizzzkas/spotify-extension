@@ -651,6 +651,111 @@
       "long_running": false,
       "scopes": [],
       "owner_chat_tool": "tool_spotify_chat"
+    },
+    {
+      "name": "sp_prev",
+      "description": "Skip to the previous track in the Spotify playback queue.",
+      "action_type": "write",
+      "chain_callable": false,
+      "effects": [
+        "player:previous"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {},
+        "title": "EmptyParams",
+        "type": "object"
+      },
+      "return_schema": {},
+      "event": "spotify-extension.player.previous",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_spotify_chat"
+    },
+    {
+      "name": "sp_next",
+      "description": "Skip to the next track in the Spotify playback queue.",
+      "action_type": "write",
+      "chain_callable": false,
+      "effects": [
+        "player:next"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {},
+        "title": "EmptyParams",
+        "type": "object"
+      },
+      "return_schema": {},
+      "event": "spotify-extension.player.next",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_spotify_chat"
+    },
+    {
+      "name": "sp_play_pause",
+      "description": "Toggle Spotify playback between playing and paused states.",
+      "action_type": "write",
+      "chain_callable": false,
+      "effects": [
+        "player:play_pause"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {},
+        "title": "EmptyParams",
+        "type": "object"
+      },
+      "return_schema": {},
+      "event": "spotify-extension.player.play_pause",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_spotify_chat"
+    },
+    {
+      "name": "sp_shuffle",
+      "description": "Toggle Spotify shuffle mode on or off for the current playback session.",
+      "action_type": "write",
+      "chain_callable": false,
+      "effects": [
+        "player:shuffle"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {},
+        "title": "EmptyParams",
+        "type": "object"
+      },
+      "return_schema": {},
+      "event": "spotify-extension.player.shuffle",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_spotify_chat"
+    },
+    {
+      "name": "sp_like",
+      "description": "Like or unlike the currently playing track in the user's Spotify library.",
+      "action_type": "write",
+      "chain_callable": false,
+      "effects": [
+        "track:like"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {},
+        "title": "EmptyParams",
+        "type": "object"
+      },
+      "return_schema": {},
+      "event": "spotify-extension.track.liked",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_spotify_chat"
     }
   ],
   "signals": [],

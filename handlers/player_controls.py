@@ -31,7 +31,7 @@ async def fn_sp_prev(ctx, params: EmptyParams) -> ActionResult:
             return err
         if not resp.ok and resp.status_code != 204:
             return _spotify_err(resp)
-        return ActionResult.success(summary="Previous track")
+        return ActionResult.success(data={}, summary="Previous track")
     except Exception as e:
         log.error("sp_prev failed: %s", e)
         return ActionResult.error(str(e))
@@ -51,7 +51,7 @@ async def fn_sp_next(ctx, params: EmptyParams) -> ActionResult:
             return err
         if not resp.ok and resp.status_code != 204:
             return _spotify_err(resp)
-        return ActionResult.success(summary="Next track")
+        return ActionResult.success(data={}, summary="Next track")
     except Exception as e:
         log.error("sp_next failed: %s", e)
         return ActionResult.error(str(e))
@@ -79,7 +79,7 @@ async def fn_sp_play_pause(ctx, params: EmptyParams) -> ActionResult:
             return err
         if not resp.ok and resp.status_code != 204:
             return _spotify_err(resp)
-        return ActionResult.success(summary="Paused" if is_playing else "Resumed")
+        return ActionResult.success(data={}, summary="Paused" if is_playing else "Resumed")
     except Exception as e:
         log.error("sp_play_pause failed: %s", e)
         return ActionResult.error(str(e))
@@ -111,7 +111,7 @@ async def fn_sp_shuffle(ctx, params: EmptyParams) -> ActionResult:
             return err
         if not resp2.ok and resp2.status_code != 204:
             return _spotify_err(resp2)
-        return ActionResult.success(summary=f"Shuffle {'on' if new_state else 'off'}")
+        return ActionResult.success(data={"shuffle": new_state}, summary=f"Shuffle {'on' if new_state else 'off'}")
     except Exception as e:
         log.error("sp_shuffle failed: %s", e)
         return ActionResult.error(str(e))
@@ -147,14 +147,15 @@ async def fn_sp_like(ctx, params: EmptyParams) -> ActionResult:
         method = "delete" if is_liked else "put"
 
         resp2, err = await _spotify_call(
-            ctx, method, f"{SP_API_BASE}/me/tracks",
-            json={"ids": [track_id]},
+            ctx, "delete" if is_liked else "put",
+            f"{SP_API_BASE}/me/tracks",
+            params={"ids": track_id},
         )
         if err:
             return err
-        if not resp2.ok and resp2.status_code != 200:
+        if not resp2.ok and resp2.status_code not in (200, 204):
             return _spotify_err(resp2)
-        return ActionResult.success(summary="Unliked" if is_liked else "Liked")
+        return ActionResult.success(data={"liked": not is_liked}, summary="Unliked" if is_liked else "Liked")
     except Exception as e:
         log.error("sp_like failed: %s", e)
         return ActionResult.error(str(e))
