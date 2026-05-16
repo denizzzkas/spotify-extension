@@ -11,6 +11,21 @@
   "capabilities": [],
   "tools": [
     {
+      "name": "spotify",
+      "description": "Full access to your Spotify music library. Search tracks, manage playlists, save songs, view play history, and more.",
+      "scopes": [],
+      "parameters": {
+        "message": {
+          "type": "string",
+          "required": false
+        },
+        "kwargs": {
+          "type": "string",
+          "required": true
+        }
+      }
+    },
+    {
       "name": "skeleton_refresh_spotify_stats",
       "description": "Spotify library stats: liked track count and playlist count for classifier",
       "scopes": [],
@@ -41,7 +56,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
+      "owner_chat_tool": "spotify"
     },
     {
       "name": "disconnect_spotify",
@@ -62,7 +77,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
+      "owner_chat_tool": "spotify"
     },
     {
       "name": "check_spotify_connection",
@@ -81,7 +96,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
+      "owner_chat_tool": "spotify"
     },
     {
       "name": "search_tracks",
@@ -117,7 +132,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
+      "owner_chat_tool": "spotify"
     },
     {
       "name": "get_playlists",
@@ -136,7 +151,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
+      "owner_chat_tool": "spotify"
     },
     {
       "name": "get_playlist_tracks",
@@ -164,7 +179,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
+      "owner_chat_tool": "spotify"
     },
     {
       "name": "create_playlist",
@@ -214,7 +229,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
+      "owner_chat_tool": "spotify"
     },
     {
       "name": "add_track_to_playlist",
@@ -250,7 +265,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
+      "owner_chat_tool": "spotify"
     },
     {
       "name": "remove_track_from_playlist",
@@ -286,7 +301,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
+      "owner_chat_tool": "spotify"
     },
     {
       "name": "get_recent_tracks",
@@ -314,7 +329,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
+      "owner_chat_tool": "spotify"
     },
     {
       "name": "get_liked_tracks",
@@ -342,7 +357,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
+      "owner_chat_tool": "spotify"
     },
     {
       "name": "like_track",
@@ -372,7 +387,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
+      "owner_chat_tool": "spotify"
     },
     {
       "name": "unlike_track",
@@ -402,7 +417,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
+      "owner_chat_tool": "spotify"
     },
     {
       "name": "get_user_profile",
@@ -421,7 +436,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
+      "owner_chat_tool": "spotify"
     },
     {
       "name": "play_track",
@@ -451,7 +466,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
+      "owner_chat_tool": "spotify"
     },
     {
       "name": "play_playlist",
@@ -481,7 +496,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
+      "owner_chat_tool": "spotify"
     },
     {
       "name": "open_demo_playlist",
@@ -502,7 +517,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
+      "owner_chat_tool": "spotify"
     },
     {
       "name": "demo_play_track",
@@ -532,7 +547,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
+      "owner_chat_tool": "spotify"
     },
     {
       "name": "demo_next_track",
@@ -553,7 +568,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
+      "owner_chat_tool": "spotify"
     },
     {
       "name": "demo_prev_track",
@@ -574,7 +589,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
+      "owner_chat_tool": "spotify"
     },
     {
       "name": "demo_pause",
@@ -595,7 +610,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
+      "owner_chat_tool": "spotify"
     },
     {
       "name": "demo_shuffle",
@@ -616,7 +631,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
+      "owner_chat_tool": "spotify"
     },
     {
       "name": "get_lyrics",
@@ -650,7 +665,7 @@
       "background": false,
       "long_running": false,
       "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
+      "owner_chat_tool": "spotify"
     }
   ],
   "signals": [],
