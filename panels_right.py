@@ -57,8 +57,12 @@ async def _fetch_playlist_tracks(ctx, playlist_id: str) -> tuple[list[dict], str
             tracks = [format_track(item["track"]) for item in items if item.get("track")]
             return tracks, None
 
-        log.error("_fetch_playlist_tracks HTTP %s for %s", resp.status_code, playlist_id)
-        return [], f"Spotify error HTTP {resp.status_code}"
+        try:
+            detail = resp.json().get("error", {}).get("message", resp.text())
+        except Exception:
+            detail = resp.text()
+        log.error("_fetch_playlist_tracks HTTP %s: %s", resp.status_code, detail)
+        return [], f"HTTP {resp.status_code}: {detail}"
 
     except Exception as e:
         log.error("_fetch_playlist_tracks failed: %s", e)
