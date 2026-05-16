@@ -29,12 +29,12 @@ async def _get_auth_headers(ctx) -> dict | None:
     return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 
 
-async def _fetch_playlist_tracks(ctx, playlist_id: str) -> list[dict]:
-    """Fetch playlist tracks from Spotify API, with token refresh on 401."""
+async def _fetch_playlist_tracks(ctx, playlist_id: str) -> tuple[list[dict], str | None]:
+    """Fetch playlist tracks. Returns (tracks, error_msg)."""
     try:
         headers = await _get_auth_headers(ctx)
         if not headers:
-            return []
+            return [], "Not authenticated"
 
         resp = await ctx.http.get(
             f"{SP_API_BASE}/playlists/{playlist_id}/tracks",
@@ -54,12 +54,15 @@ async def _fetch_playlist_tracks(ctx, playlist_id: str) -> list[dict]:
 
         if resp.ok:
             items = resp.json().get("items", [])
-            return [format_track(item["track"]) for item in items if item.get("track")]
+            tracks = [format_track(item["track"]) for item in items if item.get("track")]
+            return tracks, None
+
+        log.error("_fetch_playlist_tracks HTTP %s for %s", resp.status_code, playlist_id)
+        return [], f"Spotify error HTTP {resp.status_code}"
 
     except Exception as e:
         log.error("_fetch_playlist_tracks failed: %s", e)
-
-    return []
+        return [], str(e)
 
 
 @ext.panel(
@@ -114,22 +117,26 @@ async def panel_spotify_detail(ctx, detail_type: str = "", playlist_id: str = ""
         return ui.Empty("No playlist selected.", icon="Music")
 
     title = playlist_name or "Playlist"
+    cache_key = f"detail_{playlist_id}"
 
     try:
-        cached = await ctx.cache.get(key="detail", model=DetailModel)
-        if cached and cached.title == title and cached.tracks:
+        cached = await ctx.cache.get(key=cache_key, model=DetailModel)
+        if cached and cached.tracks:
             return _render_tracks(cached.tracks, cached.title, play_fn="play_track")
     except Exception:
         pass
 
-    tracks = await _fetch_playlist_tracks(ctx, playlist_id)
+    tracks, err = await _fetch_playlist_tracks(ctx, playlist_id)
+
+    if err:
+        return ui.Empty(f"Could not load tracks: {err}", icon="AlertCircle")
 
     if not tracks:
-        return ui.Empty("No tracks found.", icon="Music")
+        return ui.Empty("Playlist is empty.", icon="Music")
 
     try:
         await ctx.cache.set(
-            key="detail",
+            key=cache_key,
             value=DetailModel(type="tracks", title=title, tracks=tracks),
             ttl_seconds=300,
         )
