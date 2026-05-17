@@ -197,9 +197,9 @@ async def test_get_user_profile_returns_profile():
     ctx.http.mock_get("api.spotify.com/v1/me", SAMPLE_USER)
     result = await fn_get_user_profile(ctx, GetUserProfileParams())
     assert result.status == "success"
-    assert result.data["profile"]["display_name"] == "Test User"
-    assert result.data["profile"]["product"] == "premium"
-    assert result.data["profile"]["followers_count"] == 42
+    assert result.data["display_name"] == "Test User"
+    assert result.data["product"] == "premium"
+    assert result.data["followers_count"] == 42
 
 
 async def test_get_user_profile_no_token_returns_error():

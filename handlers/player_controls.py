@@ -162,7 +162,7 @@ async def fn_sp_like(ctx, params: EmptyParams) -> ActionResult:
             return err
         if not resp2.ok and resp2.status_code not in (200, 204):
             return _spotify_err(resp2)
-        return ActionResult.success(data={"liked": not is_liked}, summary="Unliked" if is_liked else "Liked")
+        return ActionResult.success(data={"track_id": track_id, "liked": not is_liked}, summary="Unliked" if is_liked else "Liked")
     except Exception as e:
         log.error("sp_like failed: %s", e)
         return ActionResult.error(str(e))

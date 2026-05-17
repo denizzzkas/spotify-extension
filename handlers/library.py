@@ -162,7 +162,7 @@ async def fn_get_user_profile(ctx, params: GetUserProfileParams) -> ActionResult
             "followers_count": (raw.get("followers") or {}).get("total", 0),
             "product": raw.get("product", "free"),
         }
-        return ActionResult.success(data={"profile": profile},
+        return ActionResult.success(data=profile,
                                     summary=f"Profile: {profile['display_name']} ({profile['product']})")
     except Exception as e:
         log.error("get_user_profile failed: %s", e)
