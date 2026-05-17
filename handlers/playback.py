@@ -31,7 +31,8 @@ class PlayPlaylistParams(BaseModel):
     chain_callable=True,
     id_projection="track_id",
     effects=["playback:start"],
-    event="spotify-extension.track.played",
+    event="spotify.track.played",
+    scopes=["playback:control"],
     data_model=PlayTrackRecord,
     description="Get track info and trigger playback. Returns track metadata with preview URL.",
 )
@@ -119,7 +120,8 @@ async def fn_play_track(ctx, params: PlayTrackParams) -> ActionResult:
     chain_callable=True,
     id_projection="playlist_id",
     effects=["playback:start"],
-    event="spotify-extension.playlist.played",
+    event="spotify.playlist.played",
+    scopes=["playback:control"],
     data_model=PlaylistPlayRecord,
     description="Get playlist tracks and trigger playback. Returns list of tracks in the playlist.",
 )

@@ -80,8 +80,10 @@ class DemoShuffleParams(BaseModel):
 @chat.function(
     "open_demo_playlist",
     action_type="write",
+    chain_callable=True,
     effects=["demo:active"],
-    event="spotify-extension.open_demo_playlist",
+    event="spotify.open_demo_playlist",
+    scopes=["music:read"],
     data_model=DemoPlaylistRecord,
     description="Open demo playlist (no Spotify login required). Returns demo tracks for testing.",
 )
@@ -102,8 +104,10 @@ async def fn_open_demo_playlist(ctx, params: OpenDemoPlaylistParams) -> ActionRe
 @chat.function(
     "demo_play_track",
     action_type="write",
+    chain_callable=True,
     effects=["demo:play"],
-    event="spotify-extension.demo_play_track",
+    event="spotify.demo_play_track",
+    scopes=["playback:control"],
     data_model=DemoTrackRecord,
     description="Play a specific track from demo playlist.",
 )
@@ -139,8 +143,10 @@ async def fn_demo_play_track(ctx, params: DemoPlayTrackParams) -> ActionResult:
 @chat.function(
     "demo_next_track",
     action_type="write",
+    chain_callable=True,
     effects=["demo:next"],
-    event="spotify-extension.demo_next_track",
+    event="spotify.demo_next_track",
+    scopes=["playback:control"],
     data_model=PlayerActionRecord,
     description="Skip to next track in demo playlist.",
 )
@@ -164,8 +170,10 @@ async def fn_demo_next_track(ctx, params: DemoNextTrackParams) -> ActionResult:
 @chat.function(
     "demo_prev_track",
     action_type="write",
+    chain_callable=True,
     effects=["demo:prev"],
-    event="spotify-extension.demo_prev_track",
+    event="spotify.demo_prev_track",
+    scopes=["playback:control"],
     data_model=PlayerActionRecord,
     description="Go to previous track in demo playlist.",
 )
@@ -183,8 +191,10 @@ async def fn_demo_prev_track(ctx, params: DemoPrevTrackParams) -> ActionResult:
 @chat.function(
     "demo_pause",
     action_type="write",
+    chain_callable=True,
     effects=["demo:pause"],
-    event="spotify-extension.demo_pause",
+    event="spotify.demo_pause",
+    scopes=["playback:control"],
     data_model=PlayerActionRecord,
     description="Toggle playback pause/resume in demo mode.",
 )
@@ -204,8 +214,10 @@ async def fn_demo_pause(ctx, params: DemoPauseParams) -> ActionResult:
 @chat.function(
     "demo_shuffle",
     action_type="write",
+    chain_callable=True,
     effects=["demo:shuffle"],
-    event="spotify-extension.demo_shuffle",
+    event="spotify.demo_shuffle",
+    scopes=["playback:control"],
     data_model=ShuffleRecord,
     description="Toggle shuffle mode in demo playlist.",
 )

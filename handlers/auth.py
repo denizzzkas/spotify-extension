@@ -38,7 +38,8 @@ class CheckConnectionParams(BaseModel):
     action_type="write",
     chain_callable=True,
     effects=["auth:connect"],
-    event="spotify-extension.connected",
+    event="spotify.connected",
+    scopes=["auth:oauth"],
     data_model=SpotifyAuthRecord,
     description="Connect your Spotify account via OAuth 2.0. Returns an authorisation URL to visit.",
 )
@@ -105,7 +106,8 @@ async def fn_connect_spotify(ctx, params: ConnectSpotifyParams) -> ActionResult:
     action_type="write",
     chain_callable=True,
     effects=["auth:disconnect"],
-    event="spotify-extension.disconnected",
+    event="spotify.disconnected",
+    scopes=["auth:oauth"],
     data_model=SpotifyDisconnectRecord,
     description="Disconnect your Spotify account and remove all stored credentials.",
 )
@@ -130,6 +132,7 @@ async def fn_disconnect_spotify(ctx, params: DisconnectSpotifyParams) -> ActionR
 @chat.function(
     "check_spotify_connection",
     action_type="read",
+    scopes=["auth:oauth"],
     data_model=SpotifyConnectionRecord,
     description="Check if you are connected to Spotify and get your profile info.",
 )
@@ -155,7 +158,7 @@ async def fn_check_connection(ctx, params: CheckConnectionParams) -> ActionResul
 
 # ─── OAuth webhook callback ────────────────────────────────────────────────── #
 
-@ext.webhook("callback", method="GET")
+@ext.webhook("/callback", method="GET")
 async def oauth_callback(ctx, headers, body, query_params) -> dict:
     from imperal_sdk import WebhookResponse
 
@@ -221,7 +224,7 @@ async def oauth_callback(ctx, headers, body, query_params) -> dict:
         await _save_token_to_store(user_store, user_id, token_data)
 
         try:
-            await ctx.extensions.emit("spotify-extension.connected", {"user_id": user_id})
+            await ctx.extensions.emit("spotify.connected", {"user_id": user_id})
         except Exception as e:
             log.warning("could not emit connected event: %s", e)
 

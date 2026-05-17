@@ -25,12 +25,12 @@ log = logging.getLogger("spotify")
 # ─── Extension ────────────────────────────────────────────────────────────── #
 
 ext = Extension(
-    "spotify-extension",
+    "spotify",
     display_name="Spotify",
     description="Full access to your Spotify music library. Search tracks, manage playlists, save songs, view play history, and more.",
     icon="icon.svg",
     version="2.0.0",
-    capabilities=[],
+    capabilities=["music:read", "music:write", "playback:control", "auth:oauth"],
     actions_explicit=True,
     system=False,
     config_defaults={},
@@ -115,25 +115,25 @@ chat = ChatExtension(
 
 # ─── Emitted events ───────────────────────────────────────────────────────── #
 
-@ext.emits("spotify-extension.connected")
-@ext.emits("spotify-extension.disconnected")
-@ext.emits("spotify-extension.track.liked")
-@ext.emits("spotify-extension.track.unliked")
-@ext.emits("spotify-extension.track.played")
-@ext.emits("spotify-extension.track.added_to_playlist")
-@ext.emits("spotify-extension.track.removed_from_playlist")
-@ext.emits("spotify-extension.playlist.created")
-@ext.emits("spotify-extension.playlist.played")
-@ext.emits("spotify-extension.player.previous")
-@ext.emits("spotify-extension.player.next")
-@ext.emits("spotify-extension.player.play_pause")
-@ext.emits("spotify-extension.player.shuffle")
-@ext.emits("spotify-extension.open_demo_playlist")
-@ext.emits("spotify-extension.demo_play_track")
-@ext.emits("spotify-extension.demo_next_track")
-@ext.emits("spotify-extension.demo_prev_track")
-@ext.emits("spotify-extension.demo_pause")
-@ext.emits("spotify-extension.demo_shuffle")
+@ext.emits("spotify.connected")
+@ext.emits("spotify.disconnected")
+@ext.emits("spotify.track.liked")
+@ext.emits("spotify.track.unliked")
+@ext.emits("spotify.track.played")
+@ext.emits("spotify.track.added_to_playlist")
+@ext.emits("spotify.track.removed_from_playlist")
+@ext.emits("spotify.playlist.created")
+@ext.emits("spotify.playlist.played")
+@ext.emits("spotify.player.previous")
+@ext.emits("spotify.player.next")
+@ext.emits("spotify.player.play_pause")
+@ext.emits("spotify.player.shuffle")
+@ext.emits("spotify.open_demo_playlist")
+@ext.emits("spotify.demo_play_track")
+@ext.emits("spotify.demo_next_track")
+@ext.emits("spotify.demo_prev_track")
+@ext.emits("spotify.demo_pause")
+@ext.emits("spotify.demo_shuffle")
 async def _declare_events() -> None:
     pass
 

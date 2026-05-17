@@ -1,14 +1,19 @@
 {
   "manifest_schema_version": 3,
   "sdk_version": "5.0.1",
-  "app_id": "spotify-extension",
+  "app_id": "spotify",
   "version": "2.0.0",
   "name": "Spotify",
   "description": "Full access to your Spotify music library. Search tracks, manage playlists, save songs, view play history, and more.",
   "icon": "icon.svg",
   "actions_explicit": true,
   "system": false,
-  "capabilities": [],
+  "capabilities": [
+    "music:read",
+    "music:write",
+    "playback:control",
+    "auth:oauth"
+  ],
   "tools": [
     {
       "name": "skeleton_refresh_spotify_stats",
@@ -49,10 +54,12 @@
         "title": "SpotifyAuthRecord",
         "type": "object"
       },
-      "event": "spotify-extension.connected",
+      "event": "spotify.connected",
       "background": false,
       "long_running": false,
-      "scopes": [],
+      "scopes": [
+        "auth:oauth"
+      ],
       "owner_chat_tool": "tool_spotify_chat"
     },
     {
@@ -82,10 +89,12 @@
         "title": "SpotifyDisconnectRecord",
         "type": "object"
       },
-      "event": "spotify-extension.disconnected",
+      "event": "spotify.disconnected",
       "background": false,
       "long_running": false,
-      "scopes": [],
+      "scopes": [
+        "auth:oauth"
+      ],
       "owner_chat_tool": "tool_spotify_chat"
     },
     {
@@ -128,7 +137,9 @@
       "event": "",
       "background": false,
       "long_running": false,
-      "scopes": [],
+      "scopes": [
+        "auth:oauth"
+      ],
       "owner_chat_tool": "tool_spotify_chat"
     },
     {
@@ -221,7 +232,9 @@
       "event": "",
       "background": false,
       "long_running": false,
-      "scopes": [],
+      "scopes": [
+        "music:read"
+      ],
       "owner_chat_tool": "tool_spotify_chat"
     },
     {
@@ -282,7 +295,9 @@
       "event": "",
       "background": false,
       "long_running": false,
-      "scopes": [],
+      "scopes": [
+        "music:read"
+      ],
       "owner_chat_tool": "tool_spotify_chat"
     },
     {
@@ -367,7 +382,9 @@
       "event": "",
       "background": false,
       "long_running": false,
-      "scopes": [],
+      "scopes": [
+        "music:read"
+      ],
       "owner_chat_tool": "tool_spotify_chat"
     },
     {
@@ -441,10 +458,12 @@
         "title": "CreatePlaylistRecord",
         "type": "object"
       },
-      "event": "spotify-extension.playlist.created",
+      "event": "spotify.playlist.created",
       "background": false,
       "long_running": false,
-      "scopes": [],
+      "scopes": [
+        "music:write"
+      ],
       "owner_chat_tool": "tool_spotify_chat"
     },
     {
@@ -499,10 +518,12 @@
         "title": "PlaylistTrackRecord",
         "type": "object"
       },
-      "event": "spotify-extension.track.added_to_playlist",
+      "event": "spotify.track.added_to_playlist",
       "background": false,
       "long_running": false,
-      "scopes": [],
+      "scopes": [
+        "music:write"
+      ],
       "owner_chat_tool": "tool_spotify_chat"
     },
     {
@@ -557,10 +578,12 @@
         "title": "PlaylistRemoveRecord",
         "type": "object"
       },
-      "event": "spotify-extension.track.removed_from_playlist",
+      "event": "spotify.track.removed_from_playlist",
       "background": false,
       "long_running": false,
-      "scopes": [],
+      "scopes": [
+        "music:write"
+      ],
       "owner_chat_tool": "tool_spotify_chat"
     },
     {
@@ -645,7 +668,9 @@
       "event": "",
       "background": false,
       "long_running": false,
-      "scopes": [],
+      "scopes": [
+        "music:read"
+      ],
       "owner_chat_tool": "tool_spotify_chat"
     },
     {
@@ -730,7 +755,9 @@
       "event": "",
       "background": false,
       "long_running": false,
-      "scopes": [],
+      "scopes": [
+        "music:read"
+      ],
       "owner_chat_tool": "tool_spotify_chat"
     },
     {
@@ -774,10 +801,12 @@
         "title": "TrackLikeRecord",
         "type": "object"
       },
-      "event": "spotify-extension.track.liked",
+      "event": "spotify.track.liked",
       "background": false,
       "long_running": false,
-      "scopes": [],
+      "scopes": [
+        "music:write"
+      ],
       "owner_chat_tool": "tool_spotify_chat"
     },
     {
@@ -821,10 +850,12 @@
         "title": "TrackLikeRecord",
         "type": "object"
       },
-      "event": "spotify-extension.track.unliked",
+      "event": "spotify.track.unliked",
       "background": false,
       "long_running": false,
-      "scopes": [],
+      "scopes": [
+        "music:write"
+      ],
       "owner_chat_tool": "tool_spotify_chat"
     },
     {
@@ -890,7 +921,9 @@
       "event": "",
       "background": false,
       "long_running": false,
-      "scopes": [],
+      "scopes": [
+        "music:read"
+      ],
       "owner_chat_tool": "tool_spotify_chat"
     },
     {
@@ -1003,10 +1036,12 @@
         "title": "PlayTrackRecord",
         "type": "object"
       },
-      "event": "spotify-extension.track.played",
+      "event": "spotify.track.played",
       "background": false,
       "long_running": false,
-      "scopes": [],
+      "scopes": [
+        "playback:control"
+      ],
       "owner_chat_tool": "tool_spotify_chat"
     },
     {
@@ -1118,10 +1153,12 @@
         "title": "PlaylistPlayRecord",
         "type": "object"
       },
-      "event": "spotify-extension.playlist.played",
+      "event": "spotify.playlist.played",
       "background": false,
       "long_running": false,
-      "scopes": [],
+      "scopes": [
+        "playback:control"
+      ],
       "owner_chat_tool": "tool_spotify_chat"
     },
     {
@@ -1219,10 +1256,12 @@
         "title": "DemoPlaylistRecord",
         "type": "object"
       },
-      "event": "spotify-extension.open_demo_playlist",
+      "event": "spotify.open_demo_playlist",
       "background": false,
       "long_running": false,
-      "scopes": [],
+      "scopes": [
+        "music:read"
+      ],
       "owner_chat_tool": "tool_spotify_chat"
     },
     {
@@ -1271,10 +1310,12 @@
         "title": "DemoTrackRecord",
         "type": "object"
       },
-      "event": "spotify-extension.demo_play_track",
+      "event": "spotify.demo_play_track",
       "background": false,
       "long_running": false,
-      "scopes": [],
+      "scopes": [
+        "playback:control"
+      ],
       "owner_chat_tool": "tool_spotify_chat"
     },
     {
@@ -1296,10 +1337,12 @@
         "title": "PlayerActionRecord",
         "type": "object"
       },
-      "event": "spotify-extension.demo_next_track",
+      "event": "spotify.demo_next_track",
       "background": false,
       "long_running": false,
-      "scopes": [],
+      "scopes": [
+        "playback:control"
+      ],
       "owner_chat_tool": "tool_spotify_chat"
     },
     {
@@ -1321,10 +1364,12 @@
         "title": "PlayerActionRecord",
         "type": "object"
       },
-      "event": "spotify-extension.demo_prev_track",
+      "event": "spotify.demo_prev_track",
       "background": false,
       "long_running": false,
-      "scopes": [],
+      "scopes": [
+        "playback:control"
+      ],
       "owner_chat_tool": "tool_spotify_chat"
     },
     {
@@ -1346,10 +1391,12 @@
         "title": "PlayerActionRecord",
         "type": "object"
       },
-      "event": "spotify-extension.demo_pause",
+      "event": "spotify.demo_pause",
       "background": false,
       "long_running": false,
-      "scopes": [],
+      "scopes": [
+        "playback:control"
+      ],
       "owner_chat_tool": "tool_spotify_chat"
     },
     {
@@ -1379,10 +1426,12 @@
         "title": "ShuffleRecord",
         "type": "object"
       },
-      "event": "spotify-extension.demo_shuffle",
+      "event": "spotify.demo_shuffle",
       "background": false,
       "long_running": false,
-      "scopes": [],
+      "scopes": [
+        "playback:control"
+      ],
       "owner_chat_tool": "tool_spotify_chat"
     },
     {
@@ -1438,7 +1487,9 @@
       "event": "",
       "background": false,
       "long_running": false,
-      "scopes": [],
+      "scopes": [
+        "music:read"
+      ],
       "owner_chat_tool": "tool_spotify_chat"
     },
     {
@@ -1460,10 +1511,12 @@
         "title": "PlayerActionRecord",
         "type": "object"
       },
-      "event": "spotify-extension.player.previous",
+      "event": "spotify.player.previous",
       "background": false,
       "long_running": false,
-      "scopes": [],
+      "scopes": [
+        "playback:control"
+      ],
       "owner_chat_tool": "tool_spotify_chat"
     },
     {
@@ -1485,10 +1538,12 @@
         "title": "PlayerActionRecord",
         "type": "object"
       },
-      "event": "spotify-extension.player.next",
+      "event": "spotify.player.next",
       "background": false,
       "long_running": false,
-      "scopes": [],
+      "scopes": [
+        "playback:control"
+      ],
       "owner_chat_tool": "tool_spotify_chat"
     },
     {
@@ -1510,10 +1565,12 @@
         "title": "PlayerActionRecord",
         "type": "object"
       },
-      "event": "spotify-extension.player.play_pause",
+      "event": "spotify.player.play_pause",
       "background": false,
       "long_running": false,
-      "scopes": [],
+      "scopes": [
+        "playback:control"
+      ],
       "owner_chat_tool": "tool_spotify_chat"
     },
     {
@@ -1543,10 +1600,12 @@
         "title": "ShuffleRecord",
         "type": "object"
       },
-      "event": "spotify-extension.player.shuffle",
+      "event": "spotify.player.shuffle",
       "background": false,
       "long_running": false,
-      "scopes": [],
+      "scopes": [
+        "playback:control"
+      ],
       "owner_chat_tool": "tool_spotify_chat"
     },
     {
@@ -1581,10 +1640,12 @@
         "title": "TrackLikeRecord",
         "type": "object"
       },
-      "event": "spotify-extension.track.liked",
+      "event": "spotify.track.liked",
       "background": false,
       "long_running": false,
-      "scopes": [],
+      "scopes": [
+        "music:write"
+      ],
       "owner_chat_tool": "tool_spotify_chat"
     }
   ],
@@ -1594,12 +1655,12 @@
   "icon_size_bytes": 905,
   "webhooks": [
     {
-      "path": "callback",
+      "path": "/callback",
       "method": "GET",
       "secret_header": ""
     },
     {
-      "path": "player-ready",
+      "path": "/player-ready",
       "method": "POST",
       "secret_header": ""
     }
@@ -1608,61 +1669,61 @@
     "subscribes": [],
     "emits": [
       {
-        "type": "spotify-extension.demo_shuffle"
+        "type": "spotify.demo_shuffle"
       },
       {
-        "type": "spotify-extension.demo_pause"
+        "type": "spotify.demo_pause"
       },
       {
-        "type": "spotify-extension.demo_prev_track"
+        "type": "spotify.demo_prev_track"
       },
       {
-        "type": "spotify-extension.demo_next_track"
+        "type": "spotify.demo_next_track"
       },
       {
-        "type": "spotify-extension.demo_play_track"
+        "type": "spotify.demo_play_track"
       },
       {
-        "type": "spotify-extension.open_demo_playlist"
+        "type": "spotify.open_demo_playlist"
       },
       {
-        "type": "spotify-extension.player.shuffle"
+        "type": "spotify.player.shuffle"
       },
       {
-        "type": "spotify-extension.player.play_pause"
+        "type": "spotify.player.play_pause"
       },
       {
-        "type": "spotify-extension.player.next"
+        "type": "spotify.player.next"
       },
       {
-        "type": "spotify-extension.player.previous"
+        "type": "spotify.player.previous"
       },
       {
-        "type": "spotify-extension.playlist.played"
+        "type": "spotify.playlist.played"
       },
       {
-        "type": "spotify-extension.playlist.created"
+        "type": "spotify.playlist.created"
       },
       {
-        "type": "spotify-extension.track.removed_from_playlist"
+        "type": "spotify.track.removed_from_playlist"
       },
       {
-        "type": "spotify-extension.track.added_to_playlist"
+        "type": "spotify.track.added_to_playlist"
       },
       {
-        "type": "spotify-extension.track.played"
+        "type": "spotify.track.played"
       },
       {
-        "type": "spotify-extension.track.unliked"
+        "type": "spotify.track.unliked"
       },
       {
-        "type": "spotify-extension.track.liked"
+        "type": "spotify.track.liked"
       },
       {
-        "type": "spotify-extension.disconnected"
+        "type": "spotify.disconnected"
       },
       {
-        "type": "spotify-extension.connected"
+        "type": "spotify.connected"
       }
     ]
   },

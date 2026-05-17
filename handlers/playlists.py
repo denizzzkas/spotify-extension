@@ -42,6 +42,7 @@ class RemoveTrackFromPlaylistParams(BaseModel):
 @chat.function(
     "get_playlists",
     action_type="read",
+    scopes=["music:read"],
     data_model=PlaylistRecord,
     description="Get all playlists owned or followed by the authenticated user. Returns list of playlists with id, title, track_count, image_url.",
 )
@@ -68,6 +69,7 @@ async def fn_get_playlists(ctx, params: GetPlaylistsParams) -> ActionResult:
 @chat.function(
     "get_playlist_tracks",
     action_type="read",
+    scopes=["music:read"],
     data_model=TrackRecord,
     description="Get all tracks in a specific Spotify playlist. Returns list of tracks with full details.",
 )
@@ -93,7 +95,8 @@ async def fn_get_playlist_tracks(ctx, params: GetPlaylistTracksParams) -> Action
     chain_callable=True,
     id_projection="playlist_id",
     effects=["playlist:create"],
-    event="spotify-extension.playlist.created",
+    event="spotify.playlist.created",
+    scopes=["music:write"],
     data_model=CreatePlaylistRecord,
     description="Create a new playlist on the user's Spotify account. Returns playlist_id and playlist details.",
 )
@@ -141,7 +144,8 @@ async def fn_create_playlist(ctx, params: CreatePlaylistParams) -> ActionResult:
     chain_callable=True,
     id_projection="playlist_id",
     effects=["playlist:add_track"],
-    event="spotify-extension.track.added_to_playlist",
+    event="spotify.track.added_to_playlist",
+    scopes=["music:write"],
     data_model=PlaylistTrackRecord,
     description="Add a track to an existing Spotify playlist. Returns updated playlist info.",
 )
@@ -169,7 +173,8 @@ async def fn_add_track_to_playlist(ctx, params: AddTrackToPlaylistParams) -> Act
     chain_callable=True,
     id_projection="playlist_id",
     effects=["playlist:remove_track"],
-    event="spotify-extension.track.removed_from_playlist",
+    event="spotify.track.removed_from_playlist",
+    scopes=["music:write"],
     data_model=PlaylistRemoveRecord,
     description="Remove a track from a Spotify playlist. Returns updated playlist info.",
 )

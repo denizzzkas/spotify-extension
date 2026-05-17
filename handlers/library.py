@@ -37,6 +37,7 @@ class GetUserProfileParams(BaseModel):
 @chat.function(
     "get_recent_tracks",
     action_type="read",
+    scopes=["music:read"],
     data_model=TrackRecord,
     description="Get the user's recently played tracks (requires Spotify Premium). Returns list of tracks with full details.",
 )
@@ -62,6 +63,7 @@ async def fn_get_recent_tracks(ctx, params: GetRecentTracksParams) -> ActionResu
 @chat.function(
     "get_liked_tracks",
     action_type="read",
+    scopes=["music:read"],
     data_model=TrackRecord,
     description="Get all tracks saved/liked in the user's Spotify library. Returns list of liked tracks with full details.",
 )
@@ -88,7 +90,8 @@ async def fn_get_liked_tracks(ctx, params: GetLikedTracksParams) -> ActionResult
     chain_callable=True,
     id_projection="track_id",
     effects=["library:like"],
-    event="spotify-extension.track.liked",
+    event="spotify.track.liked",
+    scopes=["music:write"],
     data_model=TrackLikeRecord,
     description="Save a track to the user's Spotify library (like it).",
 )
@@ -115,7 +118,8 @@ async def fn_like_track(ctx, params: LikeTrackParams) -> ActionResult:
     chain_callable=True,
     id_projection="track_id",
     effects=["library:unlike"],
-    event="spotify-extension.track.unliked",
+    event="spotify.track.unliked",
+    scopes=["music:write"],
     data_model=TrackLikeRecord,
     description="Remove a track from the user's Spotify library (unlike it).",
 )
@@ -139,6 +143,7 @@ async def fn_unlike_track(ctx, params: UnlikeTrackParams) -> ActionResult:
 @chat.function(
     "get_user_profile",
     action_type="read",
+    scopes=["music:read"],
     data_model=UserProfileRecord,
     description="Get the authenticated user's Spotify profile information including username, followers, and subscription type.",
 )
