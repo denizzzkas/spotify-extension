@@ -1,6 +1,6 @@
 {
   "manifest_schema_version": 3,
-  "sdk_version": "5.0.0",
+  "sdk_version": "5.0.1",
   "app_id": "spotify-extension",
   "version": "2.0.0",
   "name": "Spotify",
@@ -36,7 +36,19 @@
         "title": "ConnectSpotifyParams",
         "type": "object"
       },
-      "return_schema": {},
+      "return_schema": {
+        "properties": {
+          "auth_url": {
+            "title": "Auth Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "auth_url"
+        ],
+        "title": "SpotifyAuthRecord",
+        "type": "object"
+      },
       "event": "spotify-extension.connected",
       "background": false,
       "long_running": false,
@@ -57,7 +69,19 @@
         "title": "DisconnectSpotifyParams",
         "type": "object"
       },
-      "return_schema": {},
+      "return_schema": {
+        "properties": {
+          "disconnected": {
+            "title": "Disconnected",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "disconnected"
+        ],
+        "title": "SpotifyDisconnectRecord",
+        "type": "object"
+      },
       "event": "spotify-extension.disconnected",
       "background": false,
       "long_running": false,
@@ -76,7 +100,31 @@
         "title": "CheckConnectionParams",
         "type": "object"
       },
-      "return_schema": {},
+      "return_schema": {
+        "properties": {
+          "connected": {
+            "title": "Connected",
+            "type": "boolean"
+          },
+          "token_scopes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Token Scopes"
+          }
+        },
+        "required": [
+          "connected"
+        ],
+        "title": "SpotifyConnectionRecord",
+        "type": "object"
+      },
       "event": "",
       "background": false,
       "long_running": false,
@@ -112,7 +160,64 @@
         "title": "SearchTracksParams",
         "type": "object"
       },
-      "return_schema": {},
+      "return_schema": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "artist": {
+            "title": "Artist",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          },
+          "duration": {
+            "title": "Duration",
+            "type": "string"
+          },
+          "duration_ms": {
+            "title": "Duration Ms",
+            "type": "integer"
+          },
+          "popularity": {
+            "title": "Popularity",
+            "type": "integer"
+          },
+          "preview_url": {
+            "title": "Preview Url",
+            "type": "string"
+          },
+          "album": {
+            "title": "Album",
+            "type": "string"
+          },
+          "album_art": {
+            "title": "Album Art",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "artist",
+          "url",
+          "duration",
+          "duration_ms",
+          "popularity",
+          "preview_url",
+          "album",
+          "album_art"
+        ],
+        "title": "TrackRecord",
+        "type": "object"
+      },
       "event": "",
       "background": false,
       "long_running": false,
@@ -131,7 +236,49 @@
         "title": "GetPlaylistsParams",
         "type": "object"
       },
-      "return_schema": {},
+      "return_schema": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "track_count": {
+            "title": "Track Count",
+            "type": "integer"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "is_public": {
+            "title": "Is Public",
+            "type": "boolean"
+          },
+          "image_url": {
+            "title": "Image Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "track_count",
+          "url",
+          "description",
+          "is_public",
+          "image_url"
+        ],
+        "title": "PlaylistRecord",
+        "type": "object"
+      },
       "event": "",
       "background": false,
       "long_running": false,
@@ -159,7 +306,64 @@
         "title": "GetPlaylistTracksParams",
         "type": "object"
       },
-      "return_schema": {},
+      "return_schema": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "artist": {
+            "title": "Artist",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          },
+          "duration": {
+            "title": "Duration",
+            "type": "string"
+          },
+          "duration_ms": {
+            "title": "Duration Ms",
+            "type": "integer"
+          },
+          "popularity": {
+            "title": "Popularity",
+            "type": "integer"
+          },
+          "preview_url": {
+            "title": "Preview Url",
+            "type": "string"
+          },
+          "album": {
+            "title": "Album",
+            "type": "string"
+          },
+          "album_art": {
+            "title": "Album Art",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "artist",
+          "url",
+          "duration",
+          "duration_ms",
+          "popularity",
+          "preview_url",
+          "album",
+          "album_art"
+        ],
+        "title": "TrackRecord",
+        "type": "object"
+      },
       "event": "",
       "background": false,
       "long_running": false,
@@ -209,7 +413,34 @@
         "title": "CreatePlaylistParams",
         "type": "object"
       },
-      "return_schema": {},
+      "return_schema": {
+        "properties": {
+          "playlist_id": {
+            "title": "Playlist Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          },
+          "tracks_added": {
+            "title": "Tracks Added",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "playlist_id",
+          "name",
+          "url",
+          "tracks_added"
+        ],
+        "title": "CreatePlaylistRecord",
+        "type": "object"
+      },
       "event": "spotify-extension.playlist.created",
       "background": false,
       "long_running": false,
@@ -245,7 +476,29 @@
         "title": "AddTrackToPlaylistParams",
         "type": "object"
       },
-      "return_schema": {},
+      "return_schema": {
+        "properties": {
+          "playlist_id": {
+            "title": "Playlist Id",
+            "type": "string"
+          },
+          "track_id": {
+            "title": "Track Id",
+            "type": "string"
+          },
+          "added": {
+            "title": "Added",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "playlist_id",
+          "track_id",
+          "added"
+        ],
+        "title": "PlaylistTrackRecord",
+        "type": "object"
+      },
       "event": "spotify-extension.track.added_to_playlist",
       "background": false,
       "long_running": false,
@@ -281,7 +534,29 @@
         "title": "RemoveTrackFromPlaylistParams",
         "type": "object"
       },
-      "return_schema": {},
+      "return_schema": {
+        "properties": {
+          "playlist_id": {
+            "title": "Playlist Id",
+            "type": "string"
+          },
+          "track_id": {
+            "title": "Track Id",
+            "type": "string"
+          },
+          "removed": {
+            "title": "Removed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "playlist_id",
+          "track_id",
+          "removed"
+        ],
+        "title": "PlaylistRemoveRecord",
+        "type": "object"
+      },
       "event": "spotify-extension.track.removed_from_playlist",
       "background": false,
       "long_running": false,
@@ -309,7 +584,64 @@
         "title": "GetRecentTracksParams",
         "type": "object"
       },
-      "return_schema": {},
+      "return_schema": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "artist": {
+            "title": "Artist",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          },
+          "duration": {
+            "title": "Duration",
+            "type": "string"
+          },
+          "duration_ms": {
+            "title": "Duration Ms",
+            "type": "integer"
+          },
+          "popularity": {
+            "title": "Popularity",
+            "type": "integer"
+          },
+          "preview_url": {
+            "title": "Preview Url",
+            "type": "string"
+          },
+          "album": {
+            "title": "Album",
+            "type": "string"
+          },
+          "album_art": {
+            "title": "Album Art",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "artist",
+          "url",
+          "duration",
+          "duration_ms",
+          "popularity",
+          "preview_url",
+          "album",
+          "album_art"
+        ],
+        "title": "TrackRecord",
+        "type": "object"
+      },
       "event": "",
       "background": false,
       "long_running": false,
@@ -337,7 +669,64 @@
         "title": "GetLikedTracksParams",
         "type": "object"
       },
-      "return_schema": {},
+      "return_schema": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "artist": {
+            "title": "Artist",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          },
+          "duration": {
+            "title": "Duration",
+            "type": "string"
+          },
+          "duration_ms": {
+            "title": "Duration Ms",
+            "type": "integer"
+          },
+          "popularity": {
+            "title": "Popularity",
+            "type": "integer"
+          },
+          "preview_url": {
+            "title": "Preview Url",
+            "type": "string"
+          },
+          "album": {
+            "title": "Album",
+            "type": "string"
+          },
+          "album_art": {
+            "title": "Album Art",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "artist",
+          "url",
+          "duration",
+          "duration_ms",
+          "popularity",
+          "preview_url",
+          "album",
+          "album_art"
+        ],
+        "title": "TrackRecord",
+        "type": "object"
+      },
       "event": "",
       "background": false,
       "long_running": false,
@@ -367,7 +756,24 @@
         "title": "LikeTrackParams",
         "type": "object"
       },
-      "return_schema": {},
+      "return_schema": {
+        "properties": {
+          "track_id": {
+            "title": "Track Id",
+            "type": "string"
+          },
+          "liked": {
+            "title": "Liked",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "track_id",
+          "liked"
+        ],
+        "title": "TrackLikeRecord",
+        "type": "object"
+      },
       "event": "spotify-extension.track.liked",
       "background": false,
       "long_running": false,
@@ -397,7 +803,24 @@
         "title": "UnlikeTrackParams",
         "type": "object"
       },
-      "return_schema": {},
+      "return_schema": {
+        "properties": {
+          "track_id": {
+            "title": "Track Id",
+            "type": "string"
+          },
+          "liked": {
+            "title": "Liked",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "track_id",
+          "liked"
+        ],
+        "title": "TrackLikeRecord",
+        "type": "object"
+      },
       "event": "spotify-extension.track.unliked",
       "background": false,
       "long_running": false,
@@ -416,7 +839,54 @@
         "title": "GetUserProfileParams",
         "type": "object"
       },
-      "return_schema": {},
+      "return_schema": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          },
+          "avatar_url": {
+            "title": "Avatar Url",
+            "type": "string"
+          },
+          "followers_count": {
+            "title": "Followers Count",
+            "type": "integer"
+          },
+          "product": {
+            "title": "Product",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "display_name",
+          "email",
+          "url",
+          "avatar_url",
+          "followers_count",
+          "product"
+        ],
+        "title": "UserProfileRecord",
+        "type": "object"
+      },
       "event": "",
       "background": false,
       "long_running": false,
@@ -446,7 +916,93 @@
         "title": "PlayTrackParams",
         "type": "object"
       },
-      "return_schema": {},
+      "return_schema": {
+        "$defs": {
+          "TrackRecord": {
+            "properties": {
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "title": {
+                "title": "Title",
+                "type": "string"
+              },
+              "artist": {
+                "title": "Artist",
+                "type": "string"
+              },
+              "url": {
+                "title": "Url",
+                "type": "string"
+              },
+              "duration": {
+                "title": "Duration",
+                "type": "string"
+              },
+              "duration_ms": {
+                "title": "Duration Ms",
+                "type": "integer"
+              },
+              "popularity": {
+                "title": "Popularity",
+                "type": "integer"
+              },
+              "preview_url": {
+                "title": "Preview Url",
+                "type": "string"
+              },
+              "album": {
+                "title": "Album",
+                "type": "string"
+              },
+              "album_art": {
+                "title": "Album Art",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "artist",
+              "url",
+              "duration",
+              "duration_ms",
+              "popularity",
+              "preview_url",
+              "album",
+              "album_art"
+            ],
+            "title": "TrackRecord",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "track_id": {
+            "title": "Track Id",
+            "type": "string"
+          },
+          "track": {
+            "$ref": "#/$defs/TrackRecord"
+          },
+          "preview_url": {
+            "title": "Preview Url",
+            "type": "string"
+          },
+          "full_playback": {
+            "title": "Full Playback",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "track_id",
+          "track",
+          "preview_url",
+          "full_playback"
+        ],
+        "title": "PlayTrackRecord",
+        "type": "object"
+      },
       "event": "spotify-extension.track.played",
       "background": false,
       "long_running": false,
@@ -476,7 +1032,92 @@
         "title": "PlayPlaylistParams",
         "type": "object"
       },
-      "return_schema": {},
+      "return_schema": {
+        "$defs": {
+          "TrackRecord": {
+            "properties": {
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "title": {
+                "title": "Title",
+                "type": "string"
+              },
+              "artist": {
+                "title": "Artist",
+                "type": "string"
+              },
+              "url": {
+                "title": "Url",
+                "type": "string"
+              },
+              "duration": {
+                "title": "Duration",
+                "type": "string"
+              },
+              "duration_ms": {
+                "title": "Duration Ms",
+                "type": "integer"
+              },
+              "popularity": {
+                "title": "Popularity",
+                "type": "integer"
+              },
+              "preview_url": {
+                "title": "Preview Url",
+                "type": "string"
+              },
+              "album": {
+                "title": "Album",
+                "type": "string"
+              },
+              "album_art": {
+                "title": "Album Art",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "artist",
+              "url",
+              "duration",
+              "duration_ms",
+              "popularity",
+              "preview_url",
+              "album",
+              "album_art"
+            ],
+            "title": "TrackRecord",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "playlist_id": {
+            "title": "Playlist Id",
+            "type": "string"
+          },
+          "tracks": {
+            "items": {
+              "$ref": "#/$defs/TrackRecord"
+            },
+            "title": "Tracks",
+            "type": "array"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "playlist_id",
+          "tracks",
+          "count"
+        ],
+        "title": "PlaylistPlayRecord",
+        "type": "object"
+      },
       "event": "spotify-extension.playlist.played",
       "background": false,
       "long_running": false,
@@ -497,7 +1138,87 @@
         "title": "OpenDemoPlaylistParams",
         "type": "object"
       },
-      "return_schema": {},
+      "return_schema": {
+        "$defs": {
+          "TrackRecord": {
+            "properties": {
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "title": {
+                "title": "Title",
+                "type": "string"
+              },
+              "artist": {
+                "title": "Artist",
+                "type": "string"
+              },
+              "url": {
+                "title": "Url",
+                "type": "string"
+              },
+              "duration": {
+                "title": "Duration",
+                "type": "string"
+              },
+              "duration_ms": {
+                "title": "Duration Ms",
+                "type": "integer"
+              },
+              "popularity": {
+                "title": "Popularity",
+                "type": "integer"
+              },
+              "preview_url": {
+                "title": "Preview Url",
+                "type": "string"
+              },
+              "album": {
+                "title": "Album",
+                "type": "string"
+              },
+              "album_art": {
+                "title": "Album Art",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "artist",
+              "url",
+              "duration",
+              "duration_ms",
+              "popularity",
+              "preview_url",
+              "album",
+              "album_art"
+            ],
+            "title": "TrackRecord",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "tracks": {
+            "items": {
+              "$ref": "#/$defs/TrackRecord"
+            },
+            "title": "Tracks",
+            "type": "array"
+          }
+        },
+        "required": [
+          "count",
+          "tracks"
+        ],
+        "title": "DemoPlaylistRecord",
+        "type": "object"
+      },
       "event": "spotify-extension.open_demo_playlist",
       "background": false,
       "long_running": false,
@@ -527,7 +1248,29 @@
         "title": "DemoPlayTrackParams",
         "type": "object"
       },
-      "return_schema": {},
+      "return_schema": {
+        "properties": {
+          "track_id": {
+            "title": "Track Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "artist": {
+            "title": "Artist",
+            "type": "string"
+          }
+        },
+        "required": [
+          "track_id",
+          "title",
+          "artist"
+        ],
+        "title": "DemoTrackRecord",
+        "type": "object"
+      },
       "event": "spotify-extension.demo_play_track",
       "background": false,
       "long_running": false,
@@ -548,7 +1291,11 @@
         "title": "DemoNextTrackParams",
         "type": "object"
       },
-      "return_schema": {},
+      "return_schema": {
+        "properties": {},
+        "title": "PlayerActionRecord",
+        "type": "object"
+      },
       "event": "spotify-extension.demo_next_track",
       "background": false,
       "long_running": false,
@@ -569,7 +1316,11 @@
         "title": "DemoPrevTrackParams",
         "type": "object"
       },
-      "return_schema": {},
+      "return_schema": {
+        "properties": {},
+        "title": "PlayerActionRecord",
+        "type": "object"
+      },
       "event": "spotify-extension.demo_prev_track",
       "background": false,
       "long_running": false,
@@ -590,7 +1341,11 @@
         "title": "DemoPauseParams",
         "type": "object"
       },
-      "return_schema": {},
+      "return_schema": {
+        "properties": {},
+        "title": "PlayerActionRecord",
+        "type": "object"
+      },
       "event": "spotify-extension.demo_pause",
       "background": false,
       "long_running": false,
@@ -611,7 +1366,19 @@
         "title": "DemoShuffleParams",
         "type": "object"
       },
-      "return_schema": {},
+      "return_schema": {
+        "properties": {
+          "shuffle": {
+            "title": "Shuffle",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "shuffle"
+        ],
+        "title": "ShuffleRecord",
+        "type": "object"
+      },
       "event": "spotify-extension.demo_shuffle",
       "background": false,
       "long_running": false,
@@ -645,7 +1412,29 @@
         "title": "GetLyricsParams",
         "type": "object"
       },
-      "return_schema": {},
+      "return_schema": {
+        "properties": {
+          "url": {
+            "title": "Url",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "artist": {
+            "title": "Artist",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "title",
+          "artist"
+        ],
+        "title": "LyricsRecord",
+        "type": "object"
+      },
       "event": "",
       "background": false,
       "long_running": false,
@@ -656,7 +1445,7 @@
       "name": "sp_prev",
       "description": "Skip to the previous track in the Spotify playback queue.",
       "action_type": "write",
-      "chain_callable": false,
+      "chain_callable": true,
       "effects": [
         "player:previous"
       ],
@@ -666,7 +1455,11 @@
         "title": "EmptyParams",
         "type": "object"
       },
-      "return_schema": {},
+      "return_schema": {
+        "properties": {},
+        "title": "PlayerActionRecord",
+        "type": "object"
+      },
       "event": "spotify-extension.player.previous",
       "background": false,
       "long_running": false,
@@ -677,7 +1470,7 @@
       "name": "sp_next",
       "description": "Skip to the next track in the Spotify playback queue.",
       "action_type": "write",
-      "chain_callable": false,
+      "chain_callable": true,
       "effects": [
         "player:next"
       ],
@@ -687,7 +1480,11 @@
         "title": "EmptyParams",
         "type": "object"
       },
-      "return_schema": {},
+      "return_schema": {
+        "properties": {},
+        "title": "PlayerActionRecord",
+        "type": "object"
+      },
       "event": "spotify-extension.player.next",
       "background": false,
       "long_running": false,
@@ -698,7 +1495,7 @@
       "name": "sp_play_pause",
       "description": "Toggle Spotify playback between playing and paused states.",
       "action_type": "write",
-      "chain_callable": false,
+      "chain_callable": true,
       "effects": [
         "player:play_pause"
       ],
@@ -708,7 +1505,11 @@
         "title": "EmptyParams",
         "type": "object"
       },
-      "return_schema": {},
+      "return_schema": {
+        "properties": {},
+        "title": "PlayerActionRecord",
+        "type": "object"
+      },
       "event": "spotify-extension.player.play_pause",
       "background": false,
       "long_running": false,
@@ -719,7 +1520,7 @@
       "name": "sp_shuffle",
       "description": "Toggle Spotify shuffle mode on or off for the current playback session.",
       "action_type": "write",
-      "chain_callable": false,
+      "chain_callable": true,
       "effects": [
         "player:shuffle"
       ],
@@ -729,7 +1530,19 @@
         "title": "EmptyParams",
         "type": "object"
       },
-      "return_schema": {},
+      "return_schema": {
+        "properties": {
+          "shuffle": {
+            "title": "Shuffle",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "shuffle"
+        ],
+        "title": "ShuffleRecord",
+        "type": "object"
+      },
       "event": "spotify-extension.player.shuffle",
       "background": false,
       "long_running": false,
@@ -740,7 +1553,7 @@
       "name": "sp_like",
       "description": "Like or unlike the currently playing track in the user's Spotify library.",
       "action_type": "write",
-      "chain_callable": false,
+      "chain_callable": true,
       "effects": [
         "track:like"
       ],
@@ -750,7 +1563,24 @@
         "title": "EmptyParams",
         "type": "object"
       },
-      "return_schema": {},
+      "return_schema": {
+        "properties": {
+          "track_id": {
+            "title": "Track Id",
+            "type": "string"
+          },
+          "liked": {
+            "title": "Liked",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "track_id",
+          "liked"
+        ],
+        "title": "TrackLikeRecord",
+        "type": "object"
+      },
       "event": "spotify-extension.track.liked",
       "background": false,
       "long_running": false,
@@ -764,12 +1594,12 @@
   "icon_size_bytes": 905,
   "webhooks": [
     {
-      "path": "/callback",
+      "path": "callback",
       "method": "GET",
       "secret_header": ""
     },
     {
-      "path": "/player-ready",
+      "path": "player-ready",
       "method": "POST",
       "secret_header": ""
     }

@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from imperal_sdk import ActionResult
 
 from app import chat
+from return_models import LyricsRecord
 
 log = logging.getLogger("spotify.lyrics")
 
@@ -20,6 +21,7 @@ class GetLyricsParams(BaseModel):
 @chat.function(
     "get_lyrics",
     action_type="read",
+    data_model=LyricsRecord,
     description="Search for song lyrics on Genius. Returns URL to full lyrics page.",
 )
 async def fn_get_lyrics(ctx, params: GetLyricsParams) -> ActionResult:

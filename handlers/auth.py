@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from imperal_sdk import ActionResult
 
 from app import ext, chat
+from return_models import SpotifyAuthRecord, SpotifyDisconnectRecord, SpotifyConnectionRecord
 from spotify_config import (
     SP_AUTH_URL, SP_TOKEN_URL, SP_SCOPES,
     OAUTH_STATE_COLLECTION, CRED_COLLECTION,
@@ -38,6 +39,7 @@ class CheckConnectionParams(BaseModel):
     chain_callable=True,
     effects=["auth:connect"],
     event="spotify-extension.connected",
+    data_model=SpotifyAuthRecord,
     description="Connect your Spotify account via OAuth 2.0. Returns an authorisation URL to visit.",
 )
 async def fn_connect_spotify(ctx, params: ConnectSpotifyParams) -> ActionResult:
@@ -104,6 +106,7 @@ async def fn_connect_spotify(ctx, params: ConnectSpotifyParams) -> ActionResult:
     chain_callable=True,
     effects=["auth:disconnect"],
     event="spotify-extension.disconnected",
+    data_model=SpotifyDisconnectRecord,
     description="Disconnect your Spotify account and remove all stored credentials.",
 )
 async def fn_disconnect_spotify(ctx, params: DisconnectSpotifyParams) -> ActionResult:
@@ -127,6 +130,7 @@ async def fn_disconnect_spotify(ctx, params: DisconnectSpotifyParams) -> ActionR
 @chat.function(
     "check_spotify_connection",
     action_type="read",
+    data_model=SpotifyConnectionRecord,
     description="Check if you are connected to Spotify and get your profile info.",
 )
 async def fn_check_connection(ctx, params: CheckConnectionParams) -> ActionResult:

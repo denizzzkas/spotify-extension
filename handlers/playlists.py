@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from imperal_sdk import ActionResult
 
 from app import chat
+from return_models import PlaylistRecord, TrackRecord, CreatePlaylistRecord, PlaylistTrackRecord, PlaylistRemoveRecord
 from spotify_config import SP_API_BASE, MAX_LIMIT
 from app_helpers import _spotify_call, _spotify_err
 from cache_models import PlaylistsModel
@@ -41,6 +42,7 @@ class RemoveTrackFromPlaylistParams(BaseModel):
 @chat.function(
     "get_playlists",
     action_type="read",
+    data_model=PlaylistRecord,
     description="Get all playlists owned or followed by the authenticated user. Returns list of playlists with id, title, track_count, image_url.",
 )
 async def fn_get_playlists(ctx, params: GetPlaylistsParams) -> ActionResult:
@@ -66,6 +68,7 @@ async def fn_get_playlists(ctx, params: GetPlaylistsParams) -> ActionResult:
 @chat.function(
     "get_playlist_tracks",
     action_type="read",
+    data_model=TrackRecord,
     description="Get all tracks in a specific Spotify playlist. Returns list of tracks with full details.",
 )
 async def fn_get_playlist_tracks(ctx, params: GetPlaylistTracksParams) -> ActionResult:
@@ -91,6 +94,7 @@ async def fn_get_playlist_tracks(ctx, params: GetPlaylistTracksParams) -> Action
     id_projection="playlist_id",
     effects=["playlist:create"],
     event="spotify-extension.playlist.created",
+    data_model=CreatePlaylistRecord,
     description="Create a new playlist on the user's Spotify account. Returns playlist_id and playlist details.",
 )
 async def fn_create_playlist(ctx, params: CreatePlaylistParams) -> ActionResult:
@@ -138,6 +142,7 @@ async def fn_create_playlist(ctx, params: CreatePlaylistParams) -> ActionResult:
     id_projection="playlist_id",
     effects=["playlist:add_track"],
     event="spotify-extension.track.added_to_playlist",
+    data_model=PlaylistTrackRecord,
     description="Add a track to an existing Spotify playlist. Returns updated playlist info.",
 )
 async def fn_add_track_to_playlist(ctx, params: AddTrackToPlaylistParams) -> ActionResult:
@@ -165,6 +170,7 @@ async def fn_add_track_to_playlist(ctx, params: AddTrackToPlaylistParams) -> Act
     id_projection="playlist_id",
     effects=["playlist:remove_track"],
     event="spotify-extension.track.removed_from_playlist",
+    data_model=PlaylistRemoveRecord,
     description="Remove a track from a Spotify playlist. Returns updated playlist info.",
 )
 async def fn_remove_track_from_playlist(ctx, params: RemoveTrackFromPlaylistParams) -> ActionResult:

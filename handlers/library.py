@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from imperal_sdk import ActionResult
 
 from app import chat
+from return_models import TrackRecord, TrackLikeRecord, UserProfileRecord
 from spotify_config import SP_API_BASE, DEFAULT_HISTORY_LIMIT, DEFAULT_LIKES_LIMIT, MAX_LIMIT
 from app_helpers import _spotify_call, _spotify_err
 from utils import format_track
@@ -36,6 +37,7 @@ class GetUserProfileParams(BaseModel):
 @chat.function(
     "get_recent_tracks",
     action_type="read",
+    data_model=TrackRecord,
     description="Get the user's recently played tracks (requires Spotify Premium). Returns list of tracks with full details.",
 )
 async def fn_get_recent_tracks(ctx, params: GetRecentTracksParams) -> ActionResult:
@@ -60,6 +62,7 @@ async def fn_get_recent_tracks(ctx, params: GetRecentTracksParams) -> ActionResu
 @chat.function(
     "get_liked_tracks",
     action_type="read",
+    data_model=TrackRecord,
     description="Get all tracks saved/liked in the user's Spotify library. Returns list of liked tracks with full details.",
 )
 async def fn_get_liked_tracks(ctx, params: GetLikedTracksParams) -> ActionResult:
@@ -86,6 +89,7 @@ async def fn_get_liked_tracks(ctx, params: GetLikedTracksParams) -> ActionResult
     id_projection="track_id",
     effects=["library:like"],
     event="spotify-extension.track.liked",
+    data_model=TrackLikeRecord,
     description="Save a track to the user's Spotify library (like it).",
 )
 async def fn_like_track(ctx, params: LikeTrackParams) -> ActionResult:
@@ -112,6 +116,7 @@ async def fn_like_track(ctx, params: LikeTrackParams) -> ActionResult:
     id_projection="track_id",
     effects=["library:unlike"],
     event="spotify-extension.track.unliked",
+    data_model=TrackLikeRecord,
     description="Remove a track from the user's Spotify library (unlike it).",
 )
 async def fn_unlike_track(ctx, params: UnlikeTrackParams) -> ActionResult:
@@ -134,6 +139,7 @@ async def fn_unlike_track(ctx, params: UnlikeTrackParams) -> ActionResult:
 @chat.function(
     "get_user_profile",
     action_type="read",
+    data_model=UserProfileRecord,
     description="Get the authenticated user's Spotify profile information including username, followers, and subscription type.",
 )
 async def fn_get_user_profile(ctx, params: GetUserProfileParams) -> ActionResult:

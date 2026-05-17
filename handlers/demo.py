@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from imperal_sdk import ActionResult
 
 from app import chat, NowPlayingModel, DemoStateModel
+from return_models import DemoPlaylistRecord, DemoTrackRecord, PlayerActionRecord, ShuffleRecord
 from demo_data import DEMO_TRACKS, DEMO_PLAYLIST_ID, DEMO_PLAYLIST_NAME
 
 log = logging.getLogger("spotify.demo")
@@ -81,6 +82,7 @@ class DemoShuffleParams(BaseModel):
     action_type="write",
     effects=["demo:active"],
     event="spotify-extension.open_demo_playlist",
+    data_model=DemoPlaylistRecord,
     description="Open demo playlist (no Spotify login required). Returns demo tracks for testing.",
 )
 async def fn_open_demo_playlist(ctx, params: OpenDemoPlaylistParams) -> ActionResult:
@@ -102,6 +104,7 @@ async def fn_open_demo_playlist(ctx, params: OpenDemoPlaylistParams) -> ActionRe
     action_type="write",
     effects=["demo:play"],
     event="spotify-extension.demo_play_track",
+    data_model=DemoTrackRecord,
     description="Play a specific track from demo playlist.",
 )
 async def fn_demo_play_track(ctx, params: DemoPlayTrackParams) -> ActionResult:
@@ -138,6 +141,7 @@ async def fn_demo_play_track(ctx, params: DemoPlayTrackParams) -> ActionResult:
     action_type="write",
     effects=["demo:next"],
     event="spotify-extension.demo_next_track",
+    data_model=PlayerActionRecord,
     description="Skip to next track in demo playlist.",
 )
 async def fn_demo_next_track(ctx, params: DemoNextTrackParams) -> ActionResult:
@@ -162,6 +166,7 @@ async def fn_demo_next_track(ctx, params: DemoNextTrackParams) -> ActionResult:
     action_type="write",
     effects=["demo:prev"],
     event="spotify-extension.demo_prev_track",
+    data_model=PlayerActionRecord,
     description="Go to previous track in demo playlist.",
 )
 async def fn_demo_prev_track(ctx, params: DemoPrevTrackParams) -> ActionResult:
@@ -180,6 +185,7 @@ async def fn_demo_prev_track(ctx, params: DemoPrevTrackParams) -> ActionResult:
     action_type="write",
     effects=["demo:pause"],
     event="spotify-extension.demo_pause",
+    data_model=PlayerActionRecord,
     description="Toggle playback pause/resume in demo mode.",
 )
 async def fn_demo_pause(ctx, params: DemoPauseParams) -> ActionResult:
@@ -200,6 +206,7 @@ async def fn_demo_pause(ctx, params: DemoPauseParams) -> ActionResult:
     action_type="write",
     effects=["demo:shuffle"],
     event="spotify-extension.demo_shuffle",
+    data_model=ShuffleRecord,
     description="Toggle shuffle mode in demo playlist.",
 )
 async def fn_demo_shuffle(ctx, params: DemoShuffleParams) -> ActionResult:

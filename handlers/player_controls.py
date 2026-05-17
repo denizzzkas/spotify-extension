@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from imperal_sdk import ActionResult
 
 from app import chat, NowPlayingModel
+from return_models import PlayerActionRecord, ShuffleRecord, TrackLikeRecord
 from spotify_config import SP_API_BASE
 from app_helpers import _spotify_call, _spotify_err
 
@@ -19,6 +20,7 @@ class EmptyParams(BaseModel):
 
 @chat.function(
     "sp_prev", action_type="write",
+    data_model=PlayerActionRecord,
     description="Skip to the previous track in the Spotify playback queue.",
     event="spotify-extension.player.previous",
     effects=["player:previous"],
@@ -39,6 +41,7 @@ async def fn_sp_prev(ctx, params: EmptyParams) -> ActionResult:
 
 @chat.function(
     "sp_next", action_type="write",
+    data_model=PlayerActionRecord,
     description="Skip to the next track in the Spotify playback queue.",
     event="spotify-extension.player.next",
     effects=["player:next"],
@@ -59,6 +62,7 @@ async def fn_sp_next(ctx, params: EmptyParams) -> ActionResult:
 
 @chat.function(
     "sp_play_pause", action_type="write",
+    data_model=PlayerActionRecord,
     description="Toggle Spotify playback between playing and paused states.",
     event="spotify-extension.player.play_pause",
     effects=["player:play_pause"],
@@ -88,6 +92,7 @@ async def fn_sp_play_pause(ctx, params: EmptyParams) -> ActionResult:
 
 @chat.function(
     "sp_shuffle", action_type="write",
+    data_model=ShuffleRecord,
     description="Toggle Spotify shuffle mode on or off for the current playback session.",
     event="spotify-extension.player.shuffle",
     effects=["player:shuffle"],
@@ -120,6 +125,7 @@ async def fn_sp_shuffle(ctx, params: EmptyParams) -> ActionResult:
 
 @chat.function(
     "sp_like", action_type="write",
+    data_model=TrackLikeRecord,
     description="Like or unlike the currently playing track in the user's Spotify library.",
     event="spotify-extension.track.liked",
     effects=["track:like"],

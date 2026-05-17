@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from imperal_sdk import ActionResult
 
 from app import chat, NowPlayingModel, QueueModel
+from return_models import PlayTrackRecord, PlaylistPlayRecord
 from spotify_config import SP_API_BASE
 from app_helpers import _spotify_call, _spotify_err, _require_auth, _refresh_access_token, _spotify_error
 from utils import format_track
@@ -31,6 +32,7 @@ class PlayPlaylistParams(BaseModel):
     id_projection="track_id",
     effects=["playback:start"],
     event="spotify-extension.track.played",
+    data_model=PlayTrackRecord,
     description="Get track info and trigger playback. Returns track metadata with preview URL.",
 )
 async def fn_play_track(ctx, params: PlayTrackParams) -> ActionResult:
@@ -118,6 +120,7 @@ async def fn_play_track(ctx, params: PlayTrackParams) -> ActionResult:
     id_projection="playlist_id",
     effects=["playback:start"],
     event="spotify-extension.playlist.played",
+    data_model=PlaylistPlayRecord,
     description="Get playlist tracks and trigger playback. Returns list of tracks in the playlist.",
 )
 async def fn_play_playlist(ctx, params: PlayPlaylistParams) -> ActionResult:
