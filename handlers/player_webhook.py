@@ -10,7 +10,7 @@ from spotify_config import SP_PLAYER_DEVICES
 log = logging.getLogger("spotify.player_webhook")
 
 
-@ext.webhook("/player-ready", method="POST")
+@ext.webhook("player-ready", method="POST")
 async def on_player_ready(ctx, headers, body, query_params):
     try:
         data = json.loads(body) if isinstance(body, (str, bytes)) else body
