@@ -1599,12 +1599,12 @@
   "icon_size_bytes": 905,
   "webhooks": [
     {
-      "path": "/callback",
+      "path": "callback",
       "method": "GET",
       "secret_header": ""
     },
     {
-      "path": "/player-ready",
+      "path": "player-ready",
       "method": "POST",
       "secret_header": ""
     }
