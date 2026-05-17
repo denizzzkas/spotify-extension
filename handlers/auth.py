@@ -57,7 +57,7 @@ async def fn_connect_spotify(ctx, params: ConnectSpotifyParams) -> ActionResult:
             )
 
         state = str(uuid.uuid4())
-        redirect_uri = ctx.webhook_url("callback")
+        redirect_uri = ctx.webhook_url("/callback")
 
         # Store OAuth state under __webhook__ user scope so the callback
         # (which runs as __webhook__ context) can query it directly via ctx.store.
