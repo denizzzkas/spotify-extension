@@ -58,11 +58,22 @@ async def _fetch_playlist_tracks(ctx, playlist_id: str) -> tuple[list[dict], str
             return tracks, None
 
         try:
-            detail = resp.json().get("error", {}).get("message", resp.text())
+            detail = resp.json().get("error", {}).get("message", "")
         except Exception:
-            detail = resp.text()
+            try:
+                detail = resp.text()
+            except Exception:
+                detail = ""
+
+        if resp.status_code == 403:
+            if detail and "not registered" in detail.lower():
+                return [], "Account not registered as a test user. Add your email in Spotify Developer Dashboard → User Management."
+            if detail and "premium" in detail.lower():
+                return [], "This feature requires Spotify Premium."
+            return [], f"Permission denied (403){': ' + detail if detail else ''}. You may need to reconnect your Spotify account."
+
         log.error("_fetch_playlist_tracks HTTP %s: %s", resp.status_code, detail)
-        return [], f"HTTP {resp.status_code}: {detail}"
+        return [], f"HTTP {resp.status_code}{': ' + detail if detail else ''}"
 
     except Exception as e:
         log.error("_fetch_playlist_tracks failed: %s", e)
@@ -78,6 +89,7 @@ async def _fetch_playlist_tracks(ctx, playlist_id: str) -> tuple[list[dict], str
 )
 async def panel_spotify_detail(ctx, detail_type: str = "", playlist_id: str = "", playlist_name: str = "", **kwargs):
     """Center overlay panel: loads playlist/liked/recent/profile data."""
+    log.debug("panel_spotify_detail called: detail_type=%r playlist_id=%r", detail_type, playlist_id)
 
     # Restore params from cache on page refresh (when called with empty params)
     if not detail_type:
@@ -133,7 +145,10 @@ async def panel_spotify_detail(ctx, detail_type: str = "", playlist_id: str = ""
     tracks, err = await _fetch_playlist_tracks(ctx, playlist_id)
 
     if err:
-        return ui.Empty(f"Could not load tracks: {err}", icon="AlertCircle")
+        return ui.Stack([
+            ui.Header(title, level=3),
+            ui.Empty(err, icon="AlertCircle"),
+        ], direction="v", gap=2)
 
     if not tracks:
         return ui.Empty("Playlist is empty.", icon="Music")

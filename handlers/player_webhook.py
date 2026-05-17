@@ -4,6 +4,8 @@ from __future__ import annotations
 import json
 import logging
 
+from imperal_sdk.store.client import StoreClient
+
 from app import ext
 from spotify_config import SP_PLAYER_DEVICES
 
@@ -20,15 +22,23 @@ async def on_player_ready(ctx, headers, body, query_params):
         if not device_id or not user_id:
             return {"status_code": 400, "error": "Missing device_id or user_id"}
 
-        user_ctx = ctx.as_user(user_id)
-        page = await user_ctx.store.query(SP_PLAYER_DEVICES, where={"user_id": user_id})
+        # ctx.as_user() requires __system__ context; webhook runs as __webhook__.
+        # Use StoreClient directly scoped to the real user_id instead.
+        user_store = StoreClient(
+            gateway_url=ctx.store._gateway_url,
+            service_token=ctx.store._auth_token,
+            extension_id=ctx.store._extension_id,
+            user_id=user_id,
+            tenant_id=ctx.store._tenant_id,
+        )
+        page = await user_store.query(SP_PLAYER_DEVICES, where={"user_id": user_id})
         if page.data:
-            await user_ctx.store.update(
+            await user_store.update(
                 SP_PLAYER_DEVICES, page.data[0].id,
                 {"user_id": user_id, "device_id": device_id},
             )
         else:
-            await user_ctx.store.create(SP_PLAYER_DEVICES, {"user_id": user_id, "device_id": device_id})
+            await user_store.create(SP_PLAYER_DEVICES, {"user_id": user_id, "device_id": device_id})
 
         log.info("Player ready: user=%s device=%s...", user_id[:8], device_id[:8])
         return {"status": "ok"}
