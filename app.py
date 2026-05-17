@@ -142,7 +142,7 @@ async def _declare_events() -> None:
 @ext.health_check
 async def health(ctx) -> HealthStatus:
     try:
-        client_id = ctx.config.get("spotify_client_id")
+        client_id = await ctx.secrets.get("spotify_client_id")
         if not client_id:
             return HealthStatus.degraded("Spotify credentials not configured")
 

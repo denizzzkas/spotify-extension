@@ -1626,16 +1626,16 @@
         "type": "spotify-extension.open_demo_playlist"
       },
       {
-        "type": "spotify-extension.playback.previous"
+        "type": "spotify-extension.player.shuffle"
       },
       {
-        "type": "spotify-extension.playback.next"
+        "type": "spotify-extension.player.play_pause"
       },
       {
-        "type": "spotify-extension.playback.resumed"
+        "type": "spotify-extension.player.next"
       },
       {
-        "type": "spotify-extension.playback.paused"
+        "type": "spotify-extension.player.previous"
       },
       {
         "type": "spotify-extension.playlist.played"
