@@ -38,8 +38,7 @@ class CheckConnectionParams(BaseModel):
     action_type="write",
     chain_callable=True,
     effects=["auth:connect"],
-    event="spotify.connected",
-    scopes=["auth:oauth"],
+    event="connected",
     data_model=SpotifyAuthRecord,
     description="Connect your Spotify account via OAuth 2.0. Returns an authorisation URL to visit.",
 )
@@ -106,8 +105,7 @@ async def fn_connect_spotify(ctx, params: ConnectSpotifyParams) -> ActionResult:
     action_type="write",
     chain_callable=True,
     effects=["auth:disconnect"],
-    event="spotify.disconnected",
-    scopes=["auth:oauth"],
+    event="disconnected",
     data_model=SpotifyDisconnectRecord,
     description="Disconnect your Spotify account and remove all stored credentials.",
 )
@@ -132,7 +130,6 @@ async def fn_disconnect_spotify(ctx, params: DisconnectSpotifyParams) -> ActionR
 @chat.function(
     "check_spotify_connection",
     action_type="read",
-    scopes=["auth:oauth"],
     data_model=SpotifyConnectionRecord,
     description="Check if you are connected to Spotify and get your profile info.",
 )

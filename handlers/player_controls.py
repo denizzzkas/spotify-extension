@@ -23,9 +23,8 @@ class EmptyParams(BaseModel):
     chain_callable=True,
     data_model=PlayerActionRecord,
     description="Skip to the previous track in the Spotify playback queue.",
-    event="spotify.player.previous",
+    event="player.previous",
     effects=["player:previous"],
-    scopes=["playback:control"],
 )
 async def fn_sp_prev(ctx, params: EmptyParams) -> ActionResult:
     """Skip to the previous track."""
@@ -46,9 +45,8 @@ async def fn_sp_prev(ctx, params: EmptyParams) -> ActionResult:
     chain_callable=True,
     data_model=PlayerActionRecord,
     description="Skip to the next track in the Spotify playback queue.",
-    event="spotify.player.next",
+    event="player.next",
     effects=["player:next"],
-    scopes=["playback:control"],
 )
 async def fn_sp_next(ctx, params: EmptyParams) -> ActionResult:
     """Skip to the next track."""
@@ -69,9 +67,8 @@ async def fn_sp_next(ctx, params: EmptyParams) -> ActionResult:
     chain_callable=True,
     data_model=PlayerActionRecord,
     description="Toggle Spotify playback between playing and paused states.",
-    event="spotify.player.play_pause",
+    event="player.play_pause",
     effects=["player:play_pause"],
-    scopes=["playback:control"],
 )
 async def fn_sp_play_pause(ctx, params: EmptyParams) -> ActionResult:
     """Toggle play or pause on the active Spotify device."""
@@ -101,9 +98,8 @@ async def fn_sp_play_pause(ctx, params: EmptyParams) -> ActionResult:
     chain_callable=True,
     data_model=ShuffleRecord,
     description="Toggle Spotify shuffle mode on or off for the current playback session.",
-    event="spotify.player.shuffle",
+    event="player.shuffle",
     effects=["player:shuffle"],
-    scopes=["playback:control"],
 )
 async def fn_sp_shuffle(ctx, params: EmptyParams) -> ActionResult:
     """Toggle shuffle mode on the active Spotify device."""
@@ -136,9 +132,8 @@ async def fn_sp_shuffle(ctx, params: EmptyParams) -> ActionResult:
     chain_callable=True,
     data_model=TrackLikeRecord,
     description="Like or unlike the currently playing track in the user's Spotify library.",
-    event="spotify.track.liked",
+    event="track.liked",
     effects=["track:like"],
-    scopes=["music:write"],
 )
 async def fn_sp_like(ctx, params: EmptyParams) -> ActionResult:
     """Like or unlike the currently playing track."""

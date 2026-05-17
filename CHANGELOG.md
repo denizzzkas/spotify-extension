@@ -1,5 +1,44 @@
 # Changelog
 
+## [2.1.0] - 2026-05-18
+
+### SDK Migration: 4.1.2 → 5.0.1
+
+- **Typed return contracts** — added `data_model=` to all 28 `@chat.function` handlers (SDK 5.0.1 V23); created `return_models.py` with 14 Pydantic response models
+- **Orchestrator removed** — migrated from `owner_chat_tool` shim pattern to direct `ChatExtension` registration (SDK 5.0.0 V25 compliance)
+- **`ChatExtension` constructor** — aligned with SDK 5.0.0; `tool_name` positional form noted (kwarg deprecated, removal in 5.1.0)
+
+### Platform Compliance Fixes
+
+- **`app_id` renamed** `"spotify-extension"` → `"spotify"` — enforces federal event prefix rule; all emitted events now correctly namespaced as `spotify.*`
+- **`capabilities` filled** — `["music:read", "music:write", "playback:control", "auth:oauth"]` declared in `Extension()` constructor (was empty `[]`)
+- **`event=` format corrected** — all `@chat.function` decorators now pass event suffix only (e.g. `"track.liked"`); platform prepends `app_id` automatically. Previously used full names (`"spotify.track.liked"`) causing double-prefix on emit
+- **`scopes=` removed** from all `@chat.function` decorators — parameter not supported by SDK 5.0.1; was causing `TypeError` on platform load and blocking deployment
+- **Webhook paths** — added leading slash to `/callback` and `/player-ready` (SDK 5.0.1 M4 validator pattern `^/[a-z0-9_/-]+$`)
+
+### Web Playback SDK Integration
+
+- **`handlers/player_webhook.py`** — new `POST /player-ready` webhook receives `device_id` from in-browser Spotify player and stores it per user via `StoreClient`
+- **`player_html.py`** — Spotify Web Playback SDK browser component; registers "Imperal Spotify" virtual device, reports `device_id` to extension
+- **`play_track`** — prefers "Imperal Spotify" device for full playback via Spotify Connect; falls back to preview URL when no device active
+
+### Bug Fixes
+
+- **Health check** — reads `spotify_client_id` via `ctx.secrets.get()` instead of `ctx.config` (was always returning degraded)
+- **OAuth callback** — `StoreClient` scoped to real `user_id` for token storage; webhook context runs as `__webhook__`, not `__system__`
+- **`player_webhook`** — fixed `StoreClient` constructor args; properly queries and upserts device record
+- **Event declarations** — `@ext.emits` stacked on single `_declare_events()` function; all 19 event types declared with correct full names
+- **`panels_left.py`** — `on_event:` refresh string updated to match corrected event namespace (`spotify.*`)
+
+### Breaking Changes
+
+For external extensions subscribing to Spotify events:
+- Old: `"spotify-extension.connected"` → New: `"spotify.connected"`
+- Old: `"spotify-extension.track.played"` → New: `"spotify.track.played"`
+- Pattern: all events now use `spotify.` prefix instead of `spotify-extension.`
+
+---
+
 ## [2.0.0] - 2026-05-06
 
 ### Major Refactoring

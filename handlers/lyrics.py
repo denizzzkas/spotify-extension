@@ -21,7 +21,6 @@ class GetLyricsParams(BaseModel):
 @chat.function(
     "get_lyrics",
     action_type="read",
-    scopes=["music:read"],
     data_model=LyricsRecord,
     description="Search for song lyrics on Genius. Returns URL to full lyrics page.",
 )

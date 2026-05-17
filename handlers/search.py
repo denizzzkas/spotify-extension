@@ -26,7 +26,6 @@ class SearchTracksParams(BaseModel):
 @chat.function(
     "search_tracks",
     action_type="read",
-    scopes=["music:read"],
     data_model=TrackRecord,
     description="Search Spotify catalogue for tracks by title or artist (requires Spotify login). Returns up to 50 matching tracks with id, title, artist, duration, preview_url, album_art.",
 )
