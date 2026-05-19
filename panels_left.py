@@ -108,22 +108,24 @@ async def panel_spotify(ctx, **kwargs):
         try:
             headers = await _get_auth_headers(ctx)
             if headers:
-                resp = await ctx.http.get(
-                    f"{SP_API_BASE}/me/playlists",
-                    headers=headers,
-                    params={"limit": 50},
-                )
-                if resp.status_code == 401:
-                    token = await _refresh_access_token(ctx)
-                    if token:
-                        headers["Authorization"] = f"Bearer {token}"
-                        resp = await ctx.http.get(
-                            f"{SP_API_BASE}/me/playlists",
-                            headers=headers,
-                            params={"limit": 50},
-                        )
-                if resp.ok:
-                    playlists = [format_playlist(p) for p in (resp.json().get("items") or [])]
+                all_playlists = []
+                url = f"{SP_API_BASE}/me/playlists"
+                fetch_params = {"limit": 50}
+                while url:
+                    resp = await ctx.http.get(url, headers=headers, params=fetch_params)
+                    if resp.status_code == 401:
+                        token = await _refresh_access_token(ctx)
+                        if token:
+                            headers["Authorization"] = f"Bearer {token}"
+                            resp = await ctx.http.get(url, headers=headers, params=fetch_params)
+                    if not resp.ok:
+                        break
+                    data = resp.json()
+                    all_playlists.extend([format_playlist(p) for p in (data.get("items") or [])])
+                    url = data.get("next")
+                    fetch_params = {}
+                if all_playlists:
+                    playlists = all_playlists
                     await ctx.cache.set(
                         key="playlists",
                         value=PlaylistsModel(items=playlists),
@@ -195,6 +197,7 @@ async def panel_spotify(ctx, **kwargs):
         ui.Input(
             placeholder="Search tracks...",
             param_name="query",
+            value=search_query,
             on_submit=ui.Call("__panel__spotify"),
         ),
     ]

@@ -220,7 +220,7 @@ def _spotify_err(resp) -> ActionResult:
         detail = resp.json().get("error", {}).get("message", "")
     except Exception:
         try:
-            detail = resp.text()
+            detail = resp.text
         except Exception:
             detail = ""
     msg = _spotify_error(resp.status_code, detail)
@@ -232,10 +232,13 @@ def _spotify_error(status_code: int, detail: str = "") -> str:
         if detail and "not registered" in detail.lower():
             return "This Spotify account is not registered as a test user for this application. Add the account email in the Spotify Developer Dashboard → User Management."
         return "You do not have permission. Some features require Spotify Premium."
+    if status_code == 404:
+        if detail and "active device" in detail.lower():
+            return "No active Spotify device found. Open Spotify on any device first, then try again."
+        return "Resource not found on Spotify."
     messages = {
         400: "Invalid request parameters.",
         401: "Not authorised — please reconnect via connect_spotify().",
-        404: "Resource not found on Spotify.",
         429: "Spotify rate limit reached. Please wait a moment and try again.",
         500: "Spotify server error. Please try again later.",
     }

@@ -1,5 +1,35 @@
 # Changelog
 
+## [2.2.0] - 2026-05-19
+
+### Playlist Playback
+
+- **`play_playlist`** — now triggers real Spotify Connect playback via `PUT /me/player/play` with `context_uri: spotify:playlist:{id}`; Spotify manages the queue natively so prev/next/shuffle work through the full playlist
+- **`play_track` with playlist context** — added optional `playlist_id` parameter; when provided, uses `context_uri + offset` so playing a track from a playlist preserves the full queue in Spotify
+- **Playlist name in queue** — `play_playlist` now accepts optional `playlist_name` parameter; queue display shows real name instead of raw playlist ID
+- **`refresh_panels`** — `play_playlist` now refreshes the left panel after playback starts
+
+### Pagination
+
+- **Playlists** — `get_playlists` and left panel now follow `next` URL from Spotify; all playlists load regardless of count (previously capped at 50)
+- **Playlist tracks** — `get_playlist_tracks` follows `next` URL; playlists with more than 50 tracks now fully load
+- **Pagination in panels** — `panels_left.py` direct fetch also paginated; cache is populated with complete playlist list
+
+### Bug Fixes
+
+- **`track_count = 0`** — `format_playlist` now reads `tracks` field with fallback to `items` (Spotify deprecated `tracks` in favour of `items` for track count object)
+- **Deprecated `item["track"]`** — all playlist item parsing now uses `item.get("track") or item.get("item")` per Spotify API deprecation notice; affects `playlists.py`, `playback.py`, `panels_right.py`
+- **`resp.text()` → `resp.text`** — `app_helpers.py` and `panels_right.py` used `text` as a method; it is a property per Imperal SDK docs; silent failures in error message extraction are fixed
+- **Player controls 404** — "No active device" error from Spotify now surfaces as `"No active Spotify device found. Open Spotify on any device first"` instead of generic `"Resource not found"`
+- **`ActionResult.error(str(e))`** — all 5 player control handlers now have `or "..."` fallback to prevent empty error messages when exception has no message
+
+### UI Improvements
+
+- **Search input preserves query** — `ui.Input` in left panel now sets `value=search_query`; the search field retains its text after panel refresh triggered by events
+- **Playlist track play context** — clicking Play on a track inside a playlist now passes `playlist_id` to `play_track`; Spotify queues the full playlist starting from that track
+
+---
+
 ## [2.1.0] - 2026-05-18
 
 ### SDK Migration: 4.1.2 → 5.0.1

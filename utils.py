@@ -36,7 +36,7 @@ def format_track(raw: dict) -> dict:
 
 def format_playlist(raw: dict) -> dict:
     """Normalise a raw Spotify playlist object to a clean dict."""
-    tracks = raw.get("tracks") or {}
+    tracks = raw.get("tracks") or raw.get("items") or {}
     images = raw.get("images") or []
     return {
         "id": raw.get("id", ""),

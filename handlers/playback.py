@@ -19,10 +19,12 @@ log = logging.getLogger("spotify.playback")
 
 class PlayTrackParams(BaseModel):
     track_id: str = Field(..., description="Spotify track ID or track name/artist to search for and play")
+    playlist_id: str = Field("", description="Optional playlist ID — if provided, plays track within playlist context so next/prev work through the playlist")
 
 
 class PlayPlaylistParams(BaseModel):
     playlist_id: str = Field(..., description="Spotify playlist ID to play")
+    playlist_name: str = Field("", description="Optional playlist name for display")
 
 
 @chat.function(
@@ -85,10 +87,17 @@ async def fn_play_track(ctx, params: PlayTrackParams) -> ActionResult:
                 if not active:
                     active = next((d for d in devices if not d.get("is_restricted")), None)
                 if active:
+                    if params.playlist_id:
+                        play_body = {
+                            "context_uri": f"spotify:playlist:{params.playlist_id}",
+                            "offset": {"uri": f"spotify:track:{track_id}"},
+                        }
+                    else:
+                        play_body = {"uris": [f"spotify:track:{track_id}"]}
                     play_resp, _ = await _spotify_call(
                         ctx, "put", f"{SP_API_BASE}/me/player/play",
                         params={"device_id": active["id"]},
-                        json={"uris": [f"spotify:track:{track_id}"]},
+                        json=play_body,
                     )
                     played_full = play_resp is not None and (play_resp.ok or play_resp.status_code == 204)
         except Exception as e:
@@ -126,23 +135,29 @@ async def fn_play_track(ctx, params: PlayTrackParams) -> ActionResult:
 async def fn_play_playlist(ctx, params: PlayPlaylistParams) -> ActionResult:
     """Get playlist tracks and trigger playback. Returns list of tracks in the playlist."""
     try:
-        resp, err = await _spotify_call(ctx, "get", f"{SP_API_BASE}/playlists/{params.playlist_id}/tracks")
+        resp, err = await _spotify_call(ctx, "get", f"{SP_API_BASE}/playlists/{params.playlist_id}/tracks",
+                                        params={"limit": 50})
         if err:
             return err
         if not resp.ok:
             return _spotify_err(resp)
 
         raw_list = resp.json().get("items") or []
-        tracks = [format_track(item["track"]) for item in raw_list if item.get("track")]
+        tracks = [
+            format_track(item.get("track") or item.get("item"))
+            for item in raw_list
+            if item.get("track") or item.get("item")
+        ]
 
         if not tracks:
             return ActionResult.error("Playlist is empty.", retryable=False)
 
+        display_name = params.playlist_name or params.playlist_id
         await ctx.cache.set(
             key="queue",
             value=QueueModel(
                 playlist_id=params.playlist_id,
-                playlist_name=params.playlist_id,
+                playlist_name=display_name,
                 tracks=tracks[:30],
                 index=0,
             ),
@@ -154,9 +169,32 @@ async def fn_play_playlist(ctx, params: PlayPlaylistParams) -> ActionResult:
             ttl_seconds=90,
         )
 
+        # Start playback via Spotify Connect
+        played_full = False
+        try:
+            devices_resp, _ = await _spotify_call(ctx, "get", f"{SP_API_BASE}/me/player/devices")
+            if devices_resp and devices_resp.ok:
+                devices = devices_resp.json().get("devices", [])
+                active = next((d for d in devices if d.get("name") == "Imperal Spotify"), None)
+                if not active:
+                    active = next((d for d in devices if not d.get("is_restricted")), None)
+                if active:
+                    play_resp, _ = await _spotify_call(
+                        ctx, "put", f"{SP_API_BASE}/me/player/play",
+                        params={"device_id": active["id"]},
+                        json={"context_uri": f"spotify:playlist:{params.playlist_id}"},
+                    )
+                    played_full = play_resp is not None and (play_resp.ok or play_resp.status_code == 204)
+        except Exception as e:
+            log.warning("Spotify Connect playlist playback failed: %s", e)
+
+        summary = f"▶ Playing '{display_name}' — {len(tracks)} tracks"
+        if not played_full:
+            summary += " (open Spotify on any device to enable full playback)"
+
         return ActionResult.success(
             data={"playlist_id": params.playlist_id, "tracks": tracks, "count": len(tracks)},
-            summary=f"▶ Playing playlist — {len(tracks)} tracks",
+            summary=summary,
             refresh_panels=["spotify"],
         )
     except Exception as e:

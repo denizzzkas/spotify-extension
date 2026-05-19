@@ -2,7 +2,7 @@
   "manifest_schema_version": 3,
   "sdk_version": "5.0.1",
   "app_id": "spotify",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "name": "Spotify",
   "description": "Full access to your Spotify music library. Search tracks, manage playlists, save songs, view play history, and more.",
   "icon": "icon.svg",
@@ -913,6 +913,12 @@
             "description": "Spotify track ID or track name/artist to search for and play",
             "title": "Track Id",
             "type": "string"
+          },
+          "playlist_id": {
+            "default": "",
+            "description": "Optional playlist ID — if provided, plays track within playlist context so next/prev work through the playlist",
+            "title": "Playlist Id",
+            "type": "string"
           }
         },
         "required": [
@@ -1028,6 +1034,12 @@
           "playlist_id": {
             "description": "Spotify playlist ID to play",
             "title": "Playlist Id",
+            "type": "string"
+          },
+          "playlist_name": {
+            "default": "",
+            "description": "Optional playlist name for display",
+            "title": "Playlist Name",
             "type": "string"
           }
         },

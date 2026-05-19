@@ -48,12 +48,19 @@ class RemoveTrackFromPlaylistParams(BaseModel):
 async def fn_get_playlists(ctx, params: GetPlaylistsParams) -> ActionResult:
     """Get all playlists owned or followed by the authenticated user. Returns list of playlists with id, title, track_count, image_url."""
     try:
-        resp, err = await _spotify_call(ctx, "get", f"{SP_API_BASE}/me/playlists", params={"limit": 50})
-        if err:
-            return err
-        if not resp.ok:
-            return _spotify_err(resp)
-        playlists = [format_playlist(p) for p in (resp.json().get("items") or [])]
+        playlists = []
+        url = f"{SP_API_BASE}/me/playlists"
+        fetch_params = {"limit": 50}
+        while url:
+            resp, err = await _spotify_call(ctx, "get", url, params=fetch_params)
+            if err:
+                return err
+            if not resp.ok:
+                return _spotify_err(resp)
+            data = resp.json()
+            playlists.extend([format_playlist(p) for p in (data.get("items") or [])])
+            url = data.get("next")
+            fetch_params = {}
         try:
             await ctx.cache.set(key="playlists", value=PlaylistsModel(items=playlists), ttl_seconds=300)
         except Exception as e:
@@ -74,12 +81,22 @@ async def fn_get_playlists(ctx, params: GetPlaylistsParams) -> ActionResult:
 async def fn_get_playlist_tracks(ctx, params: GetPlaylistTracksParams) -> ActionResult:
     """Get all tracks in a specific Spotify playlist. Returns list of tracks with full details."""
     try:
-        resp, err = await _spotify_call(ctx, "get", f"{SP_API_BASE}/playlists/{params.playlist_id}/tracks")
-        if err:
-            return err
-        if not resp.ok:
-            return _spotify_err(resp)
-        tracks = [format_track(item["track"]) for item in (resp.json().get("items") or []) if item.get("track")]
+        tracks = []
+        url = f"{SP_API_BASE}/playlists/{params.playlist_id}/tracks"
+        fetch_params = {"limit": 50}
+        while url:
+            resp, err = await _spotify_call(ctx, "get", url, params=fetch_params)
+            if err:
+                return err
+            if not resp.ok:
+                return _spotify_err(resp)
+            data = resp.json()
+            for item in (data.get("items") or []):
+                raw_track = item.get("track") or item.get("item")
+                if raw_track:
+                    tracks.append(format_track(raw_track))
+            url = data.get("next")
+            fetch_params = {}
         return ActionResult.success(data={"tracks": tracks, "count": len(tracks), "playlist_id": params.playlist_id},
                                     summary=f"Retrieved {len(tracks)} track(s) from playlist")
     except Exception as e:

@@ -54,14 +54,18 @@ async def _fetch_playlist_tracks(ctx, playlist_id: str) -> tuple[list[dict], str
 
         if resp.ok:
             items = resp.json().get("items", [])
-            tracks = [format_track(item["track"]) for item in items if item.get("track")]
+            tracks = [
+                format_track(item.get("track") or item.get("item"))
+                for item in items
+                if item.get("track") or item.get("item")
+            ]
             return tracks, None
 
         try:
             detail = resp.json().get("error", {}).get("message", "")
         except Exception:
             try:
-                detail = resp.text()
+                detail = resp.text
             except Exception:
                 detail = ""
 
@@ -138,7 +142,7 @@ async def panel_spotify_detail(ctx, detail_type: str = "", playlist_id: str = ""
     try:
         cached = await ctx.cache.get(key=cache_key, model=DetailModel)
         if cached and cached.tracks:
-            return _render_tracks(cached.tracks, cached.title, play_fn="play_track")
+            return _render_tracks(cached.tracks, cached.title, play_fn="play_track", playlist_id=playlist_id)
     except Exception:
         pass
 
@@ -162,7 +166,7 @@ async def panel_spotify_detail(ctx, detail_type: str = "", playlist_id: str = ""
     except Exception as e:
         log.error("Failed to cache playlist tracks: %s", e)
 
-    return _render_tracks(tracks, title, play_fn="play_track")
+    return _render_tracks(tracks, title, play_fn="play_track", playlist_id=playlist_id)
 
 
 async def _render_fetched_tracks(ctx, url: str, title: str, item_key: str = "track") -> ui.Stack:
@@ -183,7 +187,7 @@ async def _render_fetched_tracks(ctx, url: str, title: str, item_key: str = "tra
 
         if resp.status_code == 403:
             try:
-                body = resp.text()
+                body = resp.text
             except Exception:
                 body = ""
             if "not registered" in body.lower():
@@ -241,8 +245,13 @@ async def _render_profile(ctx) -> ui.Stack:
     return ui.Empty("Profile not loaded.", icon="User")
 
 
-def _render_tracks(tracks: list[dict], title: str, play_fn: str = "play_track") -> ui.Stack:
+def _render_tracks(tracks: list[dict], title: str, play_fn: str = "play_track", playlist_id: str = "") -> ui.Stack:
     """Render track list with the correct play function for demo or authenticated mode."""
+    def _play_action(track_id: str) -> ui.Call:
+        if play_fn == "play_track" and playlist_id:
+            return ui.Call(play_fn, track_id=track_id, playlist_id=playlist_id)
+        return ui.Call(play_fn, track_id=track_id)
+
     track_items = [
         ui.ListItem(
             id=t["id"],
@@ -250,7 +259,7 @@ def _render_tracks(tracks: list[dict], title: str, play_fn: str = "play_track") 
             subtitle=t["artist"],
             meta=t["duration"],
             avatar=ui.Avatar(src=t["album_art"], fallback=(t["title"] or "?")[0].upper()),
-            actions=[{"icon": "Play", "on_click": ui.Call(play_fn, track_id=t["id"])}],
+            actions=[{"icon": "Play", "on_click": _play_action(t["id"])}],
         )
         for t in tracks
     ]
