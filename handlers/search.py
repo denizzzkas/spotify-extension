@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 from imperal_sdk import ActionResult
 
 from app import chat
-from return_models import TrackRecord
+from return_models import SearchResultRecord
 from spotify_config import SP_API_BASE, DEFAULT_SEARCH_LIMIT, MAX_LIMIT
 from app_helpers import _spotify_call, _spotify_err
 from utils import format_track
@@ -26,11 +26,11 @@ class SearchTracksParams(BaseModel):
 @chat.function(
     "search_tracks",
     action_type="read",
-    data_model=TrackRecord,
-    description="Search Spotify catalogue for tracks by title or artist (requires Spotify login). Returns up to 50 matching tracks with id, title, artist, duration, preview_url, album_art.",
+    data_model=SearchResultRecord,
+    description="Search Spotify catalogue for tracks by title or artist. Returns a list of matching tracks with id, title, artist, duration, album_art. Use the track id from results to play or add to playlist.",
 )
 async def fn_search_tracks(ctx, params: SearchTracksParams) -> ActionResult:
-    """Search Spotify catalogue for tracks by title or artist (requires Spotify login). Returns up to 50 matching tracks with id, title, artist, duration, preview_url, album_art."""
+    """Search Spotify catalogue for tracks by title or artist. Returns list of tracks with id, title, artist, duration, album_art."""
     try:
         resp, err = await _spotify_call(
             ctx, "get", f"{SP_API_BASE}/search",

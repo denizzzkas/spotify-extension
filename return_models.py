@@ -64,6 +64,12 @@ class UserProfileRecord(BaseModel):
     product: str
 
 
+class SearchResultRecord(BaseModel):
+    tracks: list[TrackRecord]
+    count: int
+    query: str
+
+
 class LyricsRecord(BaseModel):
     url: str
     title: str

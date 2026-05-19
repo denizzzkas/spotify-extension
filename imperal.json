@@ -138,7 +138,7 @@
     },
     {
       "name": "search_tracks",
-      "description": "Search Spotify catalogue for tracks by title or artist (requires Spotify login). Returns up to 50 matching tracks with id, title, artist, duration, preview_url, album_art.",
+      "description": "Search Spotify catalogue for tracks by title or artist. Returns a list of matching tracks with id, title, artist, duration, album_art. Use the track id from results to play or add to playlist.",
       "action_type": "read",
       "chain_callable": true,
       "effects": [],
@@ -166,61 +166,89 @@
         "type": "object"
       },
       "return_schema": {
+        "$defs": {
+          "TrackRecord": {
+            "properties": {
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "title": {
+                "title": "Title",
+                "type": "string"
+              },
+              "artist": {
+                "title": "Artist",
+                "type": "string"
+              },
+              "url": {
+                "title": "Url",
+                "type": "string"
+              },
+              "duration": {
+                "title": "Duration",
+                "type": "string"
+              },
+              "duration_ms": {
+                "title": "Duration Ms",
+                "type": "integer"
+              },
+              "popularity": {
+                "title": "Popularity",
+                "type": "integer"
+              },
+              "preview_url": {
+                "title": "Preview Url",
+                "type": "string"
+              },
+              "album": {
+                "title": "Album",
+                "type": "string"
+              },
+              "album_art": {
+                "title": "Album Art",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "artist",
+              "url",
+              "duration",
+              "duration_ms",
+              "popularity",
+              "preview_url",
+              "album",
+              "album_art"
+            ],
+            "title": "TrackRecord",
+            "type": "object"
+          }
+        },
         "properties": {
-          "id": {
-            "title": "Id",
-            "type": "string"
+          "tracks": {
+            "items": {
+              "$ref": "#/$defs/TrackRecord"
+            },
+            "title": "Tracks",
+            "type": "array"
           },
-          "title": {
-            "title": "Title",
-            "type": "string"
-          },
-          "artist": {
-            "title": "Artist",
-            "type": "string"
-          },
-          "url": {
-            "title": "Url",
-            "type": "string"
-          },
-          "duration": {
-            "title": "Duration",
-            "type": "string"
-          },
-          "duration_ms": {
-            "title": "Duration Ms",
+          "count": {
+            "title": "Count",
             "type": "integer"
           },
-          "popularity": {
-            "title": "Popularity",
-            "type": "integer"
-          },
-          "preview_url": {
-            "title": "Preview Url",
-            "type": "string"
-          },
-          "album": {
-            "title": "Album",
-            "type": "string"
-          },
-          "album_art": {
-            "title": "Album Art",
+          "query": {
+            "title": "Query",
             "type": "string"
           }
         },
         "required": [
-          "id",
-          "title",
-          "artist",
-          "url",
-          "duration",
-          "duration_ms",
-          "popularity",
-          "preview_url",
-          "album",
-          "album_art"
+          "tracks",
+          "count",
+          "query"
         ],
-        "title": "TrackRecord",
+        "title": "SearchResultRecord",
         "type": "object"
       },
       "event": "",
