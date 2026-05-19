@@ -34,7 +34,7 @@ async def fn_sp_prev(ctx, params: EmptyParams) -> ActionResult:
             return err
         if not resp.ok and resp.status_code != 204:
             return _spotify_err(resp)
-        return ActionResult.success(data={}, summary="Previous track")
+        return ActionResult.success(data={}, summary="Previous track", refresh_panels=[])
     except Exception as e:
         log.error("sp_prev failed: %s", e)
         return ActionResult.error(repr(e) or "Failed to skip to previous track.")
@@ -56,7 +56,7 @@ async def fn_sp_next(ctx, params: EmptyParams) -> ActionResult:
             return err
         if not resp.ok and resp.status_code != 204:
             return _spotify_err(resp)
-        return ActionResult.success(data={}, summary="Next track")
+        return ActionResult.success(data={}, summary="Next track", refresh_panels=[])
     except Exception as e:
         log.error("sp_next failed: %s", e)
         return ActionResult.error(repr(e) or "Failed to skip to next track.")
@@ -121,7 +121,20 @@ async def fn_sp_shuffle(ctx, params: EmptyParams) -> ActionResult:
             return err
         if not resp2.ok and resp2.status_code != 204:
             return _spotify_err(resp2)
-        return ActionResult.success(data={"shuffle": new_state}, summary=f"Shuffle {'on' if new_state else 'off'}")
+
+        try:
+            now_playing = await ctx.cache.get(key="now_playing", model=NowPlayingModel)
+            if now_playing:
+                now_playing.shuffle = new_state
+                await ctx.cache.set(key="now_playing", value=now_playing, ttl_seconds=90)
+        except Exception:
+            pass
+
+        return ActionResult.success(
+            data={"shuffle": new_state},
+            summary=f"Shuffle {'on' if new_state else 'off'}",
+            refresh_panels=["spotify"],
+        )
     except Exception as e:
         log.error("sp_shuffle failed: %s", e)
         return ActionResult.error(repr(e) or "Failed to toggle shuffle.")
@@ -156,18 +169,30 @@ async def fn_sp_like(ctx, params: EmptyParams) -> ActionResult:
             return err
 
         is_liked = resp.ok and bool(resp.json()) and resp.json()[0]
-        method = "delete" if is_liked else "put"
 
         resp2, err = await _spotify_call(
             ctx, "delete" if is_liked else "put",
             f"{SP_API_BASE}/me/tracks",
-            params={"ids": track_id},
+            json={"ids": [track_id]},
         )
         if err:
             return err
         if not resp2.ok and resp2.status_code not in (200, 204):
             return _spotify_err(resp2)
-        return ActionResult.success(data={"track_id": track_id, "liked": not is_liked}, summary="Unliked" if is_liked else "Liked")
+
+        new_liked = not is_liked
+        try:
+            if now_playing:
+                now_playing.is_liked = new_liked
+                await ctx.cache.set(key="now_playing", value=now_playing, ttl_seconds=90)
+        except Exception:
+            pass
+
+        return ActionResult.success(
+            data={"track_id": track_id, "liked": new_liked},
+            summary="Unliked" if is_liked else "Liked",
+            refresh_panels=["spotify"],
+        )
     except Exception as e:
         log.error("sp_like failed: %s", e)
         return ActionResult.error(repr(e) or "Failed to like/unlike track.")

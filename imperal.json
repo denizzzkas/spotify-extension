@@ -398,6 +398,7 @@
             "type": "string"
           },
           "tracks": {
+            "default": [],
             "description": "Optional list of track IDs to add on creation",
             "items": {
               "type": "string"

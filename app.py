@@ -75,6 +75,8 @@ class NowPlayingModel(BaseModel):
     album: str = ""
     album_art: str = ""
     is_playing: bool = False
+    shuffle: bool = False
+    is_liked: bool = False
 
 @ext.cache_model("search")
 class SearchModel(BaseModel):

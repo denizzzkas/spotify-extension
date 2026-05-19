@@ -143,10 +143,14 @@ async def panel_spotify(ctx, **kwargs):
     np_title = now_playing.title if now_playing else ""
     np_artist = now_playing.artist if now_playing else ""
     np_is_playing = now_playing.is_playing if now_playing else False
+    np_shuffle = now_playing.shuffle if now_playing else False
+    np_is_liked = now_playing.is_liked if now_playing else False
     track_to_play = f"spotify:track:{now_playing.id}" if (now_playing and now_playing.id) else ""
     np_display = "block" if (now_playing and now_playing.id) else "none"
     art_display = "block" if np_album_art else "none"
     play_icon = "⏸" if np_is_playing else "▶"
+    like_icon = "♥" if np_is_liked else "♡"
+    shuffle_variant = "primary" if np_shuffle else "ghost"
 
     player_html = build_player_html(
         token=token,
@@ -183,11 +187,11 @@ async def panel_spotify(ctx, **kwargs):
     ]
 
     controls = ui.Stack([
-        ui.Button("♡", size="sm", on_click=ui.Call("sp_like")),
+        ui.Button(like_icon, size="sm", variant="primary" if np_is_liked else "ghost", on_click=ui.Call("sp_like")),
         ui.Button("⏮", size="sm", on_click=ui.Call("sp_prev")),
         ui.Button(play_icon, size="sm", on_click=ui.Call("sp_play_pause")),
         ui.Button("⏭", size="sm", on_click=ui.Call("sp_next")),
-        ui.Button("⇄", size="sm", on_click=ui.Call("sp_shuffle")),
+        ui.Button("⇄", size="sm", variant=shuffle_variant, on_click=ui.Call("sp_shuffle")),
     ], direction="h", gap=1)
 
     children = [

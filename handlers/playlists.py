@@ -2,8 +2,6 @@
 from __future__ import annotations
 
 import logging
-from typing import List
-
 from pydantic import BaseModel, Field
 
 from imperal_sdk import ActionResult
@@ -27,7 +25,7 @@ class GetPlaylistTracksParams(BaseModel):
 class CreatePlaylistParams(BaseModel):
     name: str = Field(..., description="Name of the new playlist")
     description: str = Field("", description="Optional playlist description")
-    tracks: List[str] = Field(default_factory=list, description="Optional list of track IDs to add on creation")
+    tracks: list[str] = Field(default=[], description="Optional list of track IDs to add on creation")
     is_public: bool = Field(False, description="Set to true to make the playlist public")
 
 class AddTrackToPlaylistParams(BaseModel):

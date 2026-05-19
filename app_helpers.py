@@ -231,6 +231,8 @@ def _spotify_error(status_code: int, detail: str = "") -> str:
     if status_code == 403:
         if detail and "not registered" in detail.lower():
             return "This Spotify account is not registered as a test user for this application. Add the account email in the Spotify Developer Dashboard → User Management."
+        if not detail or detail.lower() in ("forbidden", ""):
+            return "Permission denied. Your Spotify token may be missing required scopes — please disconnect and reconnect Spotify."
         return "You do not have permission. Some features require Spotify Premium."
     if status_code == 404:
         if detail and "active device" in detail.lower():
