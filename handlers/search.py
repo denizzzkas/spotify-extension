@@ -69,4 +69,4 @@ async def fn_search_tracks(ctx, params: SearchTracksParams) -> ActionResult:
         )
     except Exception as e:
         log.error("search_tracks failed: %s", e)
-        return ActionResult.error(f"Search failed: {str(e)}", retryable=True)
+        return ActionResult.error(f"Search failed: {repr(e)}", retryable=True)

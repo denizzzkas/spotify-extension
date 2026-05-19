@@ -97,7 +97,7 @@ async def fn_connect_spotify(ctx, params: ConnectSpotifyParams) -> ActionResult:
         )
     except Exception as e:
         log.error("connect_spotify failed: %s", e)
-        return ActionResult.error(f"Connection failed: {str(e)}")
+        return ActionResult.error(f"Connection failed: {repr(e)}")
 
 
 @chat.function(
@@ -124,7 +124,7 @@ async def fn_disconnect_spotify(ctx, params: DisconnectSpotifyParams) -> ActionR
         return ActionResult.success(data={"disconnected": True}, summary="Spotify account disconnected")
     except Exception as e:
         log.error("disconnect_spotify failed: %s", e)
-        return ActionResult.error(f"Disconnect failed: {str(e)}")
+        return ActionResult.error(f"Disconnect failed: {repr(e)}")
 
 
 @chat.function(
@@ -150,7 +150,7 @@ async def fn_check_connection(ctx, params: CheckConnectionParams) -> ActionResul
         )
     except Exception as e:
         log.error("check_connection failed: %s", e)
-        return ActionResult.error(f"Status check failed: {str(e)}")
+        return ActionResult.error(f"Status check failed: {repr(e)}")
 
 
 # ─── OAuth webhook callback ────────────────────────────────────────────────── #
@@ -234,4 +234,4 @@ h1{font-size:24px;}p{color:#fff;margin-top:8px;}</style></head>
         return WebhookResponse(status_code=200, body=html, headers={"Content-Type": "text/html"})
     except Exception as e:
         log.error("oauth_callback failed: %s", e)
-        return WebhookResponse.error(f"Callback failed: {str(e)}", 500)
+        return WebhookResponse.error(f"Callback failed: {repr(e)}", 500)

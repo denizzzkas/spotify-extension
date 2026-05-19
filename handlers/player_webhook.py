@@ -44,4 +44,4 @@ async def on_player_ready(ctx, headers, body, query_params):
         return {"status": "ok"}
     except Exception as e:
         log.error("on_player_ready failed: %s", e)
-        return {"status_code": 500, "error": str(e)}
+        return {"status_code": 500, "error": repr(e)}

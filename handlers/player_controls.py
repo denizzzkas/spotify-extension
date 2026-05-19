@@ -37,7 +37,7 @@ async def fn_sp_prev(ctx, params: EmptyParams) -> ActionResult:
         return ActionResult.success(data={}, summary="Previous track")
     except Exception as e:
         log.error("sp_prev failed: %s", e)
-        return ActionResult.error(str(e) or "Failed to skip to previous track.")
+        return ActionResult.error(repr(e) or "Failed to skip to previous track.")
 
 
 @chat.function(
@@ -59,7 +59,7 @@ async def fn_sp_next(ctx, params: EmptyParams) -> ActionResult:
         return ActionResult.success(data={}, summary="Next track")
     except Exception as e:
         log.error("sp_next failed: %s", e)
-        return ActionResult.error(str(e) or "Failed to skip to next track.")
+        return ActionResult.error(repr(e) or "Failed to skip to next track.")
 
 
 @chat.function(
@@ -90,7 +90,7 @@ async def fn_sp_play_pause(ctx, params: EmptyParams) -> ActionResult:
         return ActionResult.success(data={}, summary="Paused" if is_playing else "Resumed")
     except Exception as e:
         log.error("sp_play_pause failed: %s", e)
-        return ActionResult.error(str(e) or "Failed to toggle playback.")
+        return ActionResult.error(repr(e) or "Failed to toggle playback.")
 
 
 @chat.function(
@@ -124,7 +124,7 @@ async def fn_sp_shuffle(ctx, params: EmptyParams) -> ActionResult:
         return ActionResult.success(data={"shuffle": new_state}, summary=f"Shuffle {'on' if new_state else 'off'}")
     except Exception as e:
         log.error("sp_shuffle failed: %s", e)
-        return ActionResult.error(str(e) or "Failed to toggle shuffle.")
+        return ActionResult.error(repr(e) or "Failed to toggle shuffle.")
 
 
 @chat.function(
@@ -170,4 +170,4 @@ async def fn_sp_like(ctx, params: EmptyParams) -> ActionResult:
         return ActionResult.success(data={"track_id": track_id, "liked": not is_liked}, summary="Unliked" if is_liked else "Liked")
     except Exception as e:
         log.error("sp_like failed: %s", e)
-        return ActionResult.error(str(e) or "Failed to like/unlike track.")
+        return ActionResult.error(repr(e) or "Failed to like/unlike track.")

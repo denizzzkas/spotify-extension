@@ -56,7 +56,7 @@ async def fn_get_recent_tracks(ctx, params: GetRecentTracksParams) -> ActionResu
                                     summary=f"Retrieved {len(tracks)} recently played track(s)")
     except Exception as e:
         log.error("get_recent_tracks failed: %s", e)
-        return ActionResult.error(f"Failed to get recent tracks: {str(e)}", retryable=True)
+        return ActionResult.error(f"Failed to get recent tracks: {repr(e)}", retryable=True)
 
 
 @chat.function(
@@ -79,7 +79,7 @@ async def fn_get_liked_tracks(ctx, params: GetLikedTracksParams) -> ActionResult
                                     summary=f"Retrieved {len(tracks)} saved track(s)")
     except Exception as e:
         log.error("get_liked_tracks failed: %s", e)
-        return ActionResult.error(f"Failed to get liked tracks: {str(e)}", retryable=True)
+        return ActionResult.error(f"Failed to get liked tracks: {repr(e)}", retryable=True)
 
 
 @chat.function(
@@ -106,7 +106,7 @@ async def fn_like_track(ctx, params: LikeTrackParams) -> ActionResult:
                                     refresh_panels=["spotify"])
     except Exception as e:
         log.error("like_track failed: %s", e)
-        return ActionResult.error(f"Failed to like track: {str(e)}", retryable=False)
+        return ActionResult.error(f"Failed to like track: {repr(e)}", retryable=False)
 
 
 @chat.function(
@@ -133,7 +133,7 @@ async def fn_unlike_track(ctx, params: UnlikeTrackParams) -> ActionResult:
                                     refresh_panels=["spotify"])
     except Exception as e:
         log.error("unlike_track failed: %s", e)
-        return ActionResult.error(f"Failed to unlike track: {str(e)}", retryable=False)
+        return ActionResult.error(f"Failed to unlike track: {repr(e)}", retryable=False)
 
 
 @chat.function(
@@ -166,4 +166,4 @@ async def fn_get_user_profile(ctx, params: GetUserProfileParams) -> ActionResult
                                     summary=f"Profile: {profile['display_name']} ({profile['product']})")
     except Exception as e:
         log.error("get_user_profile failed: %s", e)
-        return ActionResult.error(f"Failed to get profile: {str(e)}", retryable=True)
+        return ActionResult.error(f"Failed to get profile: {repr(e)}", retryable=True)

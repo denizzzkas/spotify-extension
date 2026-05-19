@@ -119,7 +119,7 @@ async def fn_play_track(ctx, params: PlayTrackParams) -> ActionResult:
         )
     except Exception as e:
         log.error("play_track failed: %s", e)
-        return ActionResult.error(f"Failed to get track: {str(e)}", retryable=True)
+        return ActionResult.error(f"Failed to get track: {repr(e)}", retryable=True)
 
 
 @chat.function(
@@ -135,7 +135,7 @@ async def fn_play_track(ctx, params: PlayTrackParams) -> ActionResult:
 async def fn_play_playlist(ctx, params: PlayPlaylistParams) -> ActionResult:
     """Get playlist tracks and trigger playback. Returns list of tracks in the playlist."""
     try:
-        resp, err = await _spotify_call(ctx, "get", f"{SP_API_BASE}/playlists/{params.playlist_id}/tracks",
+        resp, err = await _spotify_call(ctx, "get", f"{SP_API_BASE}/playlists/{params.playlist_id}/items",
                                         params={"limit": 50})
         if err:
             return err
@@ -199,4 +199,4 @@ async def fn_play_playlist(ctx, params: PlayPlaylistParams) -> ActionResult:
         )
     except Exception as e:
         log.error("play_playlist failed: %s", e)
-        return ActionResult.error(f"Failed to load playlist: {str(e)}", retryable=True)
+        return ActionResult.error(f"Failed to load playlist: {repr(e)}", retryable=True)

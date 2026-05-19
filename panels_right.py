@@ -37,7 +37,7 @@ async def _fetch_playlist_tracks(ctx, playlist_id: str) -> tuple[list[dict], str
             return [], "Not authenticated"
 
         resp = await ctx.http.get(
-            f"{SP_API_BASE}/playlists/{playlist_id}/tracks",
+            f"{SP_API_BASE}/playlists/{playlist_id}/items",
             headers=headers,
             params={"limit": 50},
         )
@@ -47,7 +47,7 @@ async def _fetch_playlist_tracks(ctx, playlist_id: str) -> tuple[list[dict], str
             if token:
                 headers["Authorization"] = f"Bearer {token}"
                 resp = await ctx.http.get(
-                    f"{SP_API_BASE}/playlists/{playlist_id}/tracks",
+                    f"{SP_API_BASE}/playlists/{playlist_id}/items",
                     headers=headers,
                     params={"limit": 50},
                 )
