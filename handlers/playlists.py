@@ -115,15 +115,8 @@ async def fn_get_playlist_tracks(ctx, params: GetPlaylistTracksParams) -> Action
 async def fn_create_playlist(ctx, params: CreatePlaylistParams) -> ActionResult:
     """Create a new playlist on the user's Spotify account. Returns playlist_id and playlist details."""
     try:
-        me_resp, err = await _spotify_call(ctx, "get", f"{SP_API_BASE}/me")
-        if err:
-            return err
-        if not me_resp.ok:
-            return ActionResult.error("Could not get Spotify user ID. Please reconnect via connect_spotify().")
-        my_id = me_resp.json().get("id")
-
         resp, err = await _spotify_call(
-            ctx, "post", f"{SP_API_BASE}/users/{my_id}/playlists",
+            ctx, "post", f"{SP_API_BASE}/me/playlists",
             json={"name": params.name, "description": params.description, "public": params.is_public},
         )
         if err:
@@ -136,7 +129,7 @@ async def fn_create_playlist(ctx, params: CreatePlaylistParams) -> ActionResult:
 
         if params.tracks:
             uris = [to_spotify_uri(tid) for tid in params.tracks]
-            await _spotify_call(ctx, "post", f"{SP_API_BASE}/playlists/{playlist_id}/tracks",
+            await _spotify_call(ctx, "post", f"{SP_API_BASE}/playlists/{playlist_id}/items",
                                 json={"uris": uris})
 
         return ActionResult.success(
@@ -164,7 +157,7 @@ async def fn_add_track_to_playlist(ctx, params: AddTrackToPlaylistParams) -> Act
     """Add a track to an existing Spotify playlist. Returns updated playlist info."""
     try:
         resp, err = await _spotify_call(
-            ctx, "post", f"{SP_API_BASE}/playlists/{params.playlist_id}/tracks",
+            ctx, "post", f"{SP_API_BASE}/playlists/{params.playlist_id}/items",
             json={"uris": [to_spotify_uri(params.track_id)]},
         )
         if err:

@@ -88,8 +88,7 @@ async def test_get_playlist_tracks_returns_tracks():
 
 async def test_create_playlist_success():
     ctx = await ctx_with_token()
-    ctx.http.mock_get("api.spotify.com/v1/me", SAMPLE_USER)
-    ctx.http.mock_post("api.spotify.com/v1/users/spotify_user_123/playlists", SAMPLE_PLAYLIST)
+    ctx.http.mock_post("api.spotify.com/v1/me/playlists", SAMPLE_PLAYLIST)
     result = await fn_create_playlist(ctx, CreatePlaylistParams(name="My Workout"))
     assert result.status == "success"
     assert result.data["playlist_id"] == "37i9dQZF1DXcBWIGoYBM5M"
@@ -105,7 +104,7 @@ async def test_create_playlist_no_token_returns_error():
 
 async def test_add_track_to_playlist_success():
     ctx = await ctx_with_token()
-    ctx.http.mock_post("api.spotify.com/v1/playlists/37i9dQZF1DXcBWIGoYBM5M/tracks", {})
+    ctx.http.mock_post("api.spotify.com/v1/playlists/37i9dQZF1DXcBWIGoYBM5M/items", {})
     result = await fn_add_track_to_playlist(
         ctx, AddTrackToPlaylistParams(playlist_id="37i9dQZF1DXcBWIGoYBM5M", track_id="4iV5W9uYEdYUVa79Axb7Rh"),
     )
