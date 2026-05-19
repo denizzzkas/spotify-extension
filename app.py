@@ -71,7 +71,6 @@ class NowPlayingModel(BaseModel):
     duration: str = ""
     duration_ms: int = 0
     popularity: int = 0
-    preview_url: str = ""
     album: str = ""
     album_art: str = ""
     is_playing: bool = False

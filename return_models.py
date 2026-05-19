@@ -73,7 +73,6 @@ class LyricsRecord(BaseModel):
 class PlayTrackRecord(BaseModel):
     track_id: str
     track: TrackRecord
-    preview_url: str
     full_playback: bool
 
 

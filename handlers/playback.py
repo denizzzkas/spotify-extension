@@ -35,10 +35,10 @@ class PlayPlaylistParams(BaseModel):
     effects=["playback:start"],
     event="track.played",
     data_model=PlayTrackRecord,
-    description="Get track info and trigger playback. Returns track metadata with preview URL.",
+    description="Play a track on the user's active Spotify device. Pass a track ID or name/artist to search.",
 )
 async def fn_play_track(ctx, params: PlayTrackParams) -> ActionResult:
-    """Get track info and trigger playback. Returns track metadata with preview URL."""
+    """Play a track on the user's active Spotify device."""
     token = await _require_auth(ctx)
     if isinstance(token, ActionResult):
         return token
@@ -111,7 +111,6 @@ async def fn_play_track(ctx, params: PlayTrackParams) -> ActionResult:
             data={
                 "track_id": track_id,
                 "track": track_data,
-                "preview_url": track_data["preview_url"],
                 "full_playback": played_full,
             },
             summary=summary,

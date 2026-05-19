@@ -901,7 +901,7 @@
     },
     {
       "name": "play_track",
-      "description": "Get track info and trigger playback. Returns track metadata with preview URL.",
+      "description": "Play a track on the user's active Spotify device. Pass a track ID or name/artist to search.",
       "action_type": "write",
       "chain_callable": true,
       "effects": [
@@ -997,10 +997,6 @@
           "track": {
             "$ref": "#/$defs/TrackRecord"
           },
-          "preview_url": {
-            "title": "Preview Url",
-            "type": "string"
-          },
           "full_playback": {
             "title": "Full Playback",
             "type": "boolean"
@@ -1009,7 +1005,6 @@
         "required": [
           "track_id",
           "track",
-          "preview_url",
           "full_playback"
         ],
         "title": "PlayTrackRecord",
