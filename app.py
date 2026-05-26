@@ -124,6 +124,7 @@ chat = ChatExtension(
 @ext.emits("spotify.track.added_to_playlist")
 @ext.emits("spotify.track.removed_from_playlist")
 @ext.emits("spotify.playlist.created")
+@ext.emits("spotify.album.played")
 @ext.emits("spotify.playlist.played")
 @ext.emits("spotify.player.previous")
 @ext.emits("spotify.player.next")

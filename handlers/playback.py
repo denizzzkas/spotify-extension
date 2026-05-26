@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from imperal_sdk import ActionResult
 
 from app import chat, NowPlayingModel, QueueModel
-from return_models import PlayTrackRecord, PlaylistPlayRecord
+from return_models import PlayTrackRecord, PlaylistPlayRecord, AlbumPlayRecord
 from spotify_config import SP_API_BASE
 from app_helpers import _spotify_call, _spotify_err, _require_auth, _refresh_access_token, _spotify_error
 from utils import format_track
@@ -25,6 +25,11 @@ class PlayTrackParams(BaseModel):
 class PlayPlaylistParams(BaseModel):
     playlist_id: str = Field(..., description="Spotify playlist ID to play")
     playlist_name: str = Field("", description="Optional playlist name for display")
+
+
+class PlayAlbumParams(BaseModel):
+    album_name: str = Field(..., description="Album name to search for and play")
+    artist_name: str = Field("", description="Artist name to narrow search (optional)")
 
 
 @chat.function(
@@ -199,3 +204,70 @@ async def fn_play_playlist(ctx, params: PlayPlaylistParams) -> ActionResult:
     except Exception as e:
         log.error("play_playlist failed: %s", e)
         return ActionResult.error(f"Failed to load playlist: {str(e)}", retryable=True)
+
+
+@chat.function(
+    "play_album",
+    action_type="write",
+    chain_callable=True,
+    data_model=AlbumPlayRecord,
+    description="Search for an album by name and play it on the active Spotify device. Use this when the user wants to play a specific album.",
+    event="spotify.album.played",
+    effects=["playback:start"],
+)
+async def fn_play_album(ctx, params: PlayAlbumParams) -> ActionResult:
+    """Search for an album and start playback."""
+    try:
+        auth_err = await _require_auth(ctx)
+        if auth_err:
+            return auth_err
+
+        query = params.album_name
+        if params.artist_name:
+            query = f"{params.album_name} {params.artist_name}"
+
+        search_resp, err = await _spotify_call(
+            ctx, "get", f"{SP_API_BASE}/search",
+            params={"q": query, "type": "album", "limit": 1},
+        )
+        if err:
+            return err
+        if not search_resp.ok:
+            return _spotify_err(search_resp)
+
+        albums = search_resp.json().get("albums", {}).get("items", [])
+        if not albums:
+            return ActionResult.error(f"Album '{params.album_name}' not found on Spotify.", retryable=False)
+
+        album = albums[0]
+        album_id = album["id"]
+        album_name = album["name"]
+        artist = ", ".join(a["name"] for a in album.get("artists", []))
+
+        devices_resp, _ = await _spotify_call(ctx, "get", f"{SP_API_BASE}/me/player/devices")
+        device_id = None
+        if devices_resp and devices_resp.ok:
+            devices = devices_resp.json().get("devices", [])
+            active = next((d for d in devices if d.get("name") == "Imperal Spotify"), None)
+            if not active:
+                active = next((d for d in devices if not d.get("is_restricted")), None)
+            if active:
+                device_id = active["id"]
+
+        play_body = {"context_uri": f"spotify:album:{album_id}"}
+        play_url = f"{SP_API_BASE}/me/player/play"
+        if device_id:
+            play_url += f"?device_id={device_id}"
+
+        play_resp, err = await _spotify_call(ctx, "put", play_url, json=play_body)
+        if err:
+            return err
+
+        return ActionResult.success(
+            data={"album_id": album_id, "album_name": album_name, "artist": artist},
+            summary=f"▶ Playing album '{album_name}' by {artist}",
+            refresh_panels=["spotify"],
+        )
+    except Exception as e:
+        log.error("play_album failed: %s", e)
+        return ActionResult.error(f"Failed to play album: {str(e)}", retryable=True)

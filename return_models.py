@@ -116,3 +116,9 @@ class DemoTrackRecord(BaseModel):
     track_id: str
     title: str
     artist: str
+
+
+class AlbumPlayRecord(BaseModel):
+    album_id: str
+    album_name: str
+    artist: str

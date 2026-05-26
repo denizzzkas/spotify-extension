@@ -1,6 +1,7 @@
 """Player control handlers — previous, next, play/pause, shuffle, like."""
 from __future__ import annotations
 
+import asyncio
 import logging
 
 from pydantic import BaseModel
@@ -10,12 +11,29 @@ from app import chat, NowPlayingModel
 from return_models import PlayerActionRecord, ShuffleRecord, TrackLikeRecord
 from spotify_config import SP_API_BASE
 from app_helpers import _spotify_call, _spotify_err
+from utils import format_track
 
 log = logging.getLogger("spotify.player_controls")
 
 
 class EmptyParams(BaseModel):
     pass
+
+
+async def _update_now_playing_cache(ctx) -> None:
+    """Fetch current Spotify player state and update now_playing cache."""
+    await asyncio.sleep(0.5)
+    np_resp, _ = await _spotify_call(ctx, "get", f"{SP_API_BASE}/me/player")
+    if np_resp and np_resp.ok and np_resp.status_code != 204:
+        state = np_resp.json()
+        item = state.get("item")
+        if item:
+            track_data = format_track(item)
+            await ctx.cache.set(
+                key="now_playing",
+                value=NowPlayingModel(**track_data, is_playing=state.get("is_playing", True)),
+                ttl_seconds=90,
+            )
 
 
 @chat.function(
@@ -34,6 +52,7 @@ async def fn_sp_prev(ctx, params: EmptyParams) -> ActionResult:
             return err
         if not resp.ok and resp.status_code != 204:
             return _spotify_err(resp)
+        await _update_now_playing_cache(ctx)
         return ActionResult.success(data={}, summary="Previous track", refresh_panels=["spotify"])
     except Exception as e:
         log.error("sp_prev failed: %s", e)
@@ -56,6 +75,7 @@ async def fn_sp_next(ctx, params: EmptyParams) -> ActionResult:
             return err
         if not resp.ok and resp.status_code != 204:
             return _spotify_err(resp)
+        await _update_now_playing_cache(ctx)
         return ActionResult.success(data={}, summary="Next track", refresh_panels=["spotify"])
     except Exception as e:
         log.error("sp_next failed: %s", e)
