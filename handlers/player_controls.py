@@ -164,7 +164,7 @@ async def fn_sp_shuffle(ctx, params: EmptyParams) -> ActionResult:
     "sp_like", action_type="write",
     chain_callable=True,
     data_model=TrackLikeRecord,
-    description="Like or unlike the currently playing track in the user's Spotify library.",
+    description="Toggle like/unlike on the currently playing track — no track_id needed. Use this when the user wants to like or save what's playing right now. To like a specific track by ID, use like_track instead.",
     event="track.liked",
     effects=["track:like"],
 )

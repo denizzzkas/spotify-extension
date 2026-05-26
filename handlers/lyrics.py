@@ -22,7 +22,7 @@ class GetLyricsParams(BaseModel):
     "get_lyrics",
     action_type="read",
     data_model=LyricsRecord,
-    description="Search for song lyrics on Genius. Returns URL to full lyrics page.",
+    description="Fetch song lyrics text. Returns the full lyrics as text. Requires track_name and artist_name.",
 )
 async def fn_get_lyrics(ctx, params: GetLyricsParams) -> ActionResult:
     """Search for song lyrics on Genius. Returns URL to full lyrics page."""

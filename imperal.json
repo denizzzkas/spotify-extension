@@ -259,7 +259,7 @@
     },
     {
       "name": "get_playlists",
-      "description": "Get all playlists owned or followed by the authenticated user. Returns list of playlists with id, title, track_count, image_url.",
+      "description": "List all playlists owned or followed by the user. Use this to browse or find a playlist before playing or editing it. Returns id, title, track_count, image_url.",
       "action_type": "read",
       "chain_callable": true,
       "effects": [],
@@ -320,7 +320,7 @@
     },
     {
       "name": "get_playlist_tracks",
-      "description": "Get all tracks in a specific Spotify playlist. Returns list of tracks with full details.",
+      "description": "List tracks in a playlist WITHOUT playing it. Use this to browse contents. To actually play the playlist, use play_playlist instead. Accepts playlist_id or playlist name.",
       "action_type": "read",
       "chain_callable": true,
       "effects": [],
@@ -405,7 +405,7 @@
     },
     {
       "name": "create_playlist",
-      "description": "Create a new playlist on the user's Spotify account. Returns playlist_id and playlist details.",
+      "description": "Create a NEW empty playlist. Call this ONLY when the user explicitly asks to create a playlist — NOT for viewing existing ones (use get_playlists) or playing one (use play_playlist).",
       "action_type": "write",
       "chain_callable": true,
       "effects": [
@@ -483,7 +483,7 @@
     },
     {
       "name": "add_track_to_playlist",
-      "description": "Add a track to an existing Spotify playlist. Returns updated playlist info.",
+      "description": "Add a track to an existing playlist. Accepts track name/artist or track_id. In chains after search_tracks, pass the track_id from results. Accepts playlist name or playlist_id.",
       "action_type": "write",
       "chain_callable": true,
       "effects": [
@@ -541,7 +541,7 @@
     },
     {
       "name": "remove_track_from_playlist",
-      "description": "Remove a track from a Spotify playlist. Returns updated playlist info.",
+      "description": "Remove a track from a playlist. Accepts track name/artist or track_id, and playlist name or playlist_id.",
       "action_type": "write",
       "chain_callable": true,
       "effects": [
@@ -769,7 +769,7 @@
     },
     {
       "name": "like_track",
-      "description": "Save a track to the user's Spotify library (like it).",
+      "description": "Like a specific track by track_id. Use in chains after search_tracks. To like the currently playing track without knowing its ID, use sp_like instead.",
       "action_type": "write",
       "chain_callable": true,
       "effects": [
@@ -816,7 +816,7 @@
     },
     {
       "name": "unlike_track",
-      "description": "Remove a track from the user's Spotify library (unlike it).",
+      "description": "Unlike a specific track by track_id. Use in chains after search_tracks. To unlike the currently playing track, use sp_like instead.",
       "action_type": "write",
       "chain_callable": true,
       "effects": [
@@ -929,7 +929,7 @@
     },
     {
       "name": "play_track",
-      "description": "Play a track on the user's active Spotify device. Pass a track ID or name/artist to search.",
+      "description": "Play a specific track. Accepts a track name/artist (will search) or a track_id from search_tracks results. Use this for a single track, not a playlist or album.",
       "action_type": "write",
       "chain_callable": true,
       "effects": [
@@ -1046,7 +1046,7 @@
     },
     {
       "name": "play_playlist",
-      "description": "Get playlist tracks and trigger playback. Returns list of tracks in the playlist.",
+      "description": "Start playing a playlist on the active Spotify device. Use this to PLAY a playlist. To only browse tracks without playing, use get_playlist_tracks instead. Accepts playlist_id or playlist name.",
       "action_type": "write",
       "chain_callable": true,
       "effects": [
@@ -1160,6 +1160,64 @@
         "type": "object"
       },
       "event": "playlist.played",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_spotify_chat"
+    },
+    {
+      "name": "play_album",
+      "description": "Search for an album by name and play it on the active Spotify device. Use this when the user wants to play a specific album.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "playback:start"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "album_name": {
+            "description": "Album name to search for and play",
+            "title": "Album Name",
+            "type": "string"
+          },
+          "artist_name": {
+            "default": "",
+            "description": "Artist name to narrow search (optional)",
+            "title": "Artist Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "album_name"
+        ],
+        "title": "PlayAlbumParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "album_id": {
+            "title": "Album Id",
+            "type": "string"
+          },
+          "album_name": {
+            "title": "Album Name",
+            "type": "string"
+          },
+          "artist": {
+            "title": "Artist",
+            "type": "string"
+          }
+        },
+        "required": [
+          "album_id",
+          "album_name",
+          "artist"
+        ],
+        "title": "AlbumPlayRecord",
+        "type": "object"
+      },
+      "event": "spotify.album.played",
       "background": false,
       "long_running": false,
       "scopes": [],
@@ -1428,7 +1486,7 @@
     },
     {
       "name": "get_lyrics",
-      "description": "Search for song lyrics on Genius. Returns URL to full lyrics page.",
+      "description": "Fetch song lyrics text. Returns the full lyrics as text. Requires track_name and artist_name.",
       "action_type": "read",
       "chain_callable": true,
       "effects": [],
@@ -1592,7 +1650,7 @@
     },
     {
       "name": "sp_like",
-      "description": "Like or unlike the currently playing track in the user's Spotify library.",
+      "description": "Toggle like/unlike on the currently playing track — no track_id needed. Use this when the user wants to like or save what's playing right now. To like a specific track by ID, use like_track instead.",
       "action_type": "write",
       "chain_callable": true,
       "effects": [
@@ -1680,6 +1738,9 @@
       },
       {
         "type": "spotify.playlist.played"
+      },
+      {
+        "type": "spotify.album.played"
       },
       {
         "type": "spotify.playlist.created"

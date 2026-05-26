@@ -40,7 +40,7 @@ class PlayAlbumParams(BaseModel):
     effects=["playback:start"],
     event="track.played",
     data_model=PlayTrackRecord,
-    description="Play a track on the user's active Spotify device. Pass a track ID or name/artist to search.",
+    description="Play a specific track. Accepts a track name/artist (will search) or a track_id from search_tracks results. Use this for a single track, not a playlist or album.",
 )
 async def fn_play_track(ctx, params: PlayTrackParams) -> ActionResult:
     """Play a track on the user's active Spotify device."""
@@ -134,7 +134,7 @@ async def fn_play_track(ctx, params: PlayTrackParams) -> ActionResult:
     effects=["playback:start"],
     event="playlist.played",
     data_model=PlaylistPlayRecord,
-    description="Get playlist tracks and trigger playback. Returns list of tracks in the playlist.",
+    description="Start playing a playlist on the active Spotify device. Use this to PLAY a playlist. To only browse tracks without playing, use get_playlist_tracks instead. Accepts playlist_id or playlist name.",
 )
 async def fn_play_playlist(ctx, params: PlayPlaylistParams) -> ActionResult:
     """Get playlist tracks and trigger playback. Returns list of tracks in the playlist."""

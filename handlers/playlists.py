@@ -41,7 +41,7 @@ class RemoveTrackFromPlaylistParams(BaseModel):
     "get_playlists",
     action_type="read",
     data_model=PlaylistRecord,
-    description="Get all playlists owned or followed by the authenticated user. Returns list of playlists with id, title, track_count, image_url.",
+    description="List all playlists owned or followed by the user. Use this to browse or find a playlist before playing or editing it. Returns id, title, track_count, image_url.",
 )
 async def fn_get_playlists(ctx, params: GetPlaylistsParams) -> ActionResult:
     """Get all playlists owned or followed by the authenticated user. Returns list of playlists with id, title, track_count, image_url."""
@@ -74,7 +74,7 @@ async def fn_get_playlists(ctx, params: GetPlaylistsParams) -> ActionResult:
     "get_playlist_tracks",
     action_type="read",
     data_model=TrackRecord,
-    description="Get all tracks in a specific Spotify playlist. Returns list of tracks with full details.",
+    description="List tracks in a playlist WITHOUT playing it. Use this to browse contents. To actually play the playlist, use play_playlist instead. Accepts playlist_id or playlist name.",
 )
 async def fn_get_playlist_tracks(ctx, params: GetPlaylistTracksParams) -> ActionResult:
     """Get all tracks in a specific Spotify playlist. Returns list of tracks with full details."""
@@ -110,7 +110,7 @@ async def fn_get_playlist_tracks(ctx, params: GetPlaylistTracksParams) -> Action
     effects=["playlist:create"],
     event="playlist.created",
     data_model=CreatePlaylistRecord,
-    description="Create a new playlist on the user's Spotify account. Returns playlist_id and playlist details.",
+    description="Create a NEW empty playlist. Call this ONLY when the user explicitly asks to create a playlist — NOT for viewing existing ones (use get_playlists) or playing one (use play_playlist).",
 )
 async def fn_create_playlist(ctx, params: CreatePlaylistParams) -> ActionResult:
     """Create a new playlist on the user's Spotify account. Returns playlist_id and playlist details."""
@@ -151,7 +151,7 @@ async def fn_create_playlist(ctx, params: CreatePlaylistParams) -> ActionResult:
     effects=["playlist:add_track"],
     event="track.added_to_playlist",
     data_model=PlaylistTrackRecord,
-    description="Add a track to an existing Spotify playlist. Returns updated playlist info.",
+    description="Add a track to an existing playlist. Accepts track name/artist or track_id. In chains after search_tracks, pass the track_id from results. Accepts playlist name or playlist_id.",
 )
 async def fn_add_track_to_playlist(ctx, params: AddTrackToPlaylistParams) -> ActionResult:
     """Add a track to an existing Spotify playlist. Returns updated playlist info."""
@@ -179,7 +179,7 @@ async def fn_add_track_to_playlist(ctx, params: AddTrackToPlaylistParams) -> Act
     effects=["playlist:remove_track"],
     event="track.removed_from_playlist",
     data_model=PlaylistRemoveRecord,
-    description="Remove a track from a Spotify playlist. Returns updated playlist info.",
+    description="Remove a track from a playlist. Accepts track name/artist or track_id, and playlist name or playlist_id.",
 )
 async def fn_remove_track_from_playlist(ctx, params: RemoveTrackFromPlaylistParams) -> ActionResult:
     """Remove a track from a Spotify playlist. Returns updated playlist info."""
