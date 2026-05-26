@@ -209,8 +209,15 @@ async def oauth_callback(ctx, headers, body, query_params) -> dict:
 
         token_data = resp.json()
 
-        user_ctx = ctx.as_user(user_id)
-        await _save_token_to_store(user_ctx.store, user_id, token_data)
+        from imperal_sdk.store.client import StoreClient
+        user_store = StoreClient(
+            gateway_url=ctx.store._gateway_url,
+            service_token=ctx.store._auth_token,
+            extension_id=ctx.store._extension_id,
+            user_id=user_id,
+            tenant_id=ctx.store._tenant_id,
+        )
+        await _save_token_to_store(user_store, user_id, token_data)
 
         try:
             await ctx.extensions.emit("spotify.connected", {"user_id": user_id})
