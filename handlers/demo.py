@@ -97,7 +97,7 @@ async def fn_open_demo_playlist(ctx, params: OpenDemoPlaylistParams) -> ActionRe
         )
     except Exception as e:
         log.error("open_demo_playlist failed: %s", e)
-        return ActionResult.error(f"Failed to open demo: {repr(e)}", retryable=True)
+        return ActionResult.error(f"Failed to open demo: {str(e)}", retryable=True)
 
 
 @chat.function(
@@ -135,7 +135,7 @@ async def fn_demo_play_track(ctx, params: DemoPlayTrackParams) -> ActionResult:
         )
     except Exception as e:
         log.error("demo_play_track failed: %s", e)
-        return ActionResult.error(f"Play failed: {repr(e)}", retryable=True)
+        return ActionResult.error(f"Play failed: {str(e)}", retryable=True)
 
 
 @chat.function(
@@ -161,7 +161,7 @@ async def fn_demo_next_track(ctx, params: DemoNextTrackParams) -> ActionResult:
         return ActionResult.success(data={}, summary="Next track", refresh_panels=["spotify"])
     except Exception as e:
         log.error("demo_next_track failed: %s", e)
-        return ActionResult.error(f"Skip failed: {repr(e)}", retryable=True)
+        return ActionResult.error(f"Skip failed: {str(e)}", retryable=True)
 
 
 @chat.function(
@@ -181,7 +181,7 @@ async def fn_demo_prev_track(ctx, params: DemoPrevTrackParams) -> ActionResult:
         return ActionResult.success(data={}, summary="Previous track", refresh_panels=["spotify"])
     except Exception as e:
         log.error("demo_prev_track failed: %s", e)
-        return ActionResult.error(f"Previous failed: {repr(e)}", retryable=True)
+        return ActionResult.error(f"Previous failed: {str(e)}", retryable=True)
 
 
 @chat.function(
@@ -203,7 +203,7 @@ async def fn_demo_pause(ctx, params: DemoPauseParams) -> ActionResult:
         return ActionResult.success(data={}, summary="Toggled playback", refresh_panels=["spotify"])
     except Exception as e:
         log.error("demo_pause failed: %s", e)
-        return ActionResult.error(f"Pause failed: {repr(e)}", retryable=True)
+        return ActionResult.error(f"Pause failed: {str(e)}", retryable=True)
 
 
 @chat.function(
@@ -225,4 +225,4 @@ async def fn_demo_shuffle(ctx, params: DemoShuffleParams) -> ActionResult:
         return ActionResult.success(data={"shuffle": new_shuffle}, summary=f"Shuffle {label}", refresh_panels=["spotify"])
     except Exception as e:
         log.error("demo_shuffle failed: %s", e)
-        return ActionResult.error(f"Shuffle failed: {repr(e)}", retryable=True)
+        return ActionResult.error(f"Shuffle failed: {str(e)}", retryable=True)

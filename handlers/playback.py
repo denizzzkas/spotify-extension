@@ -118,7 +118,7 @@ async def fn_play_track(ctx, params: PlayTrackParams) -> ActionResult:
         )
     except Exception as e:
         log.error("play_track failed: %s", e)
-        return ActionResult.error(f"Failed to get track: {repr(e)}", retryable=True)
+        return ActionResult.error(f"Failed to get track: {str(e)}", retryable=True)
 
 
 @chat.function(
@@ -198,4 +198,4 @@ async def fn_play_playlist(ctx, params: PlayPlaylistParams) -> ActionResult:
         )
     except Exception as e:
         log.error("play_playlist failed: %s", e)
-        return ActionResult.error(f"Failed to load playlist: {repr(e)}", retryable=True)
+        return ActionResult.error(f"Failed to load playlist: {str(e)}", retryable=True)

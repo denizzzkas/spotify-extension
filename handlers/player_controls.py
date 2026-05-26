@@ -34,10 +34,10 @@ async def fn_sp_prev(ctx, params: EmptyParams) -> ActionResult:
             return err
         if not resp.ok and resp.status_code != 204:
             return _spotify_err(resp)
-        return ActionResult.success(data={}, summary="Previous track", refresh_panels=[])
+        return ActionResult.success(data={}, summary="Previous track", refresh_panels=["spotify"])
     except Exception as e:
         log.error("sp_prev failed: %s", e)
-        return ActionResult.error(repr(e) or "Failed to skip to previous track.")
+        return ActionResult.error(str(e) or "Failed to skip to previous track.")
 
 
 @chat.function(
@@ -56,10 +56,10 @@ async def fn_sp_next(ctx, params: EmptyParams) -> ActionResult:
             return err
         if not resp.ok and resp.status_code != 204:
             return _spotify_err(resp)
-        return ActionResult.success(data={}, summary="Next track", refresh_panels=[])
+        return ActionResult.success(data={}, summary="Next track", refresh_panels=["spotify"])
     except Exception as e:
         log.error("sp_next failed: %s", e)
-        return ActionResult.error(repr(e) or "Failed to skip to next track.")
+        return ActionResult.error(str(e) or "Failed to skip to next track.")
 
 
 @chat.function(
@@ -90,7 +90,7 @@ async def fn_sp_play_pause(ctx, params: EmptyParams) -> ActionResult:
         return ActionResult.success(data={}, summary="Paused" if is_playing else "Resumed")
     except Exception as e:
         log.error("sp_play_pause failed: %s", e)
-        return ActionResult.error(repr(e) or "Failed to toggle playback.")
+        return ActionResult.error(str(e) or "Failed to toggle playback.")
 
 
 @chat.function(
@@ -137,7 +137,7 @@ async def fn_sp_shuffle(ctx, params: EmptyParams) -> ActionResult:
         )
     except Exception as e:
         log.error("sp_shuffle failed: %s", e)
-        return ActionResult.error(repr(e) or "Failed to toggle shuffle.")
+        return ActionResult.error(str(e) or "Failed to toggle shuffle.")
 
 
 @chat.function(
@@ -195,4 +195,4 @@ async def fn_sp_like(ctx, params: EmptyParams) -> ActionResult:
         )
     except Exception as e:
         log.error("sp_like failed: %s", e)
-        return ActionResult.error(repr(e) or "Failed to like/unlike track.")
+        return ActionResult.error(str(e) or "Failed to like/unlike track.")

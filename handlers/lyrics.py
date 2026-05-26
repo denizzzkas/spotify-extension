@@ -65,4 +65,4 @@ async def fn_get_lyrics(ctx, params: GetLyricsParams) -> ActionResult:
 
     except Exception as e:
         log.error("get_lyrics failed: %s", e)
-        return ActionResult.error(f"Lyrics search failed: {repr(e)}", retryable=True)
+        return ActionResult.error(f"Lyrics search failed: {str(e)}", retryable=True)

@@ -74,19 +74,17 @@ async def skeleton_now_playing(ctx) -> dict:
     try:
         now_playing = await ctx.cache.get(key="now_playing", model=NowPlayingModel)
         if not now_playing:
-            return {"response": {"playing": False, "track": None}}
+            return {"response": {"playing": False, "track_title": "", "track_artist": "", "track_album": ""}}
 
         track_data = now_playing.model_dump()
         return {
             "response": {
                 "playing": track_data.get("is_playing", False),
-                "track": {
-                    "title": track_data.get("title", ""),
-                    "artist": track_data.get("artist", ""),
-                    "album": track_data.get("album", ""),
-                },
+                "track_title": track_data.get("title", ""),
+                "track_artist": track_data.get("artist", ""),
+                "track_album": track_data.get("album", ""),
             }
         }
     except Exception as e:
         log.error("Spotify now_playing skeleton failed: %s", e)
-        return {"response": {"playing": False, "track": None}}
+        return {"response": {"playing": False, "track_title": "", "track_artist": "", "track_album": ""}}

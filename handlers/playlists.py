@@ -67,7 +67,7 @@ async def fn_get_playlists(ctx, params: GetPlaylistsParams) -> ActionResult:
                                     summary=f"Found {len(playlists)} playlist(s)")
     except Exception as e:
         log.error("get_playlists failed: %s", e)
-        return ActionResult.error(f"Failed to get playlists: {repr(e)}", retryable=True)
+        return ActionResult.error(f"Failed to get playlists: {str(e)}", retryable=True)
 
 
 @chat.function(
@@ -99,7 +99,7 @@ async def fn_get_playlist_tracks(ctx, params: GetPlaylistTracksParams) -> Action
                                     summary=f"Retrieved {len(tracks)} track(s) from playlist")
     except Exception as e:
         log.error("get_playlist_tracks failed: %s", e)
-        return ActionResult.error(f"Failed to get playlist tracks: {repr(e)}", retryable=True)
+        return ActionResult.error(f"Failed to get playlist tracks: {str(e)}", retryable=True)
 
 
 @chat.function(
@@ -140,7 +140,7 @@ async def fn_create_playlist(ctx, params: CreatePlaylistParams) -> ActionResult:
         )
     except Exception as e:
         log.error("create_playlist failed: %s", e)
-        return ActionResult.error(f"Failed to create playlist: {repr(e)}", retryable=False)
+        return ActionResult.error(f"Failed to create playlist: {str(e)}", retryable=False)
 
 
 @chat.function(
@@ -168,7 +168,7 @@ async def fn_add_track_to_playlist(ctx, params: AddTrackToPlaylistParams) -> Act
                                     summary="Track added to playlist")
     except Exception as e:
         log.error("add_track_to_playlist failed: %s", e)
-        return ActionResult.error(f"Failed to add track: {repr(e)}", retryable=False)
+        return ActionResult.error(f"Failed to add track: {str(e)}", retryable=False)
 
 
 @chat.function(
@@ -196,4 +196,4 @@ async def fn_remove_track_from_playlist(ctx, params: RemoveTrackFromPlaylistPara
                                     summary="Track removed from playlist")
     except Exception as e:
         log.error("remove_track_from_playlist failed: %s", e)
-        return ActionResult.error(f"Failed to remove track: {repr(e)}", retryable=False)
+        return ActionResult.error(f"Failed to remove track: {str(e)}", retryable=False)

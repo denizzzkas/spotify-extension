@@ -73,8 +73,6 @@ async def fn_connect_spotify(ctx, params: ConnectSpotifyParams) -> ActionResult:
         await webhook_store.create(OAUTH_STATE_COLLECTION, {
             "user_id": user_id,
             "state": state,
-            "client_id": client_id,
-            "client_secret": client_secret,
             "redirect_uri": redirect_uri,
             "created_at": datetime.now(timezone.utc).isoformat(),
         })
@@ -97,7 +95,7 @@ async def fn_connect_spotify(ctx, params: ConnectSpotifyParams) -> ActionResult:
         )
     except Exception as e:
         log.error("connect_spotify failed: %s", e)
-        return ActionResult.error(f"Connection failed: {repr(e)}")
+        return ActionResult.error(f"Connection failed: {str(e)}")
 
 
 @chat.function(
@@ -124,7 +122,7 @@ async def fn_disconnect_spotify(ctx, params: DisconnectSpotifyParams) -> ActionR
         return ActionResult.success(data={"disconnected": True}, summary="Spotify account disconnected")
     except Exception as e:
         log.error("disconnect_spotify failed: %s", e)
-        return ActionResult.error(f"Disconnect failed: {repr(e)}")
+        return ActionResult.error(f"Disconnect failed: {str(e)}")
 
 
 @chat.function(
@@ -150,12 +148,12 @@ async def fn_check_connection(ctx, params: CheckConnectionParams) -> ActionResul
         )
     except Exception as e:
         log.error("check_connection failed: %s", e)
-        return ActionResult.error(f"Status check failed: {repr(e)}")
+        return ActionResult.error(f"Status check failed: {str(e)}")
 
 
 # ─── OAuth webhook callback ────────────────────────────────────────────────── #
 
-@ext.webhook("callback", method="GET")
+@ext.webhook("/callback", method="GET")
 async def oauth_callback(ctx, headers, body, query_params) -> dict:
     from imperal_sdk import WebhookResponse
 
@@ -179,14 +177,18 @@ async def oauth_callback(ctx, headers, body, query_params) -> dict:
 
         record = page.data[0].data
         user_id = record.get("user_id")
-        client_id = record.get("client_id")
-        client_secret = record.get("client_secret")
         redirect_uri = record.get("redirect_uri")
 
         await ctx.store.delete(OAUTH_STATE_COLLECTION, page.data[0].id)
 
-        if not client_id or not client_secret or not user_id:
-            return WebhookResponse.error("Spotify credentials missing from state", 500)
+        if not user_id:
+            return WebhookResponse.error("user_id missing from state", 500)
+
+        client_id = await ctx.secrets.get("spotify_client_id")
+        client_secret = await ctx.secrets.get("spotify_client_secret")
+
+        if not client_id or not client_secret:
+            return WebhookResponse.error("Spotify credentials not found in secrets", 500)
 
         credentials = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
 
@@ -209,16 +211,8 @@ async def oauth_callback(ctx, headers, body, query_params) -> dict:
 
         token_data = resp.json()
 
-        # Save token under the real user_id via a user-scoped StoreClient.
-        from imperal_sdk.store.client import StoreClient
-        user_store = StoreClient(
-            gateway_url=ctx.store._gateway_url,
-            service_token=ctx.store._auth_token,
-            extension_id=ctx.store._extension_id,
-            user_id=user_id,
-            tenant_id=ctx.store._tenant_id,
-        )
-        await _save_token_to_store(user_store, user_id, token_data)
+        user_ctx = ctx.as_user(user_id)
+        await _save_token_to_store(user_ctx.store, user_id, token_data)
 
         try:
             await ctx.extensions.emit("spotify.connected", {"user_id": user_id})
@@ -234,4 +228,4 @@ h1{font-size:24px;}p{color:#fff;margin-top:8px;}</style></head>
         return WebhookResponse(status_code=200, body=html, headers={"Content-Type": "text/html"})
     except Exception as e:
         log.error("oauth_callback failed: %s", e)
-        return WebhookResponse.error(f"Callback failed: {repr(e)}", 500)
+        return WebhookResponse.error(f"Callback failed: {str(e)}", 500)
