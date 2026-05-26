@@ -71,7 +71,8 @@ class SearchResultRecord(BaseModel):
 
 
 class LyricsRecord(BaseModel):
-    url: str
+    lyrics: str = ""
+    url: str = ""
     title: str
     artist: str
 
