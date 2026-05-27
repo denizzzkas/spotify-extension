@@ -192,8 +192,8 @@ async def fn_remove_track_from_playlist(ctx, params: RemoveTrackFromPlaylistPara
     """Remove a track from a Spotify playlist. Returns updated playlist info."""
     try:
         resp, err = await _spotify_call(
-            ctx, "delete", f"{SP_API_BASE}/playlists/{params.playlist_id}/tracks",
-            json={"tracks": [{"uri": to_spotify_uri(params.track_id)}]},
+            ctx, "delete", f"{SP_API_BASE}/playlists/{params.playlist_id}/items",
+            json={"items": [{"uri": to_spotify_uri(params.track_id)}]},
         )
         if err:
             return err

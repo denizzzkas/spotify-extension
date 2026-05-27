@@ -1922,9 +1922,9 @@
             "type": "string"
           },
           "limit": {
-            "default": 20,
-            "description": "Number of albums to return",
-            "maximum": 50,
+            "default": 10,
+            "description": "Number of albums to return (max 10)",
+            "maximum": 10,
             "minimum": 1,
             "title": "Limit",
             "type": "integer"

@@ -15,8 +15,6 @@ from utils import format_track, format_album
 
 log = logging.getLogger("spotify.artists")
 
-DEFAULT_ARTIST_ALBUMS_LIMIT = 20
-
 
 class GetArtistTopTracksParams(BaseModel):
     artist_name: str = Field(..., description="Artist name to search for")
@@ -24,7 +22,7 @@ class GetArtistTopTracksParams(BaseModel):
 
 class GetArtistAlbumsParams(BaseModel):
     artist_name: str = Field(..., description="Artist name to search for")
-    limit: int = Field(DEFAULT_ARTIST_ALBUMS_LIMIT, ge=1, le=50, description="Number of albums to return")
+    limit: int = Field(10, ge=1, le=10, description="Number of albums to return (max 10)")
 
 
 async def _find_artist_id(ctx, artist_name: str):
@@ -50,21 +48,26 @@ async def _find_artist_id(ctx, artist_name: str):
     description="Get top tracks for an artist by name. Returns up to 10 most popular tracks with id, title, album, duration. Use track ids from results to play or add to playlist.",
 )
 async def fn_get_artist_top_tracks(ctx, params: GetArtistTopTracksParams) -> ActionResult:
-    """Get top tracks for an artist. Returns list of up to 10 tracks."""
+    """Search for artist tracks and return top 10 sorted by popularity."""
     try:
-        artist_id, artist_display, err = await _find_artist_id(ctx, params.artist_name)
-        if err:
-            return err
-
         resp, err = await _spotify_call(
-            ctx, "get", f"{SP_API_BASE}/artists/{artist_id}/top-tracks",
+            ctx, "get", f"{SP_API_BASE}/search",
+            params={"q": f"artist:{params.artist_name}", "type": "track", "limit": 50},
         )
         if err:
             return err
         if not resp.ok:
             return _spotify_err(resp)
 
-        tracks = [format_track(t) for t in (resp.json().get("tracks") or [])]
+        items = resp.json().get("tracks", {}).get("items") or []
+        tracks = [format_track(t) for t in items]
+        tracks.sort(key=lambda t: t.get("popularity", 0), reverse=True)
+        tracks = tracks[:10]
+
+        if not tracks:
+            return ActionResult.error(f"No tracks found for '{params.artist_name}'.", retryable=False)
+
+        artist_display = tracks[0]["artist"].split(", ")[0] if tracks else params.artist_name
         return ActionResult.success(
             data={"tracks": tracks, "count": len(tracks), "query": artist_display},
             summary=f"Top {len(tracks)} tracks by {artist_display}",

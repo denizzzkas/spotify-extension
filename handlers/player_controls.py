@@ -31,7 +31,11 @@ async def _update_now_playing_cache(ctx) -> None:
             track_data = format_track(item)
             await ctx.cache.set(
                 key="now_playing",
-                value=NowPlayingModel(**track_data, is_playing=state.get("is_playing", True)),
+                value=NowPlayingModel(
+                    **track_data,
+                    is_playing=state.get("is_playing", True),
+                    shuffle=state.get("shuffle_state", False),
+                ),
                 ttl_seconds=90,
             )
 

@@ -72,7 +72,7 @@ async def panel_search_tracks(ctx, query: str = "", limit: int = 20) -> dict:
     default_width=280,
     min_width=220,
     max_width=400,
-    refresh="on_event:spotify.connected,spotify.disconnected,spotify.track.liked,spotify.track.unliked,spotify.playlist.created",
+    refresh="on_event:spotify.connected,spotify.disconnected,spotify.track.liked,spotify.track.unliked,spotify.playlist.created,spotify.player.shuffle",
 )
 async def panel_spotify(ctx, **kwargs):
     """Left sidebar panel showing authentication state, playlists, and search."""

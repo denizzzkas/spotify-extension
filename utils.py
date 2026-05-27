@@ -54,8 +54,11 @@ def format_album(raw: dict) -> dict:
     artists = raw.get("artists") or []
     artist_names = ", ".join(a.get("name", "") for a in artists) or "Unknown"
     images = raw.get("images") or []
-    tracks = raw.get("tracks") or {}
-    tracks_count = tracks.get("total", 0) if isinstance(tracks, dict) else raw.get("total_tracks", 0)
+    tracks = raw.get("tracks")
+    if isinstance(tracks, dict) and tracks:
+        tracks_count = tracks.get("total", 0)
+    else:
+        tracks_count = raw.get("total_tracks", 0) or 0
     return {
         "id": raw.get("id", ""),
         "name": raw.get("name", "Unknown"),

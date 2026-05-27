@@ -1,25 +1,87 @@
 # Spotify Extension for Imperal
 
-Full access to your Spotify music library via OAuth 2.0.
+Full access to your Spotify music library through chat.
 
-## Features
+## Getting started
 
-| Function | Description | Type |
+In Imperal chat:
+```
+Connect my Spotify account
+```
+
+Open the returned URL → authorise → done. Your token is saved automatically and refreshed when needed.
+
+## What you can do
+
+### Playback
+| Function | Description |
+|---|---|
+| `play_track` | Play a track by name or ID |
+| `play_playlist` | Play a playlist |
+| `play_album` | Play an album by name |
+| `sp_prev` / `sp_next` | Skip to previous / next track |
+| `sp_play_pause` | Toggle play / pause |
+| `sp_shuffle` | Toggle shuffle mode |
+| `sp_like` | Like / unlike the currently playing track |
+
+### Search & Browse
+| Function | Description |
+|---|---|
+| `search_tracks` | Search tracks by title or artist |
+| `get_artist_top_tracks` | Top tracks for an artist |
+| `get_artist_albums` | Albums and singles by an artist |
+| `get_album_tracks` | All tracks from an album |
+| `get_lyrics` | Lyrics or Genius link for a track |
+
+### Library
+| Function | Description |
+|---|---|
+| `get_recent_tracks` | Recently played tracks (Premium) |
+| `get_liked_tracks` | Your saved/liked tracks |
+| `like_track` | Save a specific track by ID |
+| `unlike_track` | Remove a track from library |
+| `get_user_profile` | Your profile info and plan type |
+
+### Playlists
+| Function | Description |
+|---|---|
+| `get_playlists` | List all your playlists |
+| `get_playlist_tracks` | Tracks inside a playlist |
+| `create_playlist` | Create a new playlist |
+| `add_track_to_playlist` | Add one track to a playlist |
+| `add_tracks_to_playlist` | Add multiple tracks at once |
+| `remove_track_from_playlist` | Remove a track from a playlist |
+| `delete_playlist` | Delete a playlist |
+| `add_artist_top_tracks_to_playlist` | Add an artist's top tracks to a playlist |
+| `add_album_tracks_to_playlist` | Add an album's tracks to a playlist |
+
+## Chat examples
+
+```
+Connect my Spotify account
+Play Bohemian Rhapsody
+Show top tracks by Radiohead
+What albums does Arctic Monkeys have?
+Show tracks from the album AM
+Add top tracks by Oasis to my playlist "Britpop"
+Add first 5 tracks from OK Computer to my playlist "Favourites"
+Show my liked tracks
+Create a playlist called "Evening Chill"
+Remove the track Creep from my playlist "Favourites"
+Delete my playlist "Old stuff"
+What's the shuffle state?
+Like this song
+```
+
+## Free vs Premium
+
+| Feature | Free | Premium |
 |---|---|---|
-| `connect_spotify` | Connect account via OAuth 2.0 | write |
-| `disconnect_spotify` | Remove stored credentials | write |
-| `search_tracks` | Search tracks by title or artist | read |
-| `get_recent_tracks` | Recently played tracks (Premium) | read |
-| `get_liked_tracks` | Saved/liked tracks | read |
-| `like_track` | Save a track to library | write |
-| `unlike_track` | Remove a track from library | write |
-| `get_user_profile` | Profile info + plan type | read |
-| `get_playlists` | List all playlists | read |
-| `get_playlist_tracks` | Tracks in a playlist | read |
-| `create_playlist` | Create a new playlist | write |
-| `add_track_to_playlist` | Add a track to a playlist | write |
-| `remove_track_from_playlist` | Remove a track from a playlist | write |
-| `play_track` | Get track data + trigger event | write |
+| Search, browse, lyrics | ✅ | ✅ |
+| Playlists, library, likes | ✅ | ✅ |
+| Profile | ✅ | ✅ |
+| Recently played tracks | ❌ | ✅ |
+| Full audio playback | ❌ | ✅ |
 
 ## Events (for Automations)
 
@@ -31,79 +93,4 @@ Full access to your Spotify music library via OAuth 2.0.
 | `playlist.created` | New playlist created |
 | `track.added_to_playlist` | Track added to a playlist |
 | `track.removed_from_playlist` | Track removed from a playlist |
-
-## Setup
-
-### 1. Register a Spotify app (free)
-
-Go to [developer.spotify.com](https://developer.spotify.com) → **Dashboard** → **Create app**.
-
-Any free Spotify account works — no subscription needed for registration.
-
-Fill in:
-- **App name**: anything, e.g. `Imperal Music`
-- **Redirect URI**: your Imperal webhook URL (see below)
-
-You will receive a **Client ID** and **Client Secret**.
-
-### 2. Set the Redirect URI
-
-In the Spotify app settings, add:
-```
-https://<your-imperal-instance>/webhooks/spotify-extension/oauth/callback
-```
-
-### 3. Configure credentials in Imperal
-
-```json
-{
-  "spotify.client_id": "YOUR_CLIENT_ID",
-  "spotify.client_secret": "YOUR_CLIENT_SECRET",
-  "spotify.redirect_uri": "https://<your-imperal-instance>/webhooks/spotify-extension/oauth/callback"
-}
-```
-
-### 4. Connect your account
-
-In Imperal chat:
-```
-Connect my Spotify account
-```
-
-Open the returned URL → authorise → done. Token is saved automatically and refreshed every hour.
-
-## Free vs Premium
-
-| Feature | Free | Premium |
-|---|---|---|
-| Search, playlists, likes, profile | ✅ | ✅ |
-| `get_recent_tracks` (play history) | ❌ | ✅ |
-| 30-second preview (`preview_url`) | ✅ | ✅ |
-| Full audio playback | ❌ | ✅ |
-
-## Chat examples
-
-```
-Connect my Spotify account
-Search Spotify for "Midnight City"
-Show my Spotify playlists
-Show my saved tracks
-Create a playlist called "Chill Vibes"
-Add track 4iV5W9uYEdYUVa79Axb7Rh to my "Chill Vibes" playlist
-Show my Spotify profile
-Play track 4iV5W9uYEdYUVa79Axb7Rh
-```
-
-## Running tests
-
-```bash
-cd examples/soundcloud-extension
-pip install -r requirements.txt
-pytest tests/ -v
-```
-
-## Token management
-
-- Tokens are stored in `sp_credentials` collection in `ctx.store`
-- Spotify tokens expire after **1 hour** — the extension auto-refreshes using `refresh_token`
-- If refresh fails, the user is prompted to reconnect
+| `playlist.deleted` | Playlist deleted |

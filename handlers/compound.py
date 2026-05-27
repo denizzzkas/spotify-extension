@@ -42,34 +42,21 @@ class AddAlbumTracksToPlaylistParams(BaseModel):
 async def fn_add_artist_top_tracks_to_playlist(ctx, params: AddArtistTopTracksToPlaylistParams) -> ActionResult:
     """Search artist → get top tracks → add to playlist in one operation."""
     try:
-        search_resp, err = await _spotify_call(
-            ctx, "get", f"{SP_API_BASE}/search",
-            params={"q": params.artist_name, "type": "artist", "limit": 1},
-        )
-        if err:
-            return err
-        if not search_resp.ok:
-            return _spotify_err(search_resp)
-
-        artists = search_resp.json().get("artists", {}).get("items", [])
-        if not artists:
-            return ActionResult.error(f"Artist '{params.artist_name}' not found on Spotify.", retryable=False)
-
-        artist_id = artists[0]["id"]
-        artist_display = artists[0]["name"]
-
         tracks_resp, err = await _spotify_call(
-            ctx, "get", f"{SP_API_BASE}/artists/{artist_id}/top-tracks",
+            ctx, "get", f"{SP_API_BASE}/search",
+            params={"q": f"artist:{params.artist_name}", "type": "track", "limit": 50},
         )
         if err:
             return err
         if not tracks_resp.ok:
             return _spotify_err(tracks_resp)
 
-        tracks = tracks_resp.json().get("tracks") or []
-        uris = [to_spotify_uri(t["id"]) for t in tracks[:params.limit] if t.get("id")]
+        raw_tracks = tracks_resp.json().get("tracks", {}).get("items") or []
+        raw_tracks.sort(key=lambda t: t.get("popularity", 0), reverse=True)
+        artist_display = raw_tracks[0]["artists"][0]["name"] if raw_tracks else params.artist_name
+        uris = [to_spotify_uri(t["id"]) for t in raw_tracks[:params.limit] if t.get("id")]
         if not uris:
-            return ActionResult.error(f"No top tracks found for '{artist_display}'.", retryable=False)
+            return ActionResult.error(f"No tracks found for '{params.artist_name}'.", retryable=False)
 
         add_resp, err = await _spotify_call(
             ctx, "post", f"{SP_API_BASE}/playlists/{params.playlist_id}/items",
