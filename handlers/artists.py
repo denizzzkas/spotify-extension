@@ -58,7 +58,6 @@ async def fn_get_artist_top_tracks(ctx, params: GetArtistTopTracksParams) -> Act
 
         resp, err = await _spotify_call(
             ctx, "get", f"{SP_API_BASE}/artists/{artist_id}/top-tracks",
-            params={"market": "from_token"},
         )
         if err:
             return err
@@ -90,7 +89,7 @@ async def fn_get_artist_albums(ctx, params: GetArtistAlbumsParams) -> ActionResu
 
         resp, err = await _spotify_call(
             ctx, "get", f"{SP_API_BASE}/artists/{artist_id}/albums",
-            params={"include_groups": "album,single", "limit": params.limit, "market": "from_token"},
+            params={"include_groups": "album,single", "limit": params.limit},
         )
         if err:
             return err

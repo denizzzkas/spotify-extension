@@ -218,10 +218,6 @@ async def fn_play_playlist(ctx, params: PlayPlaylistParams) -> ActionResult:
 async def fn_play_album(ctx, params: PlayAlbumParams) -> ActionResult:
     """Search for an album and start playback."""
     try:
-        auth_err = await _require_auth(ctx)
-        if auth_err:
-            return auth_err
-
         query = params.album_name
         if params.artist_name:
             query = f"{params.album_name} {params.artist_name}"
@@ -262,6 +258,8 @@ async def fn_play_album(ctx, params: PlayAlbumParams) -> ActionResult:
         play_resp, err = await _spotify_call(ctx, "put", play_url, json=play_body)
         if err:
             return err
+        if not play_resp.ok and play_resp.status_code != 204:
+            return _spotify_err(play_resp)
 
         return ActionResult.success(
             data={"album_id": album_id, "album_name": album_name, "artist": artist},

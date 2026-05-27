@@ -2141,6 +2141,134 @@
       "long_running": false,
       "scopes": [],
       "owner_chat_tool": "tool_spotify_chat"
+    },
+    {
+      "name": "add_artist_top_tracks_to_playlist",
+      "description": "Find an artist by name and add their top tracks to a playlist in one step. Use when the user says 'add top tracks from [artist] to [playlist]' or 'add N tracks by [artist] to [playlist]'.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "playlist:add_track"
+      ],
+      "id_projection": "playlist_id",
+      "params_schema": {
+        "properties": {
+          "artist_name": {
+            "description": "Artist name to search for",
+            "title": "Artist Name",
+            "type": "string"
+          },
+          "playlist_id": {
+            "description": "Spotify playlist ID to add tracks to",
+            "title": "Playlist Id",
+            "type": "string"
+          },
+          "limit": {
+            "default": 10,
+            "description": "Number of top tracks to add (max 10)",
+            "maximum": 10,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "artist_name",
+          "playlist_id"
+        ],
+        "title": "AddArtistTopTracksToPlaylistParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "playlist_id": {
+            "title": "Playlist Id",
+            "type": "string"
+          },
+          "tracks_added": {
+            "title": "Tracks Added",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "playlist_id",
+          "tracks_added"
+        ],
+        "title": "BulkAddTracksRecord",
+        "type": "object"
+      },
+      "event": "track.added_to_playlist",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_spotify_chat"
+    },
+    {
+      "name": "add_album_tracks_to_playlist",
+      "description": "Find an album by name and add its tracks to a playlist in one step. Use when the user says 'add tracks from [album] to [playlist]' or 'add first N tracks from [album] to [playlist]'.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "playlist:add_track"
+      ],
+      "id_projection": "playlist_id",
+      "params_schema": {
+        "properties": {
+          "album_name": {
+            "description": "Album name to search for",
+            "title": "Album Name",
+            "type": "string"
+          },
+          "artist_name": {
+            "default": "",
+            "description": "Artist name to narrow the album search (optional)",
+            "title": "Artist Name",
+            "type": "string"
+          },
+          "playlist_id": {
+            "description": "Spotify playlist ID to add tracks to",
+            "title": "Playlist Id",
+            "type": "string"
+          },
+          "limit": {
+            "default": 50,
+            "description": "Maximum number of tracks to add from the album",
+            "maximum": 50,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "album_name",
+          "playlist_id"
+        ],
+        "title": "AddAlbumTracksToPlaylistParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "playlist_id": {
+            "title": "Playlist Id",
+            "type": "string"
+          },
+          "tracks_added": {
+            "title": "Tracks Added",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "playlist_id",
+          "tracks_added"
+        ],
+        "title": "BulkAddTracksRecord",
+        "type": "object"
+      },
+      "event": "track.added_to_playlist",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_spotify_chat"
     }
   ],
   "signals": [],
