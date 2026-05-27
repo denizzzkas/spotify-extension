@@ -114,7 +114,7 @@ async def test_add_track_to_playlist_success():
 
 async def test_remove_track_from_playlist_success():
     ctx = await ctx_with_token()
-    ctx.http._mocks.append(("DELETE", "api.spotify.com/v1/playlists/37i9dQZF1DXcBWIGoYBM5M/tracks", {}, 200))
+    ctx.http._mocks.append(("DELETE", "api.spotify.com/v1/playlists/37i9dQZF1DXcBWIGoYBM5M/items", {}, 200))
     result = await fn_remove_track_from_playlist(
         ctx, RemoveTrackFromPlaylistParams(playlist_id="37i9dQZF1DXcBWIGoYBM5M", track_id="4iV5W9uYEdYUVa79Axb7Rh"),
     )
