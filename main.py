@@ -12,6 +12,7 @@ for _m in [k for k in sys.modules if k in (
     "handlers", "handlers.auth", "handlers.search",
     "handlers.playlists", "handlers.library", "handlers.playback",
     "handlers.demo", "handlers.lyrics", "handlers.player_webhook", "handlers.player_controls",
+    "handlers.artists", "handlers.albums",
 )]:
     del sys.modules[_m]
 
@@ -25,5 +26,7 @@ import handlers.demo  # noqa: F401
 import handlers.lyrics  # noqa: F401
 import handlers.player_webhook  # noqa: F401
 import handlers.player_controls  # noqa: F401
+import handlers.artists  # noqa: F401
+import handlers.albums  # noqa: F401
 import skeleton  # noqa: F401
 import panels  # noqa: F401

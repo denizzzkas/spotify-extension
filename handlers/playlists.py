@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from imperal_sdk import ActionResult
 
 from app import chat
-from return_models import PlaylistRecord, TrackRecord, CreatePlaylistRecord, PlaylistTrackRecord, PlaylistRemoveRecord
+from return_models import PlaylistRecord, TrackRecord, CreatePlaylistRecord, PlaylistTrackRecord, PlaylistRemoveRecord, DeletePlaylistRecord, BulkAddTracksRecord
 from spotify_config import SP_API_BASE, MAX_LIMIT
 from app_helpers import _spotify_call, _spotify_err
 from cache_models import PlaylistsModel
@@ -35,6 +35,13 @@ class AddTrackToPlaylistParams(BaseModel):
 class RemoveTrackFromPlaylistParams(BaseModel):
     playlist_id: str = Field(..., description="Spotify playlist ID")
     track_id: str = Field(..., description="Spotify track ID to remove")
+
+class DeletePlaylistParams(BaseModel):
+    playlist_id: str = Field(..., description="Spotify playlist ID to delete")
+
+class AddTracksToPlaylistParams(BaseModel):
+    playlist_id: str = Field(..., description="Spotify playlist ID")
+    track_ids: list[str] = Field(..., description="List of Spotify track IDs to add")
 
 
 @chat.function(
@@ -197,3 +204,67 @@ async def fn_remove_track_from_playlist(ctx, params: RemoveTrackFromPlaylistPara
     except Exception as e:
         log.error("remove_track_from_playlist failed: %s", e)
         return ActionResult.error(f"Failed to remove track: {str(e)}", retryable=False)
+
+
+@chat.function(
+    "delete_playlist",
+    action_type="write",
+    chain_callable=True,
+    id_projection="playlist_id",
+    effects=["playlist:delete"],
+    event="playlist.deleted",
+    data_model=DeletePlaylistRecord,
+    description="Delete (unfollow) a playlist from the user's library by playlist_id. Use get_playlists first to find the playlist_id if you only have the name.",
+)
+async def fn_delete_playlist(ctx, params: DeletePlaylistParams) -> ActionResult:
+    """Delete a playlist by unfollowing it via Spotify API."""
+    try:
+        resp, err = await _spotify_call(
+            ctx, "delete", f"{SP_API_BASE}/playlists/{params.playlist_id}/followers",
+        )
+        if err:
+            return err
+        if not resp.ok and resp.status_code != 200:
+            return _spotify_err(resp)
+        return ActionResult.success(
+            data={"playlist_id": params.playlist_id, "deleted": True},
+            summary="Playlist deleted",
+            refresh_panels=["spotify"],
+        )
+    except Exception as e:
+        log.error("delete_playlist failed: %s", e)
+        return ActionResult.error(f"Failed to delete playlist: {str(e)}", retryable=False)
+
+
+@chat.function(
+    "add_tracks_to_playlist",
+    action_type="write",
+    chain_callable=True,
+    id_projection="playlist_id",
+    effects=["playlist:add_track"],
+    event="track.added_to_playlist",
+    data_model=BulkAddTracksRecord,
+    description="Add multiple tracks to a playlist in one operation. Pass a list of track_ids. Use this after get_artist_top_tracks, get_album_tracks, or search_tracks to bulk-add results to a playlist.",
+)
+async def fn_add_tracks_to_playlist(ctx, params: AddTracksToPlaylistParams) -> ActionResult:
+    """Add a list of tracks to a Spotify playlist in one API call."""
+    try:
+        if not params.track_ids:
+            return ActionResult.error("No track IDs provided.", retryable=False)
+
+        uris = [to_spotify_uri(tid) for tid in params.track_ids[:100]]
+        resp, err = await _spotify_call(
+            ctx, "post", f"{SP_API_BASE}/playlists/{params.playlist_id}/items",
+            json={"uris": uris},
+        )
+        if err:
+            return err
+        if not resp.ok:
+            return _spotify_err(resp)
+        return ActionResult.success(
+            data={"playlist_id": params.playlist_id, "tracks_added": len(uris)},
+            summary=f"Added {len(uris)} track(s) to playlist",
+        )
+    except Exception as e:
+        log.error("add_tracks_to_playlist failed: %s", e)
+        return ActionResult.error(f"Failed to add tracks: {str(e)}", retryable=False)

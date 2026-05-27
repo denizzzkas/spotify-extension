@@ -598,6 +598,109 @@
       "owner_chat_tool": "tool_spotify_chat"
     },
     {
+      "name": "delete_playlist",
+      "description": "Delete (unfollow) a playlist from the user's library by playlist_id. Use get_playlists first to find the playlist_id if you only have the name.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "playlist:delete"
+      ],
+      "id_projection": "playlist_id",
+      "params_schema": {
+        "properties": {
+          "playlist_id": {
+            "description": "Spotify playlist ID to delete",
+            "title": "Playlist Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "playlist_id"
+        ],
+        "title": "DeletePlaylistParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "playlist_id": {
+            "title": "Playlist Id",
+            "type": "string"
+          },
+          "deleted": {
+            "title": "Deleted",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "playlist_id",
+          "deleted"
+        ],
+        "title": "DeletePlaylistRecord",
+        "type": "object"
+      },
+      "event": "playlist.deleted",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_spotify_chat"
+    },
+    {
+      "name": "add_tracks_to_playlist",
+      "description": "Add multiple tracks to a playlist in one operation. Pass a list of track_ids. Use this after get_artist_top_tracks, get_album_tracks, or search_tracks to bulk-add results to a playlist.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "playlist:add_track"
+      ],
+      "id_projection": "playlist_id",
+      "params_schema": {
+        "properties": {
+          "playlist_id": {
+            "description": "Spotify playlist ID",
+            "title": "Playlist Id",
+            "type": "string"
+          },
+          "track_ids": {
+            "description": "List of Spotify track IDs to add",
+            "items": {
+              "type": "string"
+            },
+            "title": "Track Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "playlist_id",
+          "track_ids"
+        ],
+        "title": "AddTracksToPlaylistParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "playlist_id": {
+            "title": "Playlist Id",
+            "type": "string"
+          },
+          "tracks_added": {
+            "title": "Tracks Added",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "playlist_id",
+          "tracks_added"
+        ],
+        "title": "BulkAddTracksRecord",
+        "type": "object"
+      },
+      "event": "track.added_to_playlist",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_spotify_chat"
+    },
+    {
       "name": "get_recent_tracks",
       "description": "Get the user's recently played tracks (requires Spotify Premium). Returns list of tracks with full details.",
       "action_type": "read",
@@ -1686,6 +1789,354 @@
         "type": "object"
       },
       "event": "track.liked",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_spotify_chat"
+    },
+    {
+      "name": "get_artist_top_tracks",
+      "description": "Get top tracks for an artist by name. Returns up to 10 most popular tracks with id, title, album, duration. Use track ids from results to play or add to playlist.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "artist_name": {
+            "description": "Artist name to search for",
+            "title": "Artist Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "artist_name"
+        ],
+        "title": "GetArtistTopTracksParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "$defs": {
+          "TrackRecord": {
+            "properties": {
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "title": {
+                "title": "Title",
+                "type": "string"
+              },
+              "artist": {
+                "title": "Artist",
+                "type": "string"
+              },
+              "url": {
+                "title": "Url",
+                "type": "string"
+              },
+              "duration": {
+                "title": "Duration",
+                "type": "string"
+              },
+              "duration_ms": {
+                "title": "Duration Ms",
+                "type": "integer"
+              },
+              "popularity": {
+                "title": "Popularity",
+                "type": "integer"
+              },
+              "preview_url": {
+                "title": "Preview Url",
+                "type": "string"
+              },
+              "album": {
+                "title": "Album",
+                "type": "string"
+              },
+              "album_art": {
+                "title": "Album Art",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "artist",
+              "url",
+              "duration",
+              "duration_ms",
+              "popularity",
+              "preview_url",
+              "album",
+              "album_art"
+            ],
+            "title": "TrackRecord",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "tracks": {
+            "items": {
+              "$ref": "#/$defs/TrackRecord"
+            },
+            "title": "Tracks",
+            "type": "array"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "query": {
+            "title": "Query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tracks",
+          "count",
+          "query"
+        ],
+        "title": "SearchResultRecord",
+        "type": "object"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_spotify_chat"
+    },
+    {
+      "name": "get_artist_albums",
+      "description": "Get albums and singles released by an artist. Returns list of albums with id, name, release_date, tracks_count. Use album id with get_album_tracks to browse an album's tracks.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "artist_name": {
+            "description": "Artist name to search for",
+            "title": "Artist Name",
+            "type": "string"
+          },
+          "limit": {
+            "default": 20,
+            "description": "Number of albums to return",
+            "maximum": 50,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "artist_name"
+        ],
+        "title": "GetArtistAlbumsParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "$defs": {
+          "AlbumRecord": {
+            "properties": {
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "artist": {
+                "title": "Artist",
+                "type": "string"
+              },
+              "url": {
+                "title": "Url",
+                "type": "string"
+              },
+              "tracks_count": {
+                "title": "Tracks Count",
+                "type": "integer"
+              },
+              "image_url": {
+                "title": "Image Url",
+                "type": "string"
+              },
+              "release_date": {
+                "title": "Release Date",
+                "type": "string"
+              },
+              "album_type": {
+                "title": "Album Type",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "artist",
+              "url",
+              "tracks_count",
+              "image_url",
+              "release_date",
+              "album_type"
+            ],
+            "title": "AlbumRecord",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "albums": {
+            "items": {
+              "$ref": "#/$defs/AlbumRecord"
+            },
+            "title": "Albums",
+            "type": "array"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "artist": {
+            "title": "Artist",
+            "type": "string"
+          }
+        },
+        "required": [
+          "albums",
+          "count",
+          "artist"
+        ],
+        "title": "ArtistAlbumsRecord",
+        "type": "object"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_spotify_chat"
+    },
+    {
+      "name": "get_album_tracks",
+      "description": "Get all tracks from an album by album name (and optionally artist name). Returns track list with ids, titles, durations. Use track ids to play individual tracks or add them to a playlist.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "album_name": {
+            "description": "Album name to search for",
+            "title": "Album Name",
+            "type": "string"
+          },
+          "artist_name": {
+            "default": "",
+            "description": "Artist name to narrow the search (optional but recommended)",
+            "title": "Artist Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "album_name"
+        ],
+        "title": "GetAlbumTracksParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "$defs": {
+          "TrackRecord": {
+            "properties": {
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "title": {
+                "title": "Title",
+                "type": "string"
+              },
+              "artist": {
+                "title": "Artist",
+                "type": "string"
+              },
+              "url": {
+                "title": "Url",
+                "type": "string"
+              },
+              "duration": {
+                "title": "Duration",
+                "type": "string"
+              },
+              "duration_ms": {
+                "title": "Duration Ms",
+                "type": "integer"
+              },
+              "popularity": {
+                "title": "Popularity",
+                "type": "integer"
+              },
+              "preview_url": {
+                "title": "Preview Url",
+                "type": "string"
+              },
+              "album": {
+                "title": "Album",
+                "type": "string"
+              },
+              "album_art": {
+                "title": "Album Art",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "artist",
+              "url",
+              "duration",
+              "duration_ms",
+              "popularity",
+              "preview_url",
+              "album",
+              "album_art"
+            ],
+            "title": "TrackRecord",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "tracks": {
+            "items": {
+              "$ref": "#/$defs/TrackRecord"
+            },
+            "title": "Tracks",
+            "type": "array"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "album": {
+            "title": "Album",
+            "type": "string"
+          },
+          "artist": {
+            "title": "Artist",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tracks",
+          "count",
+          "album",
+          "artist"
+        ],
+        "title": "AlbumTracksRecord",
+        "type": "object"
+      },
+      "event": "",
       "background": false,
       "long_running": false,
       "scopes": [],

@@ -123,3 +123,37 @@ class AlbumPlayRecord(BaseModel):
     album_id: str
     album_name: str
     artist: str
+
+
+class AlbumRecord(BaseModel):
+    id: str
+    name: str
+    artist: str
+    url: str
+    tracks_count: int
+    image_url: str
+    release_date: str
+    album_type: str
+
+
+class ArtistAlbumsRecord(BaseModel):
+    albums: list[AlbumRecord]
+    count: int
+    artist: str
+
+
+class AlbumTracksRecord(BaseModel):
+    tracks: list[TrackRecord]
+    count: int
+    album: str
+    artist: str
+
+
+class DeletePlaylistRecord(BaseModel):
+    playlist_id: str
+    deleted: bool
+
+
+class BulkAddTracksRecord(BaseModel):
+    playlist_id: str
+    tracks_added: int

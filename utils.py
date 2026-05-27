@@ -49,6 +49,25 @@ def format_playlist(raw: dict) -> dict:
     }
 
 
+def format_album(raw: dict) -> dict:
+    """Normalise a raw Spotify album object to a clean dict."""
+    artists = raw.get("artists") or []
+    artist_names = ", ".join(a.get("name", "") for a in artists) or "Unknown"
+    images = raw.get("images") or []
+    tracks = raw.get("tracks") or {}
+    tracks_count = tracks.get("total", 0) if isinstance(tracks, dict) else raw.get("total_tracks", 0)
+    return {
+        "id": raw.get("id", ""),
+        "name": raw.get("name", "Unknown"),
+        "artist": artist_names,
+        "url": (raw.get("external_urls") or {}).get("spotify", ""),
+        "tracks_count": tracks_count,
+        "image_url": images[0].get("url", "") if images else "",
+        "release_date": raw.get("release_date", ""),
+        "album_type": raw.get("album_type", ""),
+    }
+
+
 def to_spotify_uri(track_id: str) -> str:
     """Ensure track ID is in spotify:track:xxx URI format."""
     if track_id.startswith("spotify:track:"):
