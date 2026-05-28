@@ -138,7 +138,7 @@
     },
     {
       "name": "search_tracks",
-      "description": "Search Spotify catalogue for tracks by title or artist. Returns a list of matching tracks with id, title, artist, duration, album_art. Use the track id from results to play or add to playlist.",
+      "description": "Search Spotify catalogue for tracks. Use track_name/artist_name/album_name for precise lookups (e.g. track_name='Rasputin' artist_name='Boney M'). Fall back to query for vague or partial searches. Returns a list of matching tracks with id, title, artist, duration, album_art. Use the track id from results to play or add to playlist.",
       "action_type": "read",
       "chain_callable": true,
       "effects": [],
@@ -146,8 +146,27 @@
       "params_schema": {
         "properties": {
           "query": {
-            "description": "Track title or artist name to search for",
+            "default": "",
+            "description": "Free-text search query — use when you only have a partial name or are unsure of the exact title/artist",
             "title": "Query",
+            "type": "string"
+          },
+          "track_name": {
+            "default": "",
+            "description": "Exact track title — use instead of query when you know the precise song name",
+            "title": "Track Name",
+            "type": "string"
+          },
+          "artist_name": {
+            "default": "",
+            "description": "Exact artist name — combine with track_name or album_name for precise results",
+            "title": "Artist Name",
+            "type": "string"
+          },
+          "album_name": {
+            "default": "",
+            "description": "Exact album name — combine with artist_name to narrow results",
+            "title": "Album Name",
             "type": "string"
           },
           "limit": {
@@ -159,9 +178,6 @@
             "type": "integer"
           }
         },
-        "required": [
-          "query"
-        ],
         "title": "SearchTracksParams",
         "type": "object"
       },
@@ -1032,7 +1048,7 @@
     },
     {
       "name": "play_track",
-      "description": "Play a specific track. Accepts a track name/artist (will search) or a track_id from search_tracks results. Use this for a single track, not a playlist or album.",
+      "description": "Play a specific track. Accepts a track_id from search_tracks results, or a track name/artist (will search and play the best match). If the request is ambiguous or you are not certain which track the user means, call search_tracks first and show the results so the user can confirm. If the request is unambiguous (e.g. 'Rasputin by Boney M'), play immediately without asking.",
       "action_type": "write",
       "chain_callable": true,
       "effects": [
@@ -1051,6 +1067,15 @@
             "description": "Optional playlist ID — if provided, plays track within playlist context so next/prev work through the playlist",
             "title": "Playlist Id",
             "type": "string"
+          },
+          "track_ids_queue": {
+            "default": [],
+            "description": "Optional list of track IDs to play as a queue starting from track_id. Used when playing from liked/recent tracks so next/prev work.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Track Ids Queue",
+            "type": "array"
           }
         },
         "required": [
@@ -1589,7 +1614,7 @@
     },
     {
       "name": "get_lyrics",
-      "description": "Fetch song lyrics text. Returns the full lyrics as text. Requires track_name and artist_name.",
+      "description": "Fetch full song lyrics text. Returns the complete lyrics as text if found on lrclib.net, otherwise returns a Genius URL. Only track_name is required; providing artist_name improves accuracy.",
       "action_type": "read",
       "chain_callable": true,
       "effects": [],
@@ -1602,14 +1627,14 @@
             "type": "string"
           },
           "artist_name": {
-            "description": "Artist name",
+            "default": "",
+            "description": "Artist name (optional, improves accuracy)",
             "title": "Artist Name",
             "type": "string"
           }
         },
         "required": [
-          "track_name",
-          "artist_name"
+          "track_name"
         ],
         "title": "GetLyricsParams",
         "type": "object"
@@ -2137,6 +2162,76 @@
         "type": "object"
       },
       "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_spotify_chat"
+    },
+    {
+      "name": "remove_tracks_from_playlist_by_name",
+      "description": "Remove one or more tracks from a playlist by name in a single step. Use this when the user says 'remove [track] from [playlist]' — no need to search for track IDs first. Accepts playlist_id (use get_playlists to find it) and a list of track names.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "playlist:remove_track"
+      ],
+      "id_projection": "playlist_id",
+      "params_schema": {
+        "properties": {
+          "track_names": {
+            "description": "One or more track names to remove from the playlist",
+            "items": {
+              "type": "string"
+            },
+            "title": "Track Names",
+            "type": "array"
+          },
+          "playlist_id": {
+            "description": "Spotify playlist ID. Use get_playlists first if you only have the playlist name.",
+            "title": "Playlist Id",
+            "type": "string"
+          },
+          "artist_name": {
+            "default": "",
+            "description": "Optional artist name to narrow the match when multiple tracks share the same title",
+            "title": "Artist Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "track_names",
+          "playlist_id"
+        ],
+        "title": "RemoveTracksFromPlaylistByNameParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "playlist_id": {
+            "title": "Playlist Id",
+            "type": "string"
+          },
+          "removed_count": {
+            "title": "Removed Count",
+            "type": "integer"
+          },
+          "removed_tracks": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Removed Tracks",
+            "type": "array"
+          }
+        },
+        "required": [
+          "playlist_id",
+          "removed_count",
+          "removed_tracks"
+        ],
+        "title": "BulkRemoveTracksRecord",
+        "type": "object"
+      },
+      "event": "track.removed_from_playlist",
       "background": false,
       "long_running": false,
       "scopes": [],
