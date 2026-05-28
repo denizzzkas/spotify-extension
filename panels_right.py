@@ -247,9 +247,13 @@ async def _render_profile(ctx) -> ui.Stack:
 
 def _render_tracks(tracks: list[dict], title: str, play_fn: str = "play_track", playlist_id: str = "") -> ui.Stack:
     """Render track list with the correct play function for demo or authenticated mode."""
+    all_track_ids = [t["id"] for t in tracks if t.get("id")]
+
     def _play_action(track_id: str) -> ui.Call:
         if play_fn == "play_track" and playlist_id:
             return ui.Call(play_fn, track_id=track_id, playlist_id=playlist_id)
+        if play_fn == "play_track" and len(all_track_ids) > 1:
+            return ui.Call(play_fn, track_id=track_id, track_ids_queue=all_track_ids)
         return ui.Call(play_fn, track_id=track_id)
 
     track_items = [

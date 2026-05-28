@@ -11,7 +11,7 @@ from app import chat
 from return_models import TrackRecord, TrackLikeRecord, UserProfileRecord
 from spotify_config import SP_API_BASE, DEFAULT_HISTORY_LIMIT, DEFAULT_LIKES_LIMIT, MAX_LIMIT
 from app_helpers import _spotify_call, _spotify_err
-from utils import format_track
+from utils import format_track, to_spotify_uri
 
 log = logging.getLogger("spotify.library")
 
@@ -95,8 +95,8 @@ async def fn_get_liked_tracks(ctx, params: GetLikedTracksParams) -> ActionResult
 async def fn_like_track(ctx, params: LikeTrackParams) -> ActionResult:
     """Save a track to the user's Spotify library (like it)."""
     try:
-        resp, err = await _spotify_call(ctx, "put", f"{SP_API_BASE}/me/tracks",
-                                        json={"ids": [params.track_id]})
+        resp, err = await _spotify_call(ctx, "put", f"{SP_API_BASE}/me/library",
+                                        params={"uris": to_spotify_uri(params.track_id)})
         if err:
             return err
         if not resp.ok:
@@ -122,8 +122,8 @@ async def fn_like_track(ctx, params: LikeTrackParams) -> ActionResult:
 async def fn_unlike_track(ctx, params: UnlikeTrackParams) -> ActionResult:
     """Remove a track from the user's Spotify library (unlike it)."""
     try:
-        resp, err = await _spotify_call(ctx, "delete", f"{SP_API_BASE}/me/tracks",
-                                        json={"ids": [params.track_id]})
+        resp, err = await _spotify_call(ctx, "delete", f"{SP_API_BASE}/me/library",
+                                        params={"uris": to_spotify_uri(params.track_id)})
         if err:
             return err
         if not resp.ok:

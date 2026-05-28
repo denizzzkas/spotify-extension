@@ -22,19 +22,33 @@ class EmptyParams(BaseModel):
 
 async def _update_now_playing_cache(ctx) -> None:
     """Fetch current Spotify player state and update now_playing cache."""
-    await asyncio.sleep(0.5)
+    await asyncio.sleep(1.0)
     np_resp, _ = await _spotify_call(ctx, "get", f"{SP_API_BASE}/me/player")
     if np_resp and np_resp.ok and np_resp.status_code != 204:
         state = np_resp.json()
         item = state.get("item")
         if item:
             track_data = format_track(item)
+            track_id = track_data.get("id", "")
+            is_liked = False
+            if track_id:
+                try:
+                    like_resp, _ = await _spotify_call(
+                        ctx, "get", f"{SP_API_BASE}/me/tracks/contains",
+                        params={"ids": track_id},
+                    )
+                    if like_resp and like_resp.ok:
+                        result = like_resp.json()
+                        is_liked = bool(result) and result[0] is True
+                except Exception:
+                    pass
             await ctx.cache.set(
                 key="now_playing",
                 value=NowPlayingModel(
                     **track_data,
                     is_playing=state.get("is_playing", True),
                     shuffle=state.get("shuffle_state", False),
+                    is_liked=is_liked,
                 ),
                 ttl_seconds=90,
             )
@@ -194,10 +208,11 @@ async def fn_sp_like(ctx, params: EmptyParams) -> ActionResult:
 
         is_liked = resp.ok and bool(resp.json()) and resp.json()[0]
 
+        from utils import to_spotify_uri
         resp2, err = await _spotify_call(
             ctx, "delete" if is_liked else "put",
-            f"{SP_API_BASE}/me/tracks",
-            json={"ids": [track_id]},
+            f"{SP_API_BASE}/me/library",
+            params={"uris": to_spotify_uri(track_id)},
         )
         if err:
             return err

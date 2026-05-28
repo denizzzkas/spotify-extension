@@ -1,5 +1,13 @@
 """Shared test fixtures for Spotify extension tests."""
 from imperal_sdk.testing import MockContext
+from imperal_sdk.testing.mock_context import MockHTTP
+
+# httpx.AsyncClient.delete() doesn't accept json= — production _make_request() uses request().
+# Patch MockHTTP so tests exercise the same code path.
+if not hasattr(MockHTTP, "request"):
+    async def _mock_http_request(self, method: str, url: str, **kwargs):
+        return await getattr(self, method.lower())(url, **kwargs)
+    MockHTTP.request = _mock_http_request
 
 from app_helpers import _save_token
 

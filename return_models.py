@@ -157,3 +157,9 @@ class DeletePlaylistRecord(BaseModel):
 class BulkAddTracksRecord(BaseModel):
     playlist_id: str
     tracks_added: int
+
+
+class BulkRemoveTracksRecord(BaseModel):
+    playlist_id: str
+    removed_count: int
+    removed_tracks: list[str]

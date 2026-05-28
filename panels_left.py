@@ -6,7 +6,7 @@ from imperal_sdk import ui
 from app import ext, NowPlayingModel
 from panels_demo import render_demo_state
 from spotify_config import SP_API_BASE
-from app_helpers import _get_access_token, _refresh_access_token
+from app_helpers import _get_access_token, _refresh_access_token, _spotify_call
 from utils import format_playlist, format_track
 from cache_models import SearchModel, PlaylistsModel
 from player_html import build_player_html
@@ -23,45 +23,32 @@ async def _get_auth_headers(ctx) -> dict | None:
 
 
 async def panel_search_tracks(ctx, query: str = "", limit: int = 20) -> dict:
-    """Search tracks via HTTP for panel display."""
+    """Search tracks for panel display using the centralized Spotify call helper."""
     if not query:
         return {}
 
     try:
-        headers = await _get_auth_headers(ctx)
-        if not headers:
-            return {}
-
-        resp = await ctx.http.get(
-            f"{SP_API_BASE}/search",
-            headers=headers,
+        resp, err = await _spotify_call(
+            ctx, "get", f"{SP_API_BASE}/search",
             params={"q": query, "type": "track", "limit": limit},
         )
+        if err or not resp or not resp.ok:
+            log.warning("panel_search_tracks: search failed for %r (err=%s, status=%s)",
+                        query, err, resp.status_code if resp else None)
+            return {"error": True}
 
-        if resp.status_code == 401:
-            token = await _refresh_access_token(ctx)
-            if token:
-                headers["Authorization"] = f"Bearer {token}"
-                resp = await ctx.http.get(
-                    f"{SP_API_BASE}/search",
-                    headers=headers,
-                    params={"q": query, "type": "track", "limit": limit},
-                )
-
-        if resp.ok:
-            raw_list = (resp.json().get("tracks") or {}).get("items", [])
-            tracks = [format_track(t) for t in raw_list]
-            await ctx.cache.set(
-                key="search",
-                value=SearchModel(query=query, tracks=tracks),
-                ttl_seconds=60,
-            )
-            return {"count": len(tracks)}
+        raw_list = (resp.json().get("tracks") or {}).get("items", [])
+        tracks = [format_track(t) for t in raw_list]
+        await ctx.cache.set(
+            key="search",
+            value=SearchModel(query=query, tracks=tracks),
+            ttl_seconds=60,
+        )
+        return {"count": len(tracks)}
 
     except Exception as e:
         log.error("panel_search_tracks failed: %s", e)
-
-    return {}
+        return {"error": True}
 
 
 @ext.panel(
@@ -72,7 +59,7 @@ async def panel_search_tracks(ctx, query: str = "", limit: int = 20) -> dict:
     default_width=280,
     min_width=220,
     max_width=400,
-    refresh="on_event:spotify.connected,spotify.disconnected,spotify.track.liked,spotify.track.unliked,spotify.playlist.created,spotify.player.shuffle",
+    refresh="on_event:spotify.connected,spotify.disconnected,spotify.track.liked,spotify.track.unliked,spotify.playlist.created,spotify.player.shuffle,spotify.track.played",
 )
 async def panel_spotify(ctx, **kwargs):
     """Left sidebar panel showing authentication state, playlists, and search."""
@@ -87,8 +74,10 @@ async def panel_spotify(ctx, **kwargs):
         return await render_demo_state(ctx)
 
     # Authenticated state: run search if query param provided, then load cache
+    search_error = False
     if query_param:
-        await panel_search_tracks(ctx, query=query_param)
+        result = await panel_search_tracks(ctx, query=query_param)
+        search_error = result.get("error", False)
 
     try:
         search_cache = await ctx.cache.get(key="search", model=SearchModel)
@@ -206,10 +195,14 @@ async def panel_spotify(ctx, **kwargs):
         ),
     ]
 
-    if search_result_items:
+    if search_error:
+        children.append(ui.Text("Search failed — check your Spotify connection.", variant="caption"))
+    elif search_result_items:
         children.append(ui.Text(f'Results for "{search_query}"', variant="caption"))
         children.append(ui.List(items=search_result_items))
         children.append(ui.Divider())
+    elif query_param and not search_error:
+        children.append(ui.Text(f'No results for "{query_param}"', variant="caption"))
 
     children.append(
         ui.Accordion(sections=[

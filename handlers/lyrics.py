@@ -1,4 +1,4 @@
-"""Spotify lyrics handler — fetch song lyrics via lyrics.ovh, fallback to Genius URL."""
+"""Spotify lyrics handler — fetch song lyrics via lrclib.net, fallback to Genius URL."""
 from __future__ import annotations
 
 import logging
@@ -15,58 +15,61 @@ log = logging.getLogger("spotify.lyrics")
 
 class GetLyricsParams(BaseModel):
     track_name: str = Field(..., description="Song title")
-    artist_name: str = Field(..., description="Artist name")
+    artist_name: str = Field("", description="Artist name (optional, improves accuracy)")
 
 
 @chat.function(
     "get_lyrics",
     action_type="read",
     data_model=LyricsRecord,
-    description="Fetch song lyrics text. Returns the full lyrics as text. Requires track_name and artist_name.",
+    description="Fetch full song lyrics text. Returns the complete lyrics as text if found on lrclib.net, otherwise returns a Genius URL. Only track_name is required; providing artist_name improves accuracy.",
 )
 async def fn_get_lyrics(ctx, params: GetLyricsParams) -> ActionResult:
-    """Fetch lyrics via lyrics.ovh, fall back to Genius URL if not found."""
+    """Fetch lyrics via lrclib.net, fall back to Genius URL if not found."""
     try:
-        # Primary: lyrics.ovh — free, no token, returns text directly
-        ovh_resp = await ctx.http.get(
-            f"https://api.lyrics.ovh/v1/{params.artist_name}/{params.track_name}",
-        )
-        if ovh_resp.ok:
-            lyrics_text = ovh_resp.json().get("lyrics", "").strip()
+        # Primary: lrclib.net — free, no token, returns full plainLyrics
+        lrc_params: dict = {"track_name": params.track_name}
+        if params.artist_name:
+            lrc_params["artist_name"] = params.artist_name
+
+        lrc_resp = await ctx.http.get("https://lrclib.net/api/get", params=lrc_params)
+        if lrc_resp.ok:
+            body = lrc_resp.json()
+            lyrics_text = (body.get("plainLyrics") or "").strip()
             if lyrics_text:
+                artist = body.get("artistName") or params.artist_name
+                title = body.get("trackName") or params.track_name
                 return ActionResult.success(
-                    data={"lyrics": lyrics_text, "url": "", "title": params.track_name, "artist": params.artist_name},
-                    summary=f"Lyrics for '{params.track_name}' by {params.artist_name}",
+                    data={"lyrics": lyrics_text, "url": "", "title": title, "artist": artist},
+                    summary=f"Lyrics for '{title}' by {artist}",
                 )
 
-        # Fallback: Genius — returns URL to lyrics page
+        # Fallback: Genius — return URL to lyrics page
         genius_token = await ctx.secrets.get("genius_access_token")
-        if not genius_token:
-            return ActionResult.error(
-                f"Lyrics not found for '{params.track_name}' by {params.artist_name}.",
-                retryable=False,
+        query = f"{params.track_name} {params.artist_name}".strip()
+
+        if genius_token:
+            search_resp = await ctx.http.get(
+                "https://api.genius.com/search",
+                params={"q": query},
+                headers={"Authorization": f"Bearer {genius_token}"},
             )
+            if search_resp.ok:
+                hits = search_resp.json().get("response", {}).get("hits", [])
+                if hits:
+                    result = hits[0]["result"]
+                    genius_url = result["url"]
+                    title = result["title"]
+                    artist = result["primary_artist"]["name"]
+                    return ActionResult.success(
+                        data={"lyrics": "", "url": genius_url, "title": title, "artist": artist},
+                        summary=f"Lyrics page for '{title}' by {artist}: {genius_url}",
+                    )
 
-        query = f"{params.track_name} {params.artist_name}"
-        search_resp = await ctx.http.get(
-            "https://api.genius.com/search",
-            params={"q": query},
-            headers={"Authorization": f"Bearer {genius_token}"},
-        )
-        if not search_resp.ok:
-            return ActionResult.error(
-                f"Lyrics not found for '{params.track_name}'.",
-                retryable=(search_resp.status_code == 429),
-            )
-
-        hits = search_resp.json().get("response", {}).get("hits", [])
-        if not hits:
-            return ActionResult.error(f"Lyrics not found for '{params.track_name}'.")
-
-        result = hits[0]["result"]
-        return ActionResult.success(
-            data={"lyrics": "", "url": result["url"], "title": result["title"], "artist": result["primary_artist"]["name"]},
-            summary=f"Lyrics page for '{result['title']}' by {result['primary_artist']['name']}: {result['url']}",
+        return ActionResult.error(
+            f"Lyrics not found for '{params.track_name}'"
+            + (f" by {params.artist_name}" if params.artist_name else "") + ".",
+            retryable=False,
         )
 
     except Exception as e:

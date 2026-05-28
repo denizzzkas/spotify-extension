@@ -198,29 +198,46 @@ async def _get_auth_headers(ctx) -> dict | None:
     return None
 
 
+async def _make_request(http, method: str, url: str, **kwargs):
+    """Route HTTP call. DELETE+body uses request() because httpx.delete() rejects json=/content=."""
+    _body_keys = {"json", "content", "data", "files"}
+    if method == "delete" and _body_keys & kwargs.keys():
+        if hasattr(http, "request"):
+            return await http.request("DELETE", url, **kwargs)
+        import httpx as _httpx
+        timeout = kwargs.pop("timeout", 30)
+        async with _httpx.AsyncClient(timeout=timeout, follow_redirects=True, max_redirects=5) as c:
+            resp = await c.request("DELETE", url, **kwargs)
+        from imperal_sdk.http.client import _wrap
+        return _wrap(resp)
+    return await getattr(http, method)(url, **kwargs)
+
+
 async def _spotify_call(ctx, method: str, url: str, **kwargs):
     """Authenticated Spotify API call with automatic 401 refresh-and-retry. Returns (resp, err)."""
     token = await _require_auth(ctx)
     if isinstance(token, ActionResult):
         return None, token
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-    resp = await getattr(ctx.http, method)(url, headers=headers, **kwargs)
+    resp = await _make_request(ctx.http, method, url, headers=headers, **kwargs)
     if resp.status_code == 401:
         token = await _refresh_access_token(ctx)
         if not token:
             return None, ActionResult.error("Spotify token expired. Please reconnect via connect_spotify().")
         headers["Authorization"] = f"Bearer {token}"
-        resp = await getattr(ctx.http, method)(url, headers=headers, **kwargs)
+        resp = await _make_request(ctx.http, method, url, headers=headers, **kwargs)
     return resp, None
 
 
 def _spotify_err(resp) -> ActionResult:
     """Build ActionResult from a failed Spotify response, including Spotify's own message."""
     try:
-        detail = resp.json().get("error", {}).get("message", "")
+        body = resp.json()
+        err_val = body.get("error", {})
+        detail = err_val.get("message", "") if isinstance(err_val, dict) else str(err_val)
     except Exception:
         try:
-            detail = resp.text
+            detail = resp.text() if callable(resp.text) else resp.text
         except Exception:
             detail = ""
     msg = _spotify_error(resp.status_code, detail)

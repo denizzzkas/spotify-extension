@@ -10,6 +10,9 @@ from handlers.playlists import (
     fn_add_track_to_playlist, AddTrackToPlaylistParams,
     fn_remove_track_from_playlist, RemoveTrackFromPlaylistParams,
 )
+from handlers.compound import (
+    fn_remove_tracks_from_playlist_by_name, RemoveTracksFromPlaylistByNameParams,
+)
 from handlers.library import (
     fn_get_recent_tracks, GetRecentTracksParams,
     fn_get_liked_tracks, GetLikedTracksParams,
@@ -52,6 +55,20 @@ async def test_search_tracks_rate_limit_is_retryable():
     result = await fn_search_tracks(ctx, SearchTracksParams(query="test"))
     assert result.status == "error"
     assert result.retryable is True
+
+
+async def test_search_tracks_field_filter_params():
+    ctx = await ctx_with_token()
+    ctx.http.mock_get("api.spotify.com/v1/search", {"tracks": {"items": [SAMPLE_TRACK]}})
+    result = await fn_search_tracks(ctx, SearchTracksParams(track_name="Midnight City", artist_name="M83"))
+    assert result.status == "success"
+    assert result.data["count"] == 1
+
+
+async def test_search_tracks_no_params_returns_error():
+    ctx = await ctx_with_token()
+    result = await fn_search_tracks(ctx, SearchTracksParams())
+    assert result.status == "error"
 
 
 # ── get_playlists ─────────────────────────────────────────────────────────────
@@ -170,7 +187,7 @@ async def test_get_liked_tracks_no_token_returns_error():
 
 async def test_like_track_success():
     ctx = await ctx_with_token()
-    ctx.http._mocks.append(("PUT", "api.spotify.com/v1/me/tracks", {}, 200))
+    ctx.http._mocks.append(("PUT", "api.spotify.com/v1/me/library", {}, 200))
     result = await fn_like_track(ctx, LikeTrackParams(track_id="4iV5W9uYEdYUVa79Axb7Rh"))
     assert result.status == "success"
     assert result.data["liked"] is True
@@ -183,7 +200,7 @@ async def test_like_track_no_token_returns_error():
 
 async def test_unlike_track_success():
     ctx = await ctx_with_token()
-    ctx.http._mocks.append(("DELETE", "api.spotify.com/v1/me/tracks", {}, 200))
+    ctx.http._mocks.append(("DELETE", "api.spotify.com/v1/me/library", {}, 200))
     result = await fn_unlike_track(ctx, UnlikeTrackParams(track_id="4iV5W9uYEdYUVa79Axb7Rh"))
     assert result.status == "success"
     assert result.data["liked"] is False
@@ -204,3 +221,50 @@ async def test_get_user_profile_returns_profile():
 async def test_get_user_profile_no_token_returns_error():
     ctx = MockContext(user_id="user1")
     assert (await fn_get_user_profile(ctx, GetUserProfileParams())).status == "error"
+
+
+# ── remove_tracks_from_playlist_by_name ───────────────────────────────────────
+
+PLAYLIST_ITEMS_RESPONSE = {
+    "items": [{"track": SAMPLE_TRACK}],
+    "next": None,
+}
+
+
+async def test_remove_tracks_from_playlist_by_name_success():
+    ctx = await ctx_with_token()
+    ctx.http.mock_get("api.spotify.com/v1/playlists/37i9dQZF1DXcBWIGoYBM5M/items", PLAYLIST_ITEMS_RESPONSE)
+    ctx.http._mocks.append(("DELETE", "api.spotify.com/v1/playlists/37i9dQZF1DXcBWIGoYBM5M/items", {}, 200))
+    result = await fn_remove_tracks_from_playlist_by_name(
+        ctx, RemoveTracksFromPlaylistByNameParams(
+            track_names=["Midnight City"],
+            playlist_id="37i9dQZF1DXcBWIGoYBM5M",
+        )
+    )
+    assert result.status == "success"
+    assert result.data["removed_count"] == 1
+    assert "Midnight City" in result.data["removed_tracks"]
+
+
+async def test_remove_tracks_from_playlist_by_name_not_found():
+    ctx = await ctx_with_token()
+    ctx.http.mock_get("api.spotify.com/v1/playlists/37i9dQZF1DXcBWIGoYBM5M/items", PLAYLIST_ITEMS_RESPONSE)
+    result = await fn_remove_tracks_from_playlist_by_name(
+        ctx, RemoveTracksFromPlaylistByNameParams(
+            track_names=["Nonexistent Track"],
+            playlist_id="37i9dQZF1DXcBWIGoYBM5M",
+        )
+    )
+    assert result.status == "error"
+    assert "Nonexistent Track" in result.error
+
+
+async def test_remove_tracks_from_playlist_by_name_no_token():
+    ctx = MockContext(user_id="user1")
+    result = await fn_remove_tracks_from_playlist_by_name(
+        ctx, RemoveTracksFromPlaylistByNameParams(
+            track_names=["Midnight City"],
+            playlist_id="37i9dQZF1DXcBWIGoYBM5M",
+        )
+    )
+    assert result.status == "error"

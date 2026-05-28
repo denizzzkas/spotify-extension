@@ -20,6 +20,7 @@ log = logging.getLogger("spotify.playback")
 class PlayTrackParams(BaseModel):
     track_id: str = Field(..., description="Spotify track ID or track name/artist to search for and play")
     playlist_id: str = Field("", description="Optional playlist ID — if provided, plays track within playlist context so next/prev work through the playlist")
+    track_ids_queue: list[str] = Field(default=[], description="Optional list of track IDs to play as a queue starting from track_id. Used when playing from liked/recent tracks so next/prev work.")
 
 
 class PlayPlaylistParams(BaseModel):
@@ -40,7 +41,7 @@ class PlayAlbumParams(BaseModel):
     effects=["playback:start"],
     event="track.played",
     data_model=PlayTrackRecord,
-    description="Play a specific track. Accepts a track name/artist (will search) or a track_id from search_tracks results. Use this for a single track, not a playlist or album.",
+    description="Play a specific track. Accepts a track_id from search_tracks results, or a track name/artist (will search and play the best match). If the request is ambiguous or you are not certain which track the user means, call search_tracks first and show the results so the user can confirm. If the request is unambiguous (e.g. 'Rasputin by Boney M'), play immediately without asking.",
 )
 async def fn_play_track(ctx, params: PlayTrackParams) -> ActionResult:
     """Play a track on the user's active Spotify device."""
@@ -76,9 +77,22 @@ async def fn_play_track(ctx, params: PlayTrackParams) -> ActionResult:
             return _spotify_err(track_resp)
 
         track_data = format_track(track_resp.json())
+
+        is_liked = False
+        try:
+            like_resp, _ = await _spotify_call(
+                ctx, "get", f"{SP_API_BASE}/me/tracks/contains",
+                params={"ids": track_id},
+            )
+            if like_resp and like_resp.ok:
+                result = like_resp.json()
+                is_liked = bool(result) and result[0] is True
+        except Exception:
+            pass
+
         await ctx.cache.set(
             key="now_playing",
-            value=NowPlayingModel(**track_data, is_playing=True),
+            value=NowPlayingModel(**track_data, is_playing=True, is_liked=is_liked),
             ttl_seconds=90,
         )
 
@@ -95,6 +109,11 @@ async def fn_play_track(ctx, params: PlayTrackParams) -> ActionResult:
                     if params.playlist_id:
                         play_body = {
                             "context_uri": f"spotify:playlist:{params.playlist_id}",
+                            "offset": {"uri": f"spotify:track:{track_id}"},
+                        }
+                    elif params.track_ids_queue and len(params.track_ids_queue) > 1:
+                        play_body = {
+                            "uris": [f"spotify:track:{tid}" for tid in params.track_ids_queue],
                             "offset": {"uri": f"spotify:track:{track_id}"},
                         }
                     else:
