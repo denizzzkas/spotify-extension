@@ -74,7 +74,7 @@ async def skeleton_now_playing(ctx) -> dict:
     try:
         now_playing = await ctx.cache.get(key="now_playing", model=NowPlayingModel)
         if not now_playing:
-            return {"response": {"playing": False, "track_title": "", "track_artist": "", "track_album": ""}}
+            return {"response": {"playing": False, "track_title": "", "track_artist": "", "track_album": "", "track_id": "", "is_liked": False, "shuffle": False}}
 
         track_data = now_playing.model_dump()
         return {

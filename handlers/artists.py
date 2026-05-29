@@ -48,32 +48,24 @@ async def _find_artist_id(ctx, artist_name: str):
     description="Get top tracks for an artist by name. Returns up to 10 most popular tracks with id, title, album, duration. Use track ids from results to play or add to playlist.",
 )
 async def fn_get_artist_top_tracks(ctx, params: GetArtistTopTracksParams) -> ActionResult:
-    """Search for artist tracks and return top 10 sorted by popularity."""
+    """Resolve artist ID then fetch top tracks via dedicated endpoint."""
     try:
-        resp, err = await _spotify_call(
-            ctx, "get", f"{SP_API_BASE}/search",
-            params={"q": params.artist_name, "type": "track", "limit": 20},
-        )
+        artist_id, artist_display, err = await _find_artist_id(ctx, params.artist_name)
+        if err:
+            return err
+
+        resp, err = await _spotify_call(ctx, "get", f"{SP_API_BASE}/artists/{artist_id}/top-tracks")
         if err:
             return err
         if not resp.ok:
             return _spotify_err(resp)
 
-        artist_lower = params.artist_name.lower()
-        items = resp.json().get("tracks", {}).get("items") or []
-        filtered = [
-            t for t in items
-            if any(artist_lower in a.get("name", "").lower() or a.get("name", "").lower() in artist_lower
-                   for a in (t.get("artists") or []))
-        ] or items
-        tracks = [format_track(t) for t in filtered]
-        tracks.sort(key=lambda t: t.get("popularity", 0), reverse=True)
-        tracks = tracks[:10]
+        items = resp.json().get("tracks") or []
+        tracks = [format_track(t) for t in items[:10]]
 
         if not tracks:
             return ActionResult.error(f"No tracks found for '{params.artist_name}'.", retryable=False)
 
-        artist_display = tracks[0]["artist"].split(", ")[0] if tracks else params.artist_name
         return ActionResult.success(
             data={"tracks": tracks, "count": len(tracks), "query": artist_display},
             summary=f"Top {len(tracks)} tracks by {artist_display}",
