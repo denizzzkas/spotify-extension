@@ -28,6 +28,12 @@
       "parameters": {}
     },
     {
+      "name": "skeleton_refresh_spotify_playlists",
+      "description": "User's Spotify playlists (up to 20): id and name so LLM can resolve playlist names to IDs without extra API calls",
+      "scopes": [],
+      "parameters": {}
+    },
+    {
       "name": "connect_spotify",
       "description": "Connect your Spotify account via OAuth 2.0. Returns an authorisation URL to visit.",
       "action_type": "write",
@@ -2235,7 +2241,7 @@
     },
     {
       "name": "remove_tracks_from_playlist_by_name",
-      "description": "Remove tracks from a playlist by name or artist. Use when user says 'remove [track] from [playlist]' or 'remove all tracks by [artist]' or 'keep only [artist], remove everything else' (set exclude=True for the last case). track_names and artist_name can be combined or used alone.",
+      "description": "Remove tracks from a playlist by name, artist, or duration. Examples: 'remove [track]', 'remove all tracks by [artist]', 'remove tracks longer than 4 minutes' (min_duration_ms=240000), 'keep only [artist]' (exclude=True). Filters can be combined.",
       "action_type": "write",
       "chain_callable": true,
       "effects": [
@@ -2246,7 +2252,7 @@
         "properties": {
           "track_names": {
             "default": [],
-            "description": "Track names to remove. Can be empty when using artist_name alone.",
+            "description": "Track names to remove. Leave empty when filtering by artist_name or duration alone.",
             "items": {
               "type": "string"
             },
@@ -2260,21 +2266,109 @@
           },
           "artist_name": {
             "default": "",
-            "description": "Filter by artist name. If track_names is empty, matches all tracks by this artist.",
+            "description": "Filter by artist name. Removes all tracks by this artist when track_names is empty.",
             "title": "Artist Name",
             "type": "string"
           },
           "exclude": {
-            "default": false,
-            "description": "If True, REMOVE everything EXCEPT the matching tracks (e.g. 'keep only tracks by artist X, remove the rest').",
-            "title": "Exclude",
-            "type": "boolean"
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Set to True to REMOVE everything EXCEPT matches — e.g. 'keep only Artist X, remove the rest'.",
+            "title": "Exclude"
+          },
+          "min_duration_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Remove tracks LONGER than this ms. 4 min = 240000, 5 min = 300000.",
+            "title": "Min Duration Ms"
+          },
+          "max_duration_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Remove tracks SHORTER than this ms. 2 min = 120000, 3 min = 180000.",
+            "title": "Max Duration Ms"
           }
         },
         "required": [
           "playlist_id"
         ],
         "title": "RemoveTracksFromPlaylistByNameParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "playlist_id": {
+            "title": "Playlist Id",
+            "type": "string"
+          },
+          "removed_count": {
+            "title": "Removed Count",
+            "type": "integer"
+          },
+          "removed_tracks": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Removed Tracks",
+            "type": "array"
+          }
+        },
+        "required": [
+          "playlist_id",
+          "removed_count",
+          "removed_tracks"
+        ],
+        "title": "BulkRemoveTracksRecord",
+        "type": "object"
+      },
+      "event": "track.removed_from_playlist",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_spotify_chat"
+    },
+    {
+      "name": "remove_duplicate_tracks",
+      "description": "Remove duplicate tracks from a playlist, keeping the first occurrence of each track.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "playlist:remove_track"
+      ],
+      "id_projection": "playlist_id",
+      "params_schema": {
+        "properties": {
+          "playlist_id": {
+            "description": "Spotify playlist ID to remove duplicate tracks from",
+            "title": "Playlist Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "playlist_id"
+        ],
+        "title": "RemoveDuplicateTracksParams",
         "type": "object"
       },
       "return_schema": {
