@@ -22,40 +22,64 @@ class GetLyricsParams(BaseModel):
     "get_lyrics",
     action_type="read",
     data_model=LyricsRecord,
-    description="Fetch full song lyrics text. Returns the complete lyrics as text if found on lrclib.net, otherwise returns a Genius URL. Only track_name is required; providing artist_name improves accuracy.",
+    description="Fetch full song lyrics. Returns the complete lyrics as formatted text. Only track_name is required; providing artist_name improves accuracy. If lyrics are found, they are displayed in full — no need to call search_tracks first.",
 )
 async def fn_get_lyrics(ctx, params: GetLyricsParams) -> ActionResult:
-    """Fetch lyrics via lrclib.net, fall back to Genius URL if not found."""
+    """Fetch lyrics via lrclib.net (exact then fuzzy), fall back to Genius URL."""
     try:
-        # Primary: lrclib.net — free, no token, returns full plainLyrics
-        lrc_params: dict = {"track_name": params.track_name}
+        lyrics_text = ""
+        found_title = params.track_name
+        found_artist = params.artist_name
+
+        # 1. Exact lookup (best when artist_name is known)
         if params.artist_name:
-            lrc_params["artist_name"] = params.artist_name
+            lrc_resp = await ctx.http.get(
+                "https://lrclib.net/api/get",
+                params={"track_name": params.track_name, "artist_name": params.artist_name},
+            )
+            if lrc_resp.ok:
+                body = lrc_resp.json()
+                lyrics_text = (body.get("plainLyrics") or "").strip()
+                if lyrics_text:
+                    found_title = body.get("trackName") or params.track_name
+                    found_artist = body.get("artistName") or params.artist_name
 
-        lrc_resp = await ctx.http.get("https://lrclib.net/api/get", params=lrc_params)
-        if lrc_resp.ok:
-            body = lrc_resp.json()
-            lyrics_text = (body.get("plainLyrics") or "").strip()
-            if lyrics_text:
-                artist = body.get("artistName") or params.artist_name
-                title = body.get("trackName") or params.track_name
-                return ActionResult.success(
-                    data={"lyrics": lyrics_text, "url": "", "title": title, "artist": artist},
-                    summary=f"Lyrics for '{title}' by {artist}",
-                )
+        # 2. Fuzzy search — handles no-artist case and partial name mismatches
+        if not lyrics_text:
+            q = f"{params.track_name} {params.artist_name}".strip()
+            search_resp = await ctx.http.get(
+                "https://lrclib.net/api/search",
+                params={"q": q},
+            )
+            if search_resp.ok:
+                for item in (search_resp.json() or []):
+                    text = (item.get("plainLyrics") or "").strip()
+                    if text:
+                        lyrics_text = text
+                        found_title = item.get("trackName") or params.track_name
+                        found_artist = item.get("artistName") or params.artist_name
+                        break
 
-        # Fallback: Genius — return URL to lyrics page
+        if lyrics_text:
+            formatted = lyrics_text.replace('\n\n', '\x00').replace('\n', '  \n').replace('\x00', '\n\n')
+            summary = f"**{found_title}** — {found_artist}\n\n{formatted}"
+            return ActionResult.success(
+                data={"lyrics": lyrics_text, "url": "", "title": found_title, "artist": found_artist},
+                summary=summary,
+            )
+
+        # 3. Fallback: Genius URL
         genius_token = await ctx.secrets.get("genius_access_token")
         query = f"{params.track_name} {params.artist_name}".strip()
 
         if genius_token:
-            search_resp = await ctx.http.get(
+            genius_resp = await ctx.http.get(
                 "https://api.genius.com/search",
                 params={"q": query},
                 headers={"Authorization": f"Bearer {genius_token}"},
             )
-            if search_resp.ok:
-                hits = search_resp.json().get("response", {}).get("hits", [])
+            if genius_resp.ok:
+                hits = genius_resp.json().get("response", {}).get("hits", [])
                 if hits:
                     result = hits[0]["result"]
                     genius_url = result["url"]

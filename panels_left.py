@@ -6,7 +6,7 @@ from imperal_sdk import ui
 from app import ext, NowPlayingModel
 from panels_demo import render_demo_state
 from spotify_config import SP_API_BASE
-from app_helpers import _get_access_token, _refresh_access_token, _spotify_call
+from app_helpers import _get_access_token, _refresh_access_token
 from utils import format_playlist, format_track
 from cache_models import SearchModel, PlaylistsModel
 from player_html import build_player_html
@@ -23,19 +23,35 @@ async def _get_auth_headers(ctx) -> dict | None:
 
 
 async def panel_search_tracks(ctx, query: str = "", limit: int = 20) -> dict:
-    """Search tracks for panel display using the centralized Spotify call helper."""
+    """Search tracks for panel display."""
     if not query:
         return {}
 
     try:
-        resp, err = await _spotify_call(
-            ctx, "get", f"{SP_API_BASE}/search",
+        token = await _get_access_token(ctx)
+        if not token:
+            return {"error": True, "status": 0}
+
+        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        resp = await ctx.http.get(
+            f"{SP_API_BASE}/search",
+            headers=headers,
             params={"q": query, "type": "track", "limit": limit},
         )
-        if err or not resp or not resp.ok:
-            log.warning("panel_search_tracks: search failed for %r (err=%s, status=%s)",
-                        query, err, resp.status_code if resp else None)
-            return {"error": True}
+
+        if resp.status_code == 401:
+            token = await _refresh_access_token(ctx)
+            if token:
+                headers["Authorization"] = f"Bearer {token}"
+                resp = await ctx.http.get(
+                    f"{SP_API_BASE}/search",
+                    headers=headers,
+                    params={"q": query, "type": "track", "limit": limit},
+                )
+
+        if not resp.ok:
+            log.warning("panel_search_tracks: HTTP %d for query %r", resp.status_code, query)
+            return {"error": True, "status": resp.status_code}
 
         raw_list = (resp.json().get("tracks") or {}).get("items", [])
         tracks = [format_track(t) for t in raw_list]
@@ -48,7 +64,7 @@ async def panel_search_tracks(ctx, query: str = "", limit: int = 20) -> dict:
 
     except Exception as e:
         log.error("panel_search_tracks failed: %s", e)
-        return {"error": True}
+        return {"error": True, "status": 0}
 
 
 @ext.panel(
@@ -196,7 +212,9 @@ async def panel_spotify(ctx, **kwargs):
     ]
 
     if search_error:
-        children.append(ui.Text("Search failed — check your Spotify connection.", variant="caption"))
+        status = result.get("status", 0)
+        msg = f"Search failed (HTTP {status})" if status else "Search failed — check your Spotify connection."
+        children.append(ui.Text(msg, variant="caption"))
     elif search_result_items:
         children.append(ui.Text(f'Results for "{search_query}"', variant="caption"))
         children.append(ui.List(items=search_result_items))

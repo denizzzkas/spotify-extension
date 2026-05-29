@@ -21,6 +21,7 @@ class PlayTrackParams(BaseModel):
     track_id: str = Field(..., description="Spotify track ID or track name/artist to search for and play")
     playlist_id: str = Field("", description="Optional playlist ID — if provided, plays track within playlist context so next/prev work through the playlist")
     track_ids_queue: list[str] = Field(default=[], description="Optional list of track IDs to play as a queue starting from track_id. Used when playing from liked/recent tracks so next/prev work.")
+    is_liked: bool | None = Field(None, description="Override liked state — pass True when playing from liked tracks so the like button reflects the correct state without an extra API call")
 
 
 class PlayPlaylistParams(BaseModel):
@@ -78,17 +79,20 @@ async def fn_play_track(ctx, params: PlayTrackParams) -> ActionResult:
 
         track_data = format_track(track_resp.json())
 
-        is_liked = False
-        try:
-            like_resp, _ = await _spotify_call(
-                ctx, "get", f"{SP_API_BASE}/me/tracks/contains",
-                params={"ids": track_id},
-            )
-            if like_resp and like_resp.ok:
-                result = like_resp.json()
-                is_liked = bool(result) and result[0] is True
-        except Exception:
-            pass
+        if params.is_liked is not None:
+            is_liked = params.is_liked
+        else:
+            is_liked = False
+            try:
+                like_resp, _ = await _spotify_call(
+                    ctx, "get", f"{SP_API_BASE}/me/tracks/contains",
+                    params={"ids": track_id},
+                )
+                if like_resp and like_resp.ok:
+                    result = like_resp.json()
+                    is_liked = bool(result) and result[0] is True
+            except Exception:
+                pass
 
         await ctx.cache.set(
             key="now_playing",

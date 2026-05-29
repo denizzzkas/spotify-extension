@@ -23,9 +23,10 @@ class AddArtistTopTracksToPlaylistParams(BaseModel):
 
 
 class RemoveTracksFromPlaylistByNameParams(BaseModel):
-    track_names: list[str] = Field(..., description="One or more track names to remove from the playlist")
+    track_names: list[str] = Field(default=[], description="Track names to remove. Can be empty when using artist_name alone.")
     playlist_id: str = Field(..., description="Spotify playlist ID. Use get_playlists first if you only have the playlist name.")
-    artist_name: str = Field("", description="Optional artist name to narrow the match when multiple tracks share the same title")
+    artist_name: str = Field("", description="Filter by artist name. If track_names is empty, matches all tracks by this artist.")
+    exclude: bool = Field(False, description="If True, REMOVE everything EXCEPT the matching tracks (e.g. 'keep only tracks by artist X, remove the rest').")
 
 
 class AddAlbumTracksToPlaylistParams(BaseModel):
@@ -43,11 +44,14 @@ class AddAlbumTracksToPlaylistParams(BaseModel):
     effects=["playlist:remove_track"],
     event="track.removed_from_playlist",
     data_model=BulkRemoveTracksRecord,
-    description="Remove one or more tracks from a playlist by name in a single step. Use this when the user says 'remove [track] from [playlist]' — no need to search for track IDs first. Accepts playlist_id (use get_playlists to find it) and a list of track names.",
+    description="Remove tracks from a playlist by name or artist. Use when user says 'remove [track] from [playlist]' or 'remove all tracks by [artist]' or 'keep only [artist], remove everything else' (set exclude=True for the last case). track_names and artist_name can be combined or used alone.",
 )
 async def fn_remove_tracks_from_playlist_by_name(ctx, params: RemoveTracksFromPlaylistByNameParams) -> ActionResult:
-    """Get playlist tracks, match by name, remove matched tracks in one DELETE call."""
+    """Fetch playlist tracks, match by name/artist, remove matched (or unmatched if exclude=True)."""
     try:
+        if not params.track_names and not params.artist_name:
+            return ActionResult.error("Provide at least track_names or artist_name.", retryable=False)
+
         tracks = []
         url = f"{SP_API_BASE}/playlists/{params.playlist_id}/items"
         fetch_params = {"limit": 50, "fields": "items(track(id,name,uri,artists)),next"}
@@ -68,44 +72,52 @@ async def fn_remove_tracks_from_playlist_by_name(ctx, params: RemoveTracksFromPl
         search_names = [n.lower() for n in params.track_names]
         artist_filter = params.artist_name.lower()
 
-        matched_uris: list[str] = []
-        matched_names: list[str] = []
-        for track in tracks:
+        def _matches(track: dict) -> bool:
             name_lower = (track.get("name") or "").lower()
-            name_match = any(q in name_lower or name_lower in q for q in search_names)
-            if not name_match:
-                continue
+            if search_names:
+                name_match = any(q in name_lower or name_lower in q for q in search_names)
+                if not name_match:
+                    return False
             if artist_filter:
                 artists = [a.get("name", "").lower() for a in (track.get("artists") or [])]
                 if not any(artist_filter in a or a in artist_filter for a in artists):
-                    continue
-            uri = track.get("uri") or f"spotify:track:{track['id']}"
-            if uri not in matched_uris:
-                matched_uris.append(uri)
-                matched_names.append(track.get("name", track["id"]))
+                    return False
+            return True
 
-        if not matched_uris:
-            names_str = ", ".join(f"'{n}'" for n in params.track_names)
-            return ActionResult.error(
-                f"No tracks matching {names_str} found in the playlist.", retryable=False
+        to_remove = []
+        for track in tracks:
+            matched = _matches(track)
+            if (matched and not params.exclude) or (not matched and params.exclude):
+                uri = track.get("uri") or f"spotify:track:{track['id']}"
+                if uri not in [t["uri"] for t in to_remove]:
+                    to_remove.append({"uri": uri, "name": track.get("name", track["id"])})
+
+        if not to_remove:
+            if params.track_names:
+                names_str = ", ".join(f"'{n}'" for n in params.track_names)
+                return ActionResult.error(f"No tracks matching {names_str} found in the playlist.", retryable=False)
+            return ActionResult.error("No matching tracks found in the playlist.", retryable=False)
+
+        removed_names = [t["name"] for t in to_remove]
+
+        for i in range(0, len(to_remove), 100):
+            batch = to_remove[i:i + 100]
+            del_resp, err = await _spotify_call(
+                ctx, "delete", f"{SP_API_BASE}/playlists/{params.playlist_id}/items",
+                json={"items": [{"uri": t["uri"]} for t in batch]},
             )
-
-        del_resp, err = await _spotify_call(
-            ctx, "delete", f"{SP_API_BASE}/playlists/{params.playlist_id}/items",
-            json={"items": [{"uri": u} for u in matched_uris]},
-        )
-        if err:
-            return err
-        if not del_resp.ok:
-            return _spotify_err(del_resp)
+            if err:
+                return err
+            if not del_resp.ok:
+                return _spotify_err(del_resp)
 
         return ActionResult.success(
             data={
                 "playlist_id": params.playlist_id,
-                "removed_count": len(matched_uris),
-                "removed_tracks": matched_names,
+                "removed_count": len(to_remove),
+                "removed_tracks": removed_names,
             },
-            summary=f"Removed {len(matched_uris)} track(s) from playlist: {', '.join(matched_names)}",
+            summary=f"Removed {len(to_remove)} track(s) from playlist: {', '.join(removed_names[:5])}" + (" ..." if len(removed_names) > 5 else ""),
         )
     except Exception as e:
         log.error("remove_tracks_from_playlist_by_name failed: %s", e)
@@ -127,7 +139,7 @@ async def fn_add_artist_top_tracks_to_playlist(ctx, params: AddArtistTopTracksTo
     try:
         tracks_resp, err = await _spotify_call(
             ctx, "get", f"{SP_API_BASE}/search",
-            params={"q": f"artist:{params.artist_name}", "type": "track", "limit": 50},
+            params={"q": params.artist_name, "type": "track", "limit": 20},
         )
         if err:
             return err
@@ -136,15 +148,12 @@ async def fn_add_artist_top_tracks_to_playlist(ctx, params: AddArtistTopTracksTo
 
         raw_tracks = tracks_resp.json().get("tracks", {}).get("items") or []
 
-        # Filter to tracks actually by this artist (excludes covers and features)
         artist_lower = params.artist_name.lower()
         filtered = [
             t for t in raw_tracks
             if any(artist_lower in a.get("name", "").lower() or a.get("name", "").lower() in artist_lower
                    for a in (t.get("artists") or []))
-        ]
-        if not filtered:
-            filtered = raw_tracks  # fall back to unfiltered if nothing matched
+        ] or raw_tracks
 
         filtered.sort(key=lambda t: t.get("popularity", 0), reverse=True)
         artist_display = filtered[0]["artists"][0]["name"] if filtered else params.artist_name

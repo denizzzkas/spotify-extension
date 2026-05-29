@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from imperal_sdk import ActionResult
 
 from app import chat
-from return_models import PlaylistRecord, TrackRecord, CreatePlaylistRecord, PlaylistTrackRecord, PlaylistRemoveRecord, DeletePlaylistRecord, BulkAddTracksRecord
+from return_models import PlaylistRecord, TrackRecord, CreatePlaylistRecord, PlaylistTrackRecord, PlaylistRemoveRecord, DeletePlaylistRecord, BulkAddTracksRecord, RenamePlaylistRecord
 from spotify_config import SP_API_BASE, MAX_LIMIT
 from app_helpers import _spotify_call, _spotify_err
 from cache_models import PlaylistsModel
@@ -35,6 +35,10 @@ class AddTrackToPlaylistParams(BaseModel):
 class RemoveTrackFromPlaylistParams(BaseModel):
     playlist_id: str = Field(..., description="Spotify playlist ID")
     track_id: str = Field(..., description="Spotify track ID to remove")
+
+class RenamePlaylistParams(BaseModel):
+    playlist_id: str = Field(..., description="Spotify playlist ID to rename")
+    name: str = Field(..., description="New playlist name")
 
 class DeletePlaylistParams(BaseModel):
     playlist_id: str = Field(..., description="Spotify playlist ID to delete")
@@ -204,6 +208,37 @@ async def fn_remove_track_from_playlist(ctx, params: RemoveTrackFromPlaylistPara
     except Exception as e:
         log.error("remove_track_from_playlist failed: %s", e)
         return ActionResult.error(f"Failed to remove track: {str(e)}", retryable=False)
+
+
+@chat.function(
+    "rename_playlist",
+    action_type="write",
+    chain_callable=True,
+    id_projection="playlist_id",
+    effects=["playlist:update"],
+    event="playlist.renamed",
+    data_model=RenamePlaylistRecord,
+    description="Rename an existing playlist. Accepts playlist_id (use get_playlists to find it if you only have the name) and the new name.",
+)
+async def fn_rename_playlist(ctx, params: RenamePlaylistParams) -> ActionResult:
+    """Rename a playlist via PUT /playlists/{id}."""
+    try:
+        resp, err = await _spotify_call(
+            ctx, "put", f"{SP_API_BASE}/playlists/{params.playlist_id}",
+            json={"name": params.name},
+        )
+        if err:
+            return err
+        if not resp.ok and resp.status_code != 200:
+            return _spotify_err(resp)
+        return ActionResult.success(
+            data={"playlist_id": params.playlist_id, "name": params.name},
+            summary=f"Playlist renamed to '{params.name}'",
+            refresh_panels=["spotify"],
+        )
+    except Exception as e:
+        log.error("rename_playlist failed: %s", e)
+        return ActionResult.error(f"Failed to rename playlist: {str(e)}", retryable=False)
 
 
 @chat.function(

@@ -52,15 +52,21 @@ async def fn_get_artist_top_tracks(ctx, params: GetArtistTopTracksParams) -> Act
     try:
         resp, err = await _spotify_call(
             ctx, "get", f"{SP_API_BASE}/search",
-            params={"q": f"artist:{params.artist_name}", "type": "track", "limit": 50},
+            params={"q": params.artist_name, "type": "track", "limit": 20},
         )
         if err:
             return err
         if not resp.ok:
             return _spotify_err(resp)
 
+        artist_lower = params.artist_name.lower()
         items = resp.json().get("tracks", {}).get("items") or []
-        tracks = [format_track(t) for t in items]
+        filtered = [
+            t for t in items
+            if any(artist_lower in a.get("name", "").lower() or a.get("name", "").lower() in artist_lower
+                   for a in (t.get("artists") or []))
+        ] or items
+        tracks = [format_track(t) for t in filtered]
         tracks.sort(key=lambda t: t.get("popularity", 0), reverse=True)
         tracks = tracks[:10]
 

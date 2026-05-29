@@ -74,7 +74,7 @@ async def _fetch_playlist_tracks(ctx, playlist_id: str) -> tuple[list[dict], str
                 return [], "Account not registered as a test user. Add your email in Spotify Developer Dashboard → User Management."
             if detail and "premium" in detail.lower():
                 return [], "This feature requires Spotify Premium."
-            return [], f"Permission denied (403){': ' + detail if detail else ''}. You may need to reconnect your Spotify account."
+            return [], "This playlist belongs to another user. Spotify restricts access to other users' playlists in development mode — only your own playlists are accessible."
 
         log.error("_fetch_playlist_tracks HTTP %s: %s", resp.status_code, detail)
         return [], f"HTTP {resp.status_code}{': ' + detail if detail else ''}"
@@ -123,7 +123,7 @@ async def panel_spotify_detail(ctx, detail_type: str = "", playlist_id: str = ""
         return await _render_profile(ctx)
 
     if detail_type == "liked_tracks":
-        return await _render_fetched_tracks(ctx, f"{SP_API_BASE}/me/tracks", "Liked Tracks", item_key="track")
+        return await _render_fetched_tracks(ctx, f"{SP_API_BASE}/me/tracks", "Liked Tracks", item_key="track", liked_context=True)
 
     if detail_type == "recent_tracks":
         return await _render_fetched_tracks(ctx, f"{SP_API_BASE}/me/player/recently-played", "Recent Tracks", item_key="track")
@@ -169,42 +169,51 @@ async def panel_spotify_detail(ctx, detail_type: str = "", playlist_id: str = ""
     return _render_tracks(tracks, title, play_fn="play_track", playlist_id=playlist_id)
 
 
-async def _render_fetched_tracks(ctx, url: str, title: str, item_key: str = "track") -> ui.Stack:
-    """Fetch tracks from a Spotify endpoint and render them."""
+async def _render_fetched_tracks(ctx, url: str, title: str, item_key: str = "track", liked_context: bool = False, max_tracks: int = 200) -> ui.Stack:
+    """Fetch tracks from a Spotify endpoint with pagination and render them."""
     try:
         token = await _get_access_token(ctx)
         if not token:
             return ui.Empty("Not connected to Spotify.", icon="Music")
 
         headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-        resp = await ctx.http.get(url, headers=headers, params={"limit": 50})
+        tracks = []
+        next_url = url
+        fetch_params = {"limit": 50}
 
-        if resp.status_code == 401:
-            token = await _refresh_access_token(ctx)
-            if token:
+        while next_url and len(tracks) < max_tracks:
+            resp = await ctx.http.get(next_url, headers=headers, params=fetch_params)
+            fetch_params = {}
+
+            if resp.status_code == 401:
+                token = await _refresh_access_token(ctx)
+                if not token:
+                    break
                 headers["Authorization"] = f"Bearer {token}"
-                resp = await ctx.http.get(url, headers=headers, params={"limit": 50})
+                resp = await ctx.http.get(next_url, headers=headers)
 
-        if resp.status_code == 403:
-            try:
-                body = resp.text
-            except Exception:
-                body = ""
-            if "not registered" in body.lower():
-                return ui.Empty("Account not registered for this app. Add it in Spotify Developer Dashboard → User Management.", icon="Lock")
-            return ui.Empty("This feature requires Spotify Premium.", icon="Lock")
+            if resp.status_code == 403:
+                try:
+                    body = resp.text
+                except Exception:
+                    body = ""
+                if "not registered" in body.lower():
+                    return ui.Empty("Account not registered for this app. Add it in Spotify Developer Dashboard → User Management.", icon="Lock")
+                return ui.Empty("This feature requires Spotify Premium.", icon="Lock")
 
-        if not resp.ok:
-            return ui.Empty(f"Could not load tracks (HTTP {resp.status_code}).", icon="AlertCircle")
+            if not resp.ok:
+                return ui.Empty(f"Could not load tracks (HTTP {resp.status_code}).", icon="AlertCircle")
 
-        raw_list = resp.json().get("items") or []
-        tracks = [format_track(item[item_key]) for item in raw_list if item.get(item_key)]
+            data = resp.json()
+            raw_list = data.get("items") or []
+            tracks.extend(format_track(item[item_key]) for item in raw_list if item.get(item_key))
+            next_url = data.get("next")
 
     except Exception as e:
         log.error("_render_fetched_tracks failed for %s: %s", url, e)
         return ui.Empty("Failed to load tracks.", icon="AlertCircle")
 
-    return _render_tracks(tracks, title, play_fn="play_track")
+    return _render_tracks(tracks, title, play_fn="play_track", liked_context=liked_context)
 
 
 async def _render_profile(ctx) -> ui.Stack:
@@ -245,7 +254,7 @@ async def _render_profile(ctx) -> ui.Stack:
     return ui.Empty("Profile not loaded.", icon="User")
 
 
-def _render_tracks(tracks: list[dict], title: str, play_fn: str = "play_track", playlist_id: str = "") -> ui.Stack:
+def _render_tracks(tracks: list[dict], title: str, play_fn: str = "play_track", playlist_id: str = "", liked_context: bool = False) -> ui.Stack:
     """Render track list with the correct play function for demo or authenticated mode."""
     all_track_ids = [t["id"] for t in tracks if t.get("id")]
 
@@ -253,7 +262,12 @@ def _render_tracks(tracks: list[dict], title: str, play_fn: str = "play_track", 
         if play_fn == "play_track" and playlist_id:
             return ui.Call(play_fn, track_id=track_id, playlist_id=playlist_id)
         if play_fn == "play_track" and len(all_track_ids) > 1:
-            return ui.Call(play_fn, track_id=track_id, track_ids_queue=all_track_ids)
+            base = ui.Call(play_fn, track_id=track_id, track_ids_queue=all_track_ids)
+            if liked_context:
+                return ui.Call(play_fn, track_id=track_id, track_ids_queue=all_track_ids, is_liked=True)
+            return base
+        if play_fn == "play_track" and liked_context:
+            return ui.Call(play_fn, track_id=track_id, is_liked=True)
         return ui.Call(play_fn, track_id=track_id)
 
     track_items = [
