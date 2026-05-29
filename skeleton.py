@@ -1,7 +1,7 @@
 """Spotify · Skeleton tools — library statistics and now playing for LLM classifier."""
 import logging
 
-from app import ext, NowPlayingModel
+from app import ext, NowPlayingModel, PlaylistsModel
 from spotify_config import SP_API_BASE
 from app_helpers import _get_access_token, _refresh_access_token
 
@@ -83,8 +83,48 @@ async def skeleton_now_playing(ctx) -> dict:
                 "track_title": track_data.get("title", ""),
                 "track_artist": track_data.get("artist", ""),
                 "track_album": track_data.get("album", ""),
+                "track_id": track_data.get("id", ""),
+                "is_liked": track_data.get("is_liked", False),
+                "shuffle": track_data.get("shuffle", False),
             }
         }
     except Exception as e:
         log.error("Spotify now_playing skeleton failed: %s", e)
-        return {"response": {"playing": False, "track_title": "", "track_artist": "", "track_album": ""}}
+        return {"response": {"playing": False, "track_title": "", "track_artist": "", "track_album": "", "track_id": "", "is_liked": False, "shuffle": False}}
+
+
+@ext.skeleton(
+    "spotify_playlists",
+    ttl=120,
+    alert=False,
+    description="User's Spotify playlists (up to 20): id and name so LLM can resolve playlist names to IDs without extra API calls",
+)
+async def skeleton_playlists(ctx) -> dict:
+    """Return user's playlists from cache or API for LLM context."""
+    try:
+        cached = await ctx.cache.get(key="playlists", model=PlaylistsModel)
+        if cached and cached.items:
+            playlists = [{"id": p["id"], "name": p["title"]} for p in cached.items[:20]]
+            return {"response": {"playlists": playlists, "count": len(playlists)}}
+
+        token = await _get_access_token(ctx)
+        if not token:
+            return {"response": {"playlists": [], "count": 0}}
+
+        fresh = await _refresh_access_token(ctx)
+        headers = {"Authorization": f"Bearer {fresh or token}"}
+        resp = await ctx.http.get(
+            f"{SP_API_BASE}/me/playlists",
+            headers=headers,
+            params={"limit": 20},
+        )
+        if not resp.ok:
+            return {"response": {"playlists": [], "count": 0}}
+
+        items = resp.json().get("items") or []
+        playlists = [{"id": p["id"], "name": p.get("name", "")} for p in items if p.get("id")]
+        return {"response": {"playlists": playlists, "count": len(playlists)}}
+
+    except Exception as e:
+        log.error("Spotify playlists skeleton failed: %s", e)
+        return {"response": {"playlists": [], "count": 0}}

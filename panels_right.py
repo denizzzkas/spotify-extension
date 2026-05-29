@@ -18,6 +18,8 @@ class _DetailParams(BaseModel):
     detail_type: str = ""
     playlist_id: str = ""
     playlist_name: str = ""
+    page: int = 0
+    cursor: str = ""
 
 log = logging.getLogger("spotify.panels.right")
 
@@ -29,17 +31,18 @@ async def _get_auth_headers(ctx) -> dict | None:
     return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 
 
-async def _fetch_playlist_tracks(ctx, playlist_id: str) -> tuple[list[dict], str | None]:
-    """Fetch playlist tracks. Returns (tracks, error_msg)."""
+async def _fetch_playlist_tracks(ctx, playlist_id: str, page: int = 0) -> tuple[list[dict], str | None, bool]:
+    """Fetch one page of playlist tracks. Returns (tracks, error_msg, has_next)."""
     try:
         headers = await _get_auth_headers(ctx)
         if not headers:
-            return [], "Not authenticated"
+            return [], "Not authenticated", False
 
+        fetch_params = {"limit": 50, "offset": page * 50}
         resp = await ctx.http.get(
             f"{SP_API_BASE}/playlists/{playlist_id}/items",
             headers=headers,
-            params={"limit": 50},
+            params=fetch_params,
         )
 
         if resp.status_code == 401:
@@ -49,17 +52,18 @@ async def _fetch_playlist_tracks(ctx, playlist_id: str) -> tuple[list[dict], str
                 resp = await ctx.http.get(
                     f"{SP_API_BASE}/playlists/{playlist_id}/items",
                     headers=headers,
-                    params={"limit": 50},
+                    params=fetch_params,
                 )
 
         if resp.ok:
-            items = resp.json().get("items", [])
+            data = resp.json()
+            items = data.get("items", [])
             tracks = [
                 format_track(item.get("track") or item.get("item"))
                 for item in items
                 if item.get("track") or item.get("item")
             ]
-            return tracks, None
+            return tracks, None, bool(data.get("next"))
 
         try:
             detail = resp.json().get("error", {}).get("message", "")
@@ -71,17 +75,17 @@ async def _fetch_playlist_tracks(ctx, playlist_id: str) -> tuple[list[dict], str
 
         if resp.status_code == 403:
             if detail and "not registered" in detail.lower():
-                return [], "Account not registered as a test user. Add your email in Spotify Developer Dashboard → User Management."
+                return [], "Account not registered as a test user. Add your email in Spotify Developer Dashboard → User Management.", False
             if detail and "premium" in detail.lower():
-                return [], "This feature requires Spotify Premium."
-            return [], "This playlist belongs to another user. Spotify restricts access to other users' playlists in development mode — only your own playlists are accessible."
+                return [], "This feature requires Spotify Premium.", False
+            return [], "This playlist belongs to another user. Spotify restricts access to other users' playlists in development mode — only your own playlists are accessible.", False
 
         log.error("_fetch_playlist_tracks HTTP %s: %s", resp.status_code, detail)
-        return [], f"HTTP {resp.status_code}{': ' + detail if detail else ''}"
+        return [], f"HTTP {resp.status_code}{': ' + detail if detail else ''}", False
 
     except Exception as e:
         log.error("_fetch_playlist_tracks failed: %s", e)
-        return [], str(e)
+        return [], str(e), False
 
 
 @ext.panel(
@@ -91,7 +95,7 @@ async def _fetch_playlist_tracks(ctx, playlist_id: str) -> tuple[list[dict], str
     title="Spotify",
     icon="Music",
 )
-async def panel_spotify_detail(ctx, detail_type: str = "", playlist_id: str = "", playlist_name: str = "", **kwargs):
+async def panel_spotify_detail(ctx, detail_type: str = "", playlist_id: str = "", playlist_name: str = "", page: int = 0, cursor: str = "", **kwargs):
     """Center overlay panel: loads playlist/liked/recent/profile data."""
     log.debug("panel_spotify_detail called: detail_type=%r playlist_id=%r", detail_type, playlist_id)
 
@@ -103,6 +107,8 @@ async def panel_spotify_detail(ctx, detail_type: str = "", playlist_id: str = ""
                 detail_type = saved.detail_type
                 playlist_id = saved.playlist_id
                 playlist_name = saved.playlist_name
+                page = saved.page
+                cursor = saved.cursor
         except Exception:
             pass
 
@@ -113,7 +119,7 @@ async def panel_spotify_detail(ctx, detail_type: str = "", playlist_id: str = ""
     try:
         await ctx.cache.set(
             key="detail_params",
-            value=_DetailParams(detail_type=detail_type, playlist_id=playlist_id, playlist_name=playlist_name),
+            value=_DetailParams(detail_type=detail_type, playlist_id=playlist_id, playlist_name=playlist_name, page=page, cursor=cursor),
             ttl_seconds=300,
         )
     except Exception:
@@ -123,10 +129,10 @@ async def panel_spotify_detail(ctx, detail_type: str = "", playlist_id: str = ""
         return await _render_profile(ctx)
 
     if detail_type == "liked_tracks":
-        return await _render_fetched_tracks(ctx, f"{SP_API_BASE}/me/tracks", "Liked Tracks", item_key="track", liked_context=True)
+        return await _render_fetched_tracks(ctx, f"{SP_API_BASE}/me/tracks", "Liked Tracks", item_key="track", liked_context=True, page=page)
 
     if detail_type == "recent_tracks":
-        return await _render_fetched_tracks(ctx, f"{SP_API_BASE}/me/player/recently-played", "Recent Tracks", item_key="track")
+        return await _render_fetched_tracks(ctx, f"{SP_API_BASE}/me/player/recently-played", "Recent Tracks", item_key="track", cursor=cursor)
 
     # Demo mode — load directly from hardcoded demo data
     if playlist_id == DEMO_PLAYLIST_ID:
@@ -139,14 +145,15 @@ async def panel_spotify_detail(ctx, detail_type: str = "", playlist_id: str = ""
     title = playlist_name or "Playlist"
     cache_key = f"detail_{playlist_id}"
 
-    try:
-        cached = await ctx.cache.get(key=cache_key, model=DetailModel)
-        if cached and cached.tracks:
-            return _render_tracks(cached.tracks, cached.title, play_fn="play_track", playlist_id=playlist_id)
-    except Exception:
-        pass
+    if page == 0:
+        try:
+            cached = await ctx.cache.get(key=cache_key, model=DetailModel)
+            if cached and cached.tracks:
+                return _render_tracks(cached.tracks, cached.title, play_fn="play_track", playlist_id=playlist_id, has_next=True, page=0, playlist_name=playlist_name)
+        except Exception:
+            pass
 
-    tracks, err = await _fetch_playlist_tracks(ctx, playlist_id)
+    tracks, err, has_next = await _fetch_playlist_tracks(ctx, playlist_id, page=page)
 
     if err:
         return ui.Stack([
@@ -154,66 +161,85 @@ async def panel_spotify_detail(ctx, detail_type: str = "", playlist_id: str = ""
             ui.Empty(err, icon="AlertCircle"),
         ], direction="v", gap=2)
 
-    if not tracks:
+    if not tracks and page == 0:
         return ui.Empty("Playlist is empty.", icon="Music")
 
-    try:
-        await ctx.cache.set(
-            key=cache_key,
-            value=DetailModel(type="tracks", title=title, tracks=tracks),
-            ttl_seconds=300,
-        )
-    except Exception as e:
-        log.error("Failed to cache playlist tracks: %s", e)
+    if page == 0:
+        try:
+            await ctx.cache.set(
+                key=cache_key,
+                value=DetailModel(type="tracks", title=title, tracks=tracks),
+                ttl_seconds=300,
+            )
+        except Exception as e:
+            log.error("Failed to cache playlist tracks: %s", e)
 
-    return _render_tracks(tracks, title, play_fn="play_track", playlist_id=playlist_id)
+    return _render_tracks(tracks, title, play_fn="play_track", playlist_id=playlist_id, has_next=has_next, page=page, playlist_name=playlist_name)
 
 
-async def _render_fetched_tracks(ctx, url: str, title: str, item_key: str = "track", liked_context: bool = False, max_tracks: int = 200) -> ui.Stack:
-    """Fetch tracks from a Spotify endpoint with pagination and render them."""
+async def _render_fetched_tracks(ctx, url: str, title: str, item_key: str = "track", liked_context: bool = False, page: int = 0, cursor: str = "") -> ui.Stack:
+    """Fetch one page of tracks from a Spotify endpoint and render with pagination."""
     try:
         token = await _get_access_token(ctx)
         if not token:
             return ui.Empty("Not connected to Spotify.", icon="Music")
 
         headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-        tracks = []
-        next_url = url
-        fetch_params = {"limit": 50}
+        fetch_params: dict = {"limit": 50}
+        if liked_context:
+            fetch_params["offset"] = page * 50
+        elif cursor:
+            fetch_params["before"] = cursor
 
-        while next_url and len(tracks) < max_tracks:
-            resp = await ctx.http.get(next_url, headers=headers, params=fetch_params)
-            fetch_params = {}
+        resp = await ctx.http.get(url, headers=headers, params=fetch_params)
 
-            if resp.status_code == 401:
-                token = await _refresh_access_token(ctx)
-                if not token:
-                    break
-                headers["Authorization"] = f"Bearer {token}"
-                resp = await ctx.http.get(next_url, headers=headers)
+        if resp.status_code == 401:
+            token = await _refresh_access_token(ctx)
+            if not token:
+                return ui.Empty("Session expired. Reconnect Spotify.", icon="Lock")
+            headers["Authorization"] = f"Bearer {token}"
+            resp = await ctx.http.get(url, headers=headers, params=fetch_params)
 
-            if resp.status_code == 403:
-                try:
-                    body = resp.text
-                except Exception:
-                    body = ""
-                if "not registered" in body.lower():
-                    return ui.Empty("Account not registered for this app. Add it in Spotify Developer Dashboard → User Management.", icon="Lock")
-                return ui.Empty("This feature requires Spotify Premium.", icon="Lock")
+        if resp.status_code == 403:
+            try:
+                body = resp.text
+            except Exception:
+                body = ""
+            if "not registered" in body.lower():
+                return ui.Empty("Account not registered for this app. Add it in Spotify Developer Dashboard → User Management.", icon="Lock")
+            return ui.Empty("This feature requires Spotify Premium.", icon="Lock")
 
-            if not resp.ok:
-                return ui.Empty(f"Could not load tracks (HTTP {resp.status_code}).", icon="AlertCircle")
+        if not resp.ok:
+            return ui.Empty(f"Could not load tracks (HTTP {resp.status_code}).", icon="AlertCircle")
 
-            data = resp.json()
-            raw_list = data.get("items") or []
-            tracks.extend(format_track(item[item_key]) for item in raw_list if item.get(item_key))
-            next_url = data.get("next")
+        data = resp.json()
+        raw_list = data.get("items") or []
+        tracks = [format_track(item[item_key]) for item in raw_list if item.get(item_key)]
+        has_next = bool(data.get("next"))
+
+        next_cursor = ""
+        if not liked_context and has_next and raw_list:
+            next_cursor = raw_list[-1].get("played_at", "")
 
     except Exception as e:
         log.error("_render_fetched_tracks failed for %s: %s", url, e)
         return ui.Empty("Failed to load tracks.", icon="AlertCircle")
 
-    return _render_tracks(tracks, title, play_fn="play_track", liked_context=liked_context)
+    detail_type = "liked_tracks" if liked_context else "recent_tracks"
+    nav_buttons = []
+    if liked_context:
+        if page > 0:
+            nav_buttons.append(ui.Button("← Back", size="sm", on_click=ui.Call("__panel__spotify_detail", detail_type=detail_type, page=page - 1)))
+        if has_next:
+            nav_buttons.append(ui.Button("Next →", size="sm", on_click=ui.Call("__panel__spotify_detail", detail_type=detail_type, page=page + 1)))
+    else:
+        if has_next and next_cursor:
+            nav_buttons.append(ui.Button("Load older →", size="sm", on_click=ui.Call("__panel__spotify_detail", detail_type=detail_type, cursor=next_cursor)))
+
+    track_list = _render_tracks(tracks, title, play_fn="play_track", liked_context=liked_context)
+    if nav_buttons:
+        return ui.Stack([track_list, ui.Stack(nav_buttons, direction="h", gap=1)], direction="v", gap=2)
+    return track_list
 
 
 async def _render_profile(ctx) -> ui.Stack:
@@ -254,7 +280,7 @@ async def _render_profile(ctx) -> ui.Stack:
     return ui.Empty("Profile not loaded.", icon="User")
 
 
-def _render_tracks(tracks: list[dict], title: str, play_fn: str = "play_track", playlist_id: str = "", liked_context: bool = False) -> ui.Stack:
+def _render_tracks(tracks: list[dict], title: str, play_fn: str = "play_track", playlist_id: str = "", liked_context: bool = False, has_next: bool = False, page: int = 0, playlist_name: str = "") -> ui.Stack:
     """Render track list with the correct play function for demo or authenticated mode."""
     all_track_ids = [t["id"] for t in tracks if t.get("id")]
 
@@ -282,7 +308,16 @@ def _render_tracks(tracks: list[dict], title: str, play_fn: str = "play_track", 
         for t in tracks
     ]
 
-    return ui.Stack([
+    children = [
         ui.Header(title, level=3),
         ui.List(items=track_items) if track_items else ui.Empty("No tracks found."),
-    ], direction="v", gap=2)
+    ]
+    if playlist_id:
+        nav_buttons = []
+        if page > 0:
+            nav_buttons.append(ui.Button("← Back", size="sm", on_click=ui.Call("__panel__spotify_detail", detail_type="tracks", playlist_id=playlist_id, playlist_name=playlist_name, page=page - 1)))
+        if has_next:
+            nav_buttons.append(ui.Button("Next →", size="sm", on_click=ui.Call("__panel__spotify_detail", detail_type="tracks", playlist_id=playlist_id, playlist_name=playlist_name, page=page + 1)))
+        if nav_buttons:
+            children.append(ui.Stack(nav_buttons, direction="h", gap=1))
+    return ui.Stack(children, direction="v", gap=2)

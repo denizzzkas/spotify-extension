@@ -24,7 +24,8 @@ async def _get_auth_headers(ctx) -> dict | None:
 
 async def panel_search_tracks(ctx, query: str = "", limit: int = 20) -> dict:
     """Search tracks for panel display."""
-    if not query:
+    query = query.strip()
+    if len(query) < 2:
         return {}
 
     try:

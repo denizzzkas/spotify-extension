@@ -31,7 +31,7 @@ async def fn_get_lyrics(ctx, params: GetLyricsParams) -> ActionResult:
         found_title = params.track_name
         found_artist = params.artist_name
 
-        # 1. Exact lookup (best when artist_name is known)
+        # 1. Exact lookup with artist (most accurate)
         if params.artist_name:
             lrc_resp = await ctx.http.get(
                 "https://lrclib.net/api/get",
@@ -44,7 +44,20 @@ async def fn_get_lyrics(ctx, params: GetLyricsParams) -> ActionResult:
                     found_title = body.get("trackName") or params.track_name
                     found_artist = body.get("artistName") or params.artist_name
 
-        # 2. Fuzzy search — handles no-artist case and partial name mismatches
+        # 1b. Exact lookup by title only (when no artist provided)
+        if not lyrics_text:
+            lrc_resp = await ctx.http.get(
+                "https://lrclib.net/api/get",
+                params={"track_name": params.track_name},
+            )
+            if lrc_resp.ok:
+                body = lrc_resp.json()
+                lyrics_text = (body.get("plainLyrics") or "").strip()
+                if lyrics_text:
+                    found_title = body.get("trackName") or params.track_name
+                    found_artist = body.get("artistName") or params.artist_name
+
+        # 2. Fuzzy search — handles partial name mismatches
         if not lyrics_text:
             q = f"{params.track_name} {params.artist_name}".strip()
             search_resp = await ctx.http.get(
@@ -61,7 +74,8 @@ async def fn_get_lyrics(ctx, params: GetLyricsParams) -> ActionResult:
                         break
 
         if lyrics_text:
-            formatted = lyrics_text.replace('\n\n', '\x00').replace('\n', '  \n').replace('\x00', '\n\n')
+            paragraphs = [p.strip() for p in lyrics_text.split("\n\n") if p.strip()]
+            formatted = "\n\n".join(paragraphs)
             summary = f"**{found_title}** — {found_artist}\n\n{formatted}"
             return ActionResult.success(
                 data={"lyrics": lyrics_text, "url": "", "title": found_title, "artist": found_artist},

@@ -22,7 +22,7 @@ class EmptyParams(BaseModel):
 
 async def _update_now_playing_cache(ctx) -> None:
     """Fetch current Spotify player state and update now_playing cache."""
-    await asyncio.sleep(1.0)
+    await asyncio.sleep(1.5)
     np_resp, _ = await _spotify_call(ctx, "get", f"{SP_API_BASE}/me/player")
     if np_resp and np_resp.ok and np_resp.status_code != 204:
         state = np_resp.json()
