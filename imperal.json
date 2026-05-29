@@ -614,6 +614,59 @@
       "owner_chat_tool": "tool_spotify_chat"
     },
     {
+      "name": "rename_playlist",
+      "description": "Rename an existing playlist. Accepts playlist_id (use get_playlists to find it if you only have the name) and the new name.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "playlist:update"
+      ],
+      "id_projection": "playlist_id",
+      "params_schema": {
+        "properties": {
+          "playlist_id": {
+            "description": "Spotify playlist ID to rename",
+            "title": "Playlist Id",
+            "type": "string"
+          },
+          "name": {
+            "description": "New playlist name",
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "playlist_id",
+          "name"
+        ],
+        "title": "RenamePlaylistParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "playlist_id": {
+            "title": "Playlist Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "playlist_id",
+          "name"
+        ],
+        "title": "RenamePlaylistRecord",
+        "type": "object"
+      },
+      "event": "playlist.renamed",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_spotify_chat"
+    },
+    {
       "name": "delete_playlist",
       "description": "Delete (unfollow) a playlist from the user's library by playlist_id. Use get_playlists first to find the playlist_id if you only have the name.",
       "action_type": "write",
@@ -1076,6 +1129,19 @@
             },
             "title": "Track Ids Queue",
             "type": "array"
+          },
+          "is_liked": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Override liked state — pass True when playing from liked tracks so the like button reflects the correct state without an extra API call",
+            "title": "Is Liked"
           }
         },
         "required": [
@@ -1614,7 +1680,7 @@
     },
     {
       "name": "get_lyrics",
-      "description": "Fetch full song lyrics text. Returns the complete lyrics as text if found on lrclib.net, otherwise returns a Genius URL. Only track_name is required; providing artist_name improves accuracy.",
+      "description": "Fetch full song lyrics. Returns the complete lyrics as formatted text. Only track_name is required; providing artist_name improves accuracy. If lyrics are found, they are displayed in full — no need to call search_tracks first.",
       "action_type": "read",
       "chain_callable": true,
       "effects": [],
@@ -2169,7 +2235,7 @@
     },
     {
       "name": "remove_tracks_from_playlist_by_name",
-      "description": "Remove one or more tracks from a playlist by name in a single step. Use this when the user says 'remove [track] from [playlist]' — no need to search for track IDs first. Accepts playlist_id (use get_playlists to find it) and a list of track names.",
+      "description": "Remove tracks from a playlist by name or artist. Use when user says 'remove [track] from [playlist]' or 'remove all tracks by [artist]' or 'keep only [artist], remove everything else' (set exclude=True for the last case). track_names and artist_name can be combined or used alone.",
       "action_type": "write",
       "chain_callable": true,
       "effects": [
@@ -2179,7 +2245,8 @@
       "params_schema": {
         "properties": {
           "track_names": {
-            "description": "One or more track names to remove from the playlist",
+            "default": [],
+            "description": "Track names to remove. Can be empty when using artist_name alone.",
             "items": {
               "type": "string"
             },
@@ -2193,13 +2260,18 @@
           },
           "artist_name": {
             "default": "",
-            "description": "Optional artist name to narrow the match when multiple tracks share the same title",
+            "description": "Filter by artist name. If track_names is empty, matches all tracks by this artist.",
             "title": "Artist Name",
             "type": "string"
+          },
+          "exclude": {
+            "default": false,
+            "description": "If True, REMOVE everything EXCEPT the matching tracks (e.g. 'keep only tracks by artist X, remove the rest').",
+            "title": "Exclude",
+            "type": "boolean"
           }
         },
         "required": [
-          "track_names",
           "playlist_id"
         ],
         "title": "RemoveTracksFromPlaylistByNameParams",
