@@ -1,5 +1,4 @@
 """Spotify right panel — render helpers for track lists, fetched pages, and profile."""
-import datetime
 import logging
 
 from imperal_sdk import ui
@@ -50,15 +49,7 @@ async def _render_fetched_tracks(ctx, url: str, title: str, item_key: str = "tra
         tracks = [format_track(item[item_key]) for item in raw_list if item.get(item_key)]
         has_next = bool(data.get("next"))
 
-        next_cursor = ""
-        if not liked_context and has_next and raw_list:
-            played_at = raw_list[-1].get("played_at", "")
-            if played_at:
-                try:
-                    dt = datetime.datetime.fromisoformat(played_at.replace("Z", "+00:00"))
-                    next_cursor = str(int(dt.timestamp() * 1000))
-                except Exception:
-                    pass
+        next_cursor = str(data.get("cursors", {}).get("before", "")) if not liked_context else ""
 
     except Exception as e:
         log.error("_render_fetched_tracks failed for %s: %s", url, e)

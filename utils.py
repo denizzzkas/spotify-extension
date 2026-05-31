@@ -61,7 +61,7 @@ def format_album(raw: dict) -> dict:
         tracks_count = raw.get("total_tracks", 0) or 0
     return {
         "id": raw.get("id", ""),
-        "name": raw.get("name", "Unknown"),
+        "title": raw.get("name", "Unknown"),
         "artist": artist_names,
         "url": (raw.get("external_urls") or {}).get("spotify", ""),
         "tracks_count": tracks_count,

@@ -226,7 +226,7 @@ async def test_get_user_profile_no_token_returns_error():
 # ── remove_tracks_from_playlist_by_name ───────────────────────────────────────
 
 PLAYLIST_ITEMS_RESPONSE = {
-    "items": [{"track": SAMPLE_TRACK}],
+    "items": [{"item": SAMPLE_TRACK}],
     "next": None,
 }
 

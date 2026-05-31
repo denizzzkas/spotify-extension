@@ -150,7 +150,7 @@ async def panel_spotify_detail(ctx, detail_type: str = "", playlist_id: str = ""
         try:
             cached = await ctx.cache.get(key=cache_key, model=DetailModel)
             if cached and cached.tracks:
-                return _render_tracks(cached.tracks, cached.title, play_fn="play_track", playlist_id=playlist_id, has_next=len(cached.tracks) >= 50, page=0, playlist_name=playlist_name)
+                return _render_tracks(cached.tracks, cached.title, play_fn="play_track", playlist_id=playlist_id, has_next=cached.has_next, page=0, playlist_name=playlist_name)
         except Exception:
             pass
 
@@ -169,7 +169,7 @@ async def panel_spotify_detail(ctx, detail_type: str = "", playlist_id: str = ""
         try:
             await ctx.cache.set(
                 key=cache_key,
-                value=DetailModel(type="tracks", title=title, tracks=tracks),
+                value=DetailModel(type="tracks", title=title, tracks=tracks, has_next=has_next),
                 ttl_seconds=300,
             )
         except Exception as e:

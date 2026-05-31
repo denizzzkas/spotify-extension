@@ -12,6 +12,7 @@ from return_models import BulkAddTracksRecord, BulkRemoveTracksRecord
 from spotify_config import SP_API_BASE
 from app_helpers import _spotify_call, _spotify_err
 from utils import to_spotify_uri
+from handlers.artists import _find_artist_id
 
 log = logging.getLogger("spotify.compound")
 
@@ -61,7 +62,7 @@ async def fn_remove_tracks_from_playlist_by_name(ctx, params: RemoveTracksFromPl
 
         tracks = []
         url = f"{SP_API_BASE}/playlists/{params.playlist_id}/items"
-        fetch_params = {"limit": 50, "fields": "items(track(id,name,uri,artists,duration_ms)),next"}
+        fetch_params: dict = {"limit": 50}
         while url:
             resp, err = await _spotify_call(ctx, "get", url, params=fetch_params)
             if err:
@@ -70,7 +71,7 @@ async def fn_remove_tracks_from_playlist_by_name(ctx, params: RemoveTracksFromPl
                 return _spotify_err(resp)
             data = resp.json()
             for item in (data.get("items") or []):
-                raw = item.get("track")
+                raw = item.get("item")
                 if raw and raw.get("id"):
                     tracks.append(raw)
             url = data.get("next")
@@ -148,7 +149,7 @@ async def fn_remove_duplicate_tracks(ctx, params: RemoveDuplicateTracksParams) -
     try:
         tracks = []
         url = f"{SP_API_BASE}/playlists/{params.playlist_id}/items"
-        fetch_params = {"limit": 50, "fields": "items(track(id,uri,name)),next"}
+        fetch_params: dict = {"limit": 50}
         while url:
             resp, err = await _spotify_call(ctx, "get", url, params=fetch_params)
             if err:
@@ -157,7 +158,7 @@ async def fn_remove_duplicate_tracks(ctx, params: RemoveDuplicateTracksParams) -
                 return _spotify_err(resp)
             data = resp.json()
             for item in (data.get("items") or []):
-                raw = item.get("track")
+                raw = item.get("item")
                 if raw and raw.get("id"):
                     tracks.append(raw)
             url = data.get("next")
@@ -176,11 +177,11 @@ async def fn_remove_duplicate_tracks(ctx, params: RemoveDuplicateTracksParams) -
         if not duplicates:
             return ActionResult.error("No duplicate tracks found in the playlist.", retryable=False)
 
-        items_to_delete = [{"uri": uri, "positions": positions} for uri, positions in duplicates.items()]
+        uris_to_dedup = list(duplicates.keys())
         removed_count = sum(len(p) for p in duplicates.values())
 
-        for i in range(0, len(items_to_delete), 100):
-            batch = items_to_delete[i:i + 100]
+        for i in range(0, len(uris_to_dedup), 100):
+            batch = [{"uri": uri} for uri in uris_to_dedup[i:i + 100]]
             del_resp, err = await _spotify_call(
                 ctx, "delete", f"{SP_API_BASE}/playlists/{params.playlist_id}/items",
                 json={"items": batch},
@@ -189,6 +190,17 @@ async def fn_remove_duplicate_tracks(ctx, params: RemoveDuplicateTracksParams) -
                 return err
             if not del_resp.ok:
                 return _spotify_err(del_resp)
+
+        for i in range(0, len(uris_to_dedup), 100):
+            batch = uris_to_dedup[i:i + 100]
+            add_resp, err = await _spotify_call(
+                ctx, "post", f"{SP_API_BASE}/playlists/{params.playlist_id}/items",
+                json={"uris": batch},
+            )
+            if err:
+                return err
+            if not add_resp.ok:
+                return _spotify_err(add_resp)
 
         return ActionResult.success(
             data={"playlist_id": params.playlist_id, "removed_count": removed_count, "removed_tracks": []},
@@ -212,29 +224,22 @@ async def fn_remove_duplicate_tracks(ctx, params: RemoveDuplicateTracksParams) -
 async def fn_add_artist_top_tracks_to_playlist(ctx, params: AddArtistTopTracksToPlaylistParams) -> ActionResult:
     """Search artist → get top tracks → add to playlist in one operation."""
     try:
+        artist_id, artist_display, err = await _find_artist_id(ctx, params.artist_name)
+        if err:
+            return err
+
         tracks_resp, err = await _spotify_call(
-            ctx, "get", f"{SP_API_BASE}/search",
-            params={"q": params.artist_name, "type": "track", "limit": 20},
+            ctx, "get", f"{SP_API_BASE}/artists/{artist_id}/top-tracks",
         )
         if err:
             return err
         if not tracks_resp.ok:
             return _spotify_err(tracks_resp)
 
-        raw_tracks = tracks_resp.json().get("tracks", {}).get("items") or []
-
-        artist_lower = params.artist_name.lower()
-        filtered = [
-            t for t in raw_tracks
-            if any(artist_lower in a.get("name", "").lower() or a.get("name", "").lower() in artist_lower
-                   for a in (t.get("artists") or []))
-        ] or raw_tracks
-
-        filtered.sort(key=lambda t: t.get("popularity", 0), reverse=True)
-        artist_display = filtered[0]["artists"][0]["name"] if filtered else params.artist_name
-        uris = [to_spotify_uri(t["id"]) for t in filtered[:params.limit] if t.get("id")]
+        raw_tracks = tracks_resp.json().get("tracks") or []
+        uris = [to_spotify_uri(t["id"]) for t in raw_tracks[:params.limit] if t.get("id")]
         if not uris:
-            return ActionResult.error(f"No tracks found for '{params.artist_name}'.", retryable=False)
+            return ActionResult.error(f"No top tracks found for '{params.artist_name}'.", retryable=False)
 
         add_resp, err = await _spotify_call(
             ctx, "post", f"{SP_API_BASE}/playlists/{params.playlist_id}/items",

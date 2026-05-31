@@ -12,7 +12,7 @@ from app import chat, NowPlayingModel, QueueModel
 from return_models import PlayTrackRecord, PlaylistPlayRecord, AlbumPlayRecord
 from spotify_config import SP_API_BASE
 from app_helpers import _spotify_call, _spotify_err, _require_auth, _refresh_access_token, _spotify_error
-from utils import format_track
+from utils import format_track, to_spotify_uri
 
 log = logging.getLogger("spotify.playback")
 
@@ -85,8 +85,8 @@ async def fn_play_track(ctx, params: PlayTrackParams) -> ActionResult:
             is_liked = False
             try:
                 like_resp, _ = await _spotify_call(
-                    ctx, "get", f"{SP_API_BASE}/me/tracks/contains",
-                    params={"ids": track_id},
+                    ctx, "get", f"{SP_API_BASE}/me/library/contains",
+                    params={"uris": to_spotify_uri(track_id)},
                 )
                 if like_resp and like_resp.ok:
                     result = like_resp.json()
@@ -274,11 +274,11 @@ async def fn_play_album(ctx, params: PlayAlbumParams) -> ActionResult:
                 device_id = active["id"]
 
         play_body = {"context_uri": f"spotify:album:{album_id}"}
-        play_url = f"{SP_API_BASE}/me/player/play"
+        play_kwargs: dict = {"json": play_body}
         if device_id:
-            play_url += f"?device_id={device_id}"
+            play_kwargs["params"] = {"device_id": device_id}
 
-        play_resp, err = await _spotify_call(ctx, "put", play_url, json=play_body)
+        play_resp, err = await _spotify_call(ctx, "put", f"{SP_API_BASE}/me/player/play", **play_kwargs)
         if err:
             return err
         if not play_resp.ok and play_resp.status_code != 204:

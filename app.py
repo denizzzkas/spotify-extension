@@ -88,6 +88,7 @@ class DetailModel(BaseModel):
     title: str = ""
     tracks: list[dict] = []
     profile: dict = {}
+    has_next: bool = False
 
 @ext.cache_model("playlists")
 class PlaylistsModel(BaseModel):

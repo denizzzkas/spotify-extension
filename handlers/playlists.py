@@ -54,6 +54,7 @@ class AddTracksToPlaylistParams(BaseModel):
     description="List all playlists owned or followed by the user. Use this to browse or find a playlist before playing or editing it. Returns id, title, track_count, image_url.",
 )
 async def fn_get_playlists(ctx, params: GetPlaylistsParams) -> ActionResult:
+    """Return all playlists owned or followed by the authenticated user."""
     try:
         playlists = []
         url = f"{SP_API_BASE}/me/playlists"
@@ -86,6 +87,7 @@ async def fn_get_playlists(ctx, params: GetPlaylistsParams) -> ActionResult:
     description="List tracks in a playlist WITHOUT playing it. Use this to browse contents. To actually play the playlist, use play_playlist instead. Accepts playlist_id or playlist name.",
 )
 async def fn_get_playlist_tracks(ctx, params: GetPlaylistTracksParams) -> ActionResult:
+    """Return all tracks in a playlist without starting playback."""
     try:
         tracks = []
         url = f"{SP_API_BASE}/playlists/{params.playlist_id}/items"
@@ -121,6 +123,7 @@ async def fn_get_playlist_tracks(ctx, params: GetPlaylistTracksParams) -> Action
     description="Create a NEW empty playlist. Call this ONLY when the user explicitly asks to create a playlist — NOT for viewing existing ones (use get_playlists) or playing one (use play_playlist).",
 )
 async def fn_create_playlist(ctx, params: CreatePlaylistParams) -> ActionResult:
+    """Create a new empty playlist, optionally seeded with track IDs."""
     try:
         resp, err = await _spotify_call(
             ctx, "post", f"{SP_API_BASE}/me/playlists",
@@ -161,6 +164,7 @@ async def fn_create_playlist(ctx, params: CreatePlaylistParams) -> ActionResult:
     description="Add a track to an existing playlist. Accepts track name/artist or track_id. In chains after search_tracks, pass the track_id from results. Accepts playlist name or playlist_id.",
 )
 async def fn_add_track_to_playlist(ctx, params: AddTrackToPlaylistParams) -> ActionResult:
+    """Add a single track to a playlist by track ID."""
     try:
         resp, err = await _spotify_call(
             ctx, "post", f"{SP_API_BASE}/playlists/{params.playlist_id}/items",

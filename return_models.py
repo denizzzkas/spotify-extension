@@ -1,31 +1,47 @@
-"""Return models for @chat.function data_model= declarations (SDK 5.0.1 V23/V24)."""
+"""Return models for @chat.function data_model= declarations (SDL-typed, SDK 5.2.0)."""
 from __future__ import annotations
 
 from pydantic import BaseModel
 
-
-class TrackRecord(BaseModel):
-    id: str
-    title: str
-    artist: str
-    url: str
-    duration: str
-    duration_ms: int
-    popularity: int
-    preview_url: str
-    album: str
-    album_art: str
+from imperal_sdk import sdl
 
 
-class PlaylistRecord(BaseModel):
-    id: str
-    title: str
-    track_count: int
-    url: str
-    description: str
-    is_public: bool
-    image_url: str
+# ── Core entity types ─────────────────────────────────────────────────────────
+# sdl.Entity gives the platform direct access to id / title / kind.
+# Custom fields carry spotify.* semantic roles via sdl.field().
 
+class TrackRecord(sdl.Entity):
+    kind: str = "track"
+    url: str = ""
+    artist: str = sdl.field(role="spotify.artist", default="")
+    duration: str = sdl.field(role="spotify.duration_label", default="")
+    duration_ms: int = sdl.field(role="spotify.duration_ms", default=0)
+    popularity: int = sdl.field(role="spotify.popularity", default=0)
+    preview_url: str = sdl.field(role="spotify.preview_url", default="")
+    album: str = sdl.field(role="spotify.album", default="")
+    album_art: str = sdl.field(role="spotify.album_art", default="")
+
+
+class PlaylistRecord(sdl.Entity):
+    kind: str = "playlist"
+    url: str = ""
+    description: str = ""
+    track_count: int = sdl.field(role="spotify.track_count", default=0)
+    is_public: bool = sdl.field(role="spotify.is_public", default=False)
+    image_url: str = sdl.field(role="spotify.image_url", default="")
+
+
+class AlbumRecord(sdl.Entity):
+    kind: str = "album"
+    url: str = ""
+    artist: str = sdl.field(role="spotify.artist", default="")
+    tracks_count: int = sdl.field(role="spotify.tracks_count", default=0)
+    image_url: str = sdl.field(role="spotify.image_url", default="")
+    release_date: str = sdl.field(role="spotify.release_date", default="")
+    album_type: str = sdl.field(role="spotify.album_type", default="")
+
+
+# ── Action / state result models ──────────────────────────────────────────────
 
 class PlayerActionRecord(BaseModel):
     pass
@@ -63,6 +79,8 @@ class UserProfileRecord(BaseModel):
     followers_count: int
     product: str
 
+
+# ── Composite / list result models ────────────────────────────────────────────
 
 class SearchResultRecord(BaseModel):
     tracks: list[TrackRecord]
@@ -123,17 +141,6 @@ class AlbumPlayRecord(BaseModel):
     album_id: str
     album_name: str
     artist: str
-
-
-class AlbumRecord(BaseModel):
-    id: str
-    name: str
-    artist: str
-    url: str
-    tracks_count: int
-    image_url: str
-    release_date: str
-    album_type: str
 
 
 class ArtistAlbumsRecord(BaseModel):

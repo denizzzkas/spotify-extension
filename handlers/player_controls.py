@@ -11,7 +11,7 @@ from app import chat, NowPlayingModel
 from return_models import PlayerActionRecord, ShuffleRecord, TrackLikeRecord
 from spotify_config import SP_API_BASE
 from app_helpers import _spotify_call, _spotify_err
-from utils import format_track
+from utils import format_track, to_spotify_uri
 
 log = logging.getLogger("spotify.player_controls")
 
@@ -34,8 +34,8 @@ async def _update_now_playing_cache(ctx) -> None:
             if track_id:
                 try:
                     like_resp, _ = await _spotify_call(
-                        ctx, "get", f"{SP_API_BASE}/me/tracks/contains",
-                        params={"ids": track_id},
+                        ctx, "get", f"{SP_API_BASE}/me/library/contains",
+                        params={"uris": to_spotify_uri(track_id)},
                     )
                     if like_resp and like_resp.ok:
                         result = like_resp.json()
@@ -114,6 +114,8 @@ async def fn_sp_play_pause(ctx, params: EmptyParams) -> ActionResult:
         resp, err = await _spotify_call(ctx, "get", f"{SP_API_BASE}/me/player")
         if err:
             return err
+        if resp.status_code == 204:
+            return ActionResult.error("No active Spotify device. Open Spotify on any device first.", retryable=False)
         if not resp.ok:
             return _spotify_err(resp)
 
@@ -145,6 +147,8 @@ async def fn_sp_shuffle(ctx, params: EmptyParams) -> ActionResult:
         resp, err = await _spotify_call(ctx, "get", f"{SP_API_BASE}/me/player")
         if err:
             return err
+        if resp.status_code == 204:
+            return ActionResult.error("No active Spotify device. Open Spotify on any device first.", retryable=False)
         if not resp.ok:
             return _spotify_err(resp)
 
@@ -200,15 +204,14 @@ async def fn_sp_like(ctx, params: EmptyParams) -> ActionResult:
         track_id = now_playing.id
 
         resp, err = await _spotify_call(
-            ctx, "get", f"{SP_API_BASE}/me/tracks/contains",
-            params={"ids": track_id},
+            ctx, "get", f"{SP_API_BASE}/me/library/contains",
+            params={"uris": to_spotify_uri(track_id)},
         )
         if err:
             return err
 
         is_liked = resp.ok and bool(resp.json()) and resp.json()[0]
 
-        from utils import to_spotify_uri
         resp2, err = await _spotify_call(
             ctx, "delete" if is_liked else "put",
             f"{SP_API_BASE}/me/library",
