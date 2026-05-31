@@ -3,9 +3,7 @@ from __future__ import annotations
 
 import logging
 from pydantic import BaseModel, Field
-
 from imperal_sdk import ActionResult
-
 from app import chat
 from return_models import PlaylistRecord, TrackRecord, CreatePlaylistRecord, PlaylistTrackRecord, PlaylistRemoveRecord, DeletePlaylistRecord, BulkAddTracksRecord, RenamePlaylistRecord
 from spotify_config import SP_API_BASE, MAX_LIMIT
@@ -67,8 +65,7 @@ async def fn_get_playlists(ctx, params: GetPlaylistsParams) -> ActionResult:
                 return _spotify_err(resp)
             data = resp.json()
             playlists.extend([format_playlist(p) for p in (data.get("items") or [])])
-            url = data.get("next")
-            fetch_params = {}
+            url, fetch_params = data.get("next"), {}
         try:
             await ctx.cache.set(key="playlists", value=PlaylistsModel(items=playlists), ttl_seconds=300)
         except Exception as e:
@@ -103,8 +100,7 @@ async def fn_get_playlist_tracks(ctx, params: GetPlaylistTracksParams) -> Action
                 raw_track = item.get("track") or item.get("item")
                 if raw_track:
                     tracks.append(format_track(raw_track))
-            url = data.get("next")
-            fetch_params = {}
+            url, fetch_params = data.get("next"), {}
         return ActionResult.success(data={"tracks": tracks, "count": len(tracks), "playlist_id": params.playlist_id},
                                     summary=f"Retrieved {len(tracks)} track(s) from playlist")
     except Exception as e:
@@ -285,7 +281,6 @@ async def fn_add_tracks_to_playlist(ctx, params: AddTracksToPlaylistParams) -> A
     try:
         if not params.track_ids:
             return ActionResult.error("No track IDs provided.", retryable=False)
-
         uris = [to_spotify_uri(tid) for tid in params.track_ids[:100]]
         resp, err = await _spotify_call(
             ctx, "post", f"{SP_API_BASE}/playlists/{params.playlist_id}/items",

@@ -16,6 +16,18 @@
   ],
   "tools": [
     {
+      "name": "skeleton_refresh_spotify_stats",
+      "description": "Spotify library stats: liked track count and playlist count for classifier",
+      "scopes": [],
+      "parameters": {}
+    },
+    {
+      "name": "skeleton_refresh_spotify_now_playing",
+      "description": "Spotify current track being played by user",
+      "scopes": [],
+      "parameters": {}
+    },
+    {
       "name": "connect_spotify",
       "description": "Connect your Spotify account via OAuth 2.0. Returns an authorisation URL to visit.",
       "action_type": "write",
@@ -125,582 +137,6 @@
       "owner_chat_tool": "tool_spotify_chat"
     },
     {
-      "name": "sp_prev",
-      "description": "Skip to the previous track in the Spotify playback queue.",
-      "action_type": "write",
-      "chain_callable": true,
-      "effects": [
-        "player:previous"
-      ],
-      "id_projection": "",
-      "params_schema": {
-        "properties": {},
-        "title": "EmptyParams",
-        "type": "object"
-      },
-      "return_schema": {
-        "properties": {},
-        "title": "PlayerActionRecord",
-        "type": "object"
-      },
-      "event": "player.previous",
-      "background": false,
-      "long_running": false,
-      "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
-    },
-    {
-      "name": "sp_next",
-      "description": "Skip to the next track in the Spotify playback queue.",
-      "action_type": "write",
-      "chain_callable": true,
-      "effects": [
-        "player:next"
-      ],
-      "id_projection": "",
-      "params_schema": {
-        "properties": {},
-        "title": "EmptyParams",
-        "type": "object"
-      },
-      "return_schema": {
-        "properties": {},
-        "title": "PlayerActionRecord",
-        "type": "object"
-      },
-      "event": "player.next",
-      "background": false,
-      "long_running": false,
-      "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
-    },
-    {
-      "name": "sp_play_pause",
-      "description": "Toggle Spotify playback between playing and paused states.",
-      "action_type": "write",
-      "chain_callable": true,
-      "effects": [
-        "player:play_pause"
-      ],
-      "id_projection": "",
-      "params_schema": {
-        "properties": {},
-        "title": "EmptyParams",
-        "type": "object"
-      },
-      "return_schema": {
-        "properties": {},
-        "title": "PlayerActionRecord",
-        "type": "object"
-      },
-      "event": "player.play_pause",
-      "background": false,
-      "long_running": false,
-      "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
-    },
-    {
-      "name": "sp_shuffle",
-      "description": "Toggle Spotify shuffle mode on or off for the current playback session.",
-      "action_type": "write",
-      "chain_callable": true,
-      "effects": [
-        "player:shuffle"
-      ],
-      "id_projection": "",
-      "params_schema": {
-        "properties": {},
-        "title": "EmptyParams",
-        "type": "object"
-      },
-      "return_schema": {
-        "properties": {
-          "shuffle": {
-            "title": "Shuffle",
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "shuffle"
-        ],
-        "title": "ShuffleRecord",
-        "type": "object"
-      },
-      "event": "player.shuffle",
-      "background": false,
-      "long_running": false,
-      "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
-    },
-    {
-      "name": "sp_like",
-      "description": "Toggle like/unlike on the currently playing track — no track_id needed. Use this when the user wants to like or save what's playing right now. To like a specific track by ID, use like_track instead.",
-      "action_type": "write",
-      "chain_callable": true,
-      "effects": [
-        "track:like"
-      ],
-      "id_projection": "",
-      "params_schema": {
-        "properties": {},
-        "title": "EmptyParams",
-        "type": "object"
-      },
-      "return_schema": {
-        "properties": {
-          "track_id": {
-            "title": "Track Id",
-            "type": "string"
-          },
-          "liked": {
-            "title": "Liked",
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "track_id",
-          "liked"
-        ],
-        "title": "TrackLikeRecord",
-        "type": "object"
-      },
-      "event": "track.liked",
-      "background": false,
-      "long_running": false,
-      "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
-    },
-    {
-      "name": "play_track",
-      "description": "Play a specific track. Accepts a track_id from search_tracks results, or a track name/artist (will search and play the best match). If the request is ambiguous or you are not certain which track the user means, call search_tracks first and show the results so the user can confirm. If the request is unambiguous (e.g. 'Rasputin by Boney M'), play immediately without asking.",
-      "action_type": "write",
-      "chain_callable": true,
-      "effects": [
-        "playback:start"
-      ],
-      "id_projection": "track_id",
-      "params_schema": {
-        "properties": {
-          "track_id": {
-            "description": "Spotify track ID or track name/artist to search for and play",
-            "title": "Track Id",
-            "type": "string"
-          },
-          "playlist_id": {
-            "default": "",
-            "description": "Optional playlist ID — if provided, plays track within playlist context so next/prev work through the playlist",
-            "title": "Playlist Id",
-            "type": "string"
-          },
-          "track_ids_queue": {
-            "default": [],
-            "description": "Optional list of track IDs to play as a queue starting from track_id. Used when playing from liked/recent tracks so next/prev work.",
-            "items": {
-              "type": "string"
-            },
-            "title": "Track Ids Queue",
-            "type": "array"
-          },
-          "is_liked": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "Override liked state — pass True when playing from liked tracks so the like button reflects the correct state without an extra API call",
-            "title": "Is Liked"
-          }
-        },
-        "required": [
-          "track_id"
-        ],
-        "title": "PlayTrackParams",
-        "type": "object"
-      },
-      "return_schema": {
-        "$defs": {
-          "TrackRecord": {
-            "properties": {
-              "id": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "integer"
-                  }
-                ],
-                "title": "Id"
-              },
-              "title": {
-                "title": "Title",
-                "type": "string"
-              },
-              "kind": {
-                "default": "track",
-                "title": "Kind",
-                "type": "string"
-              },
-              "subtitle": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ],
-                "default": null,
-                "title": "Subtitle"
-              },
-              "description": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ],
-                "default": null,
-                "title": "Description"
-              },
-              "status": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ],
-                "default": null,
-                "title": "Status"
-              },
-              "url": {
-                "default": "",
-                "title": "Url",
-                "type": "string"
-              },
-              "artist": {
-                "default": "",
-                "title": "Artist",
-                "type": "string",
-                "x-sdl-role": "spotify.artist"
-              },
-              "duration": {
-                "default": "",
-                "title": "Duration",
-                "type": "string",
-                "x-sdl-role": "spotify.duration_label"
-              },
-              "duration_ms": {
-                "default": 0,
-                "title": "Duration Ms",
-                "type": "integer",
-                "x-sdl-role": "spotify.duration_ms"
-              },
-              "popularity": {
-                "default": 0,
-                "title": "Popularity",
-                "type": "integer",
-                "x-sdl-role": "spotify.popularity"
-              },
-              "preview_url": {
-                "default": "",
-                "title": "Preview Url",
-                "type": "string",
-                "x-sdl-role": "spotify.preview_url"
-              },
-              "album": {
-                "default": "",
-                "title": "Album",
-                "type": "string",
-                "x-sdl-role": "spotify.album"
-              },
-              "album_art": {
-                "default": "",
-                "title": "Album Art",
-                "type": "string",
-                "x-sdl-role": "spotify.album_art"
-              }
-            },
-            "required": [
-              "id",
-              "title"
-            ],
-            "title": "TrackRecord",
-            "type": "object",
-            "x-sdl": "entity"
-          }
-        },
-        "properties": {
-          "track_id": {
-            "title": "Track Id",
-            "type": "string"
-          },
-          "track": {
-            "$ref": "#/$defs/TrackRecord"
-          },
-          "full_playback": {
-            "title": "Full Playback",
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "track_id",
-          "track",
-          "full_playback"
-        ],
-        "title": "PlayTrackRecord",
-        "type": "object"
-      },
-      "event": "track.played",
-      "background": false,
-      "long_running": false,
-      "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
-    },
-    {
-      "name": "play_playlist",
-      "description": "Start playing a playlist on the active Spotify device. Use this to PLAY a playlist. To only browse tracks without playing, use get_playlist_tracks instead. Accepts playlist_id or playlist name.",
-      "action_type": "write",
-      "chain_callable": true,
-      "effects": [
-        "playback:start"
-      ],
-      "id_projection": "playlist_id",
-      "params_schema": {
-        "properties": {
-          "playlist_id": {
-            "description": "Spotify playlist ID to play",
-            "title": "Playlist Id",
-            "type": "string"
-          },
-          "playlist_name": {
-            "default": "",
-            "description": "Optional playlist name for display",
-            "title": "Playlist Name",
-            "type": "string"
-          }
-        },
-        "required": [
-          "playlist_id"
-        ],
-        "title": "PlayPlaylistParams",
-        "type": "object"
-      },
-      "return_schema": {
-        "$defs": {
-          "TrackRecord": {
-            "properties": {
-              "id": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "integer"
-                  }
-                ],
-                "title": "Id"
-              },
-              "title": {
-                "title": "Title",
-                "type": "string"
-              },
-              "kind": {
-                "default": "track",
-                "title": "Kind",
-                "type": "string"
-              },
-              "subtitle": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ],
-                "default": null,
-                "title": "Subtitle"
-              },
-              "description": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ],
-                "default": null,
-                "title": "Description"
-              },
-              "status": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ],
-                "default": null,
-                "title": "Status"
-              },
-              "url": {
-                "default": "",
-                "title": "Url",
-                "type": "string"
-              },
-              "artist": {
-                "default": "",
-                "title": "Artist",
-                "type": "string",
-                "x-sdl-role": "spotify.artist"
-              },
-              "duration": {
-                "default": "",
-                "title": "Duration",
-                "type": "string",
-                "x-sdl-role": "spotify.duration_label"
-              },
-              "duration_ms": {
-                "default": 0,
-                "title": "Duration Ms",
-                "type": "integer",
-                "x-sdl-role": "spotify.duration_ms"
-              },
-              "popularity": {
-                "default": 0,
-                "title": "Popularity",
-                "type": "integer",
-                "x-sdl-role": "spotify.popularity"
-              },
-              "preview_url": {
-                "default": "",
-                "title": "Preview Url",
-                "type": "string",
-                "x-sdl-role": "spotify.preview_url"
-              },
-              "album": {
-                "default": "",
-                "title": "Album",
-                "type": "string",
-                "x-sdl-role": "spotify.album"
-              },
-              "album_art": {
-                "default": "",
-                "title": "Album Art",
-                "type": "string",
-                "x-sdl-role": "spotify.album_art"
-              }
-            },
-            "required": [
-              "id",
-              "title"
-            ],
-            "title": "TrackRecord",
-            "type": "object",
-            "x-sdl": "entity"
-          }
-        },
-        "properties": {
-          "playlist_id": {
-            "title": "Playlist Id",
-            "type": "string"
-          },
-          "tracks": {
-            "items": {
-              "$ref": "#/$defs/TrackRecord"
-            },
-            "title": "Tracks",
-            "type": "array"
-          },
-          "count": {
-            "title": "Count",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "playlist_id",
-          "tracks",
-          "count"
-        ],
-        "title": "PlaylistPlayRecord",
-        "type": "object"
-      },
-      "event": "playlist.played",
-      "background": false,
-      "long_running": false,
-      "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
-    },
-    {
-      "name": "play_album",
-      "description": "Search for an album by name and play it on the active Spotify device. Use this when the user wants to play a specific album.",
-      "action_type": "write",
-      "chain_callable": true,
-      "effects": [
-        "playback:start"
-      ],
-      "id_projection": "",
-      "params_schema": {
-        "properties": {
-          "album_name": {
-            "description": "Album name to search for and play",
-            "title": "Album Name",
-            "type": "string"
-          },
-          "artist_name": {
-            "default": "",
-            "description": "Artist name to narrow search (optional)",
-            "title": "Artist Name",
-            "type": "string"
-          }
-        },
-        "required": [
-          "album_name"
-        ],
-        "title": "PlayAlbumParams",
-        "type": "object"
-      },
-      "return_schema": {
-        "properties": {
-          "album_id": {
-            "title": "Album Id",
-            "type": "string"
-          },
-          "album_name": {
-            "title": "Album Name",
-            "type": "string"
-          },
-          "artist": {
-            "title": "Artist",
-            "type": "string"
-          }
-        },
-        "required": [
-          "album_id",
-          "album_name",
-          "artist"
-        ],
-        "title": "AlbumPlayRecord",
-        "type": "object"
-      },
-      "event": "spotify.album.played",
-      "background": false,
-      "long_running": false,
-      "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
-    },
-    {
       "name": "search_tracks",
       "description": "Search Spotify catalogue for tracks. Use track_name/artist_name/album_name for precise lookups (e.g. track_name='Rasputin' artist_name='Boney M'). Fall back to query for vague or partial searches. Returns a list of matching tracks with id, title, artist, duration, album_art. Use the track id from results to play or add to playlist.",
       "action_type": "read",
@@ -711,25 +147,25 @@
         "properties": {
           "query": {
             "default": "",
-            "description": "Free-text search query — use when you only have a partial name or are unsure of the exact title/artist",
+            "description": "Free-text search query \u2014 use when you only have a partial name or are unsure of the exact title/artist",
             "title": "Query",
             "type": "string"
           },
           "track_name": {
             "default": "",
-            "description": "Exact track title — use instead of query when you know the precise song name",
+            "description": "Exact track title \u2014 use instead of query when you know the precise song name",
             "title": "Track Name",
             "type": "string"
           },
           "artist_name": {
             "default": "",
-            "description": "Exact artist name — combine with track_name or album_name for precise results",
+            "description": "Exact artist name \u2014 combine with track_name or album_name for precise results",
             "title": "Artist Name",
             "type": "string"
           },
           "album_name": {
             "default": "",
-            "description": "Exact album name — combine with artist_name to narrow results",
+            "description": "Exact album name \u2014 combine with artist_name to narrow results",
             "title": "Album Name",
             "type": "string"
           },
@@ -1137,7 +573,7 @@
     },
     {
       "name": "create_playlist",
-      "description": "Create a NEW empty playlist. Call this ONLY when the user explicitly asks to create a playlist — NOT for viewing existing ones (use get_playlists) or playing one (use play_playlist).",
+      "description": "Create a NEW empty playlist. Call this ONLY when the user explicitly asks to create a playlist \u2014 NOT for viewing existing ones (use get_playlists) or playing one (use play_playlist).",
       "action_type": "write",
       "chain_callable": true,
       "effects": [
@@ -1928,30 +1364,54 @@
       "owner_chat_tool": "tool_spotify_chat"
     },
     {
-      "name": "get_album_tracks",
-      "description": "Get all tracks from an album by album name (and optionally artist name). Returns track list with ids, titles, durations. Use track ids to play individual tracks or add them to a playlist.",
-      "action_type": "read",
+      "name": "play_track",
+      "description": "Play a specific track. Accepts a track_id from search_tracks results, or a track name/artist (will search and play the best match). If the request is ambiguous or you are not certain which track the user means, call search_tracks first and show the results so the user can confirm. If the request is unambiguous (e.g. 'Rasputin by Boney M'), play immediately without asking.",
+      "action_type": "write",
       "chain_callable": true,
-      "effects": [],
-      "id_projection": "",
+      "effects": [
+        "playback:start"
+      ],
+      "id_projection": "track_id",
       "params_schema": {
         "properties": {
-          "album_name": {
-            "description": "Album name to search for",
-            "title": "Album Name",
+          "track_id": {
+            "description": "Spotify track ID or track name/artist to search for and play",
+            "title": "Track Id",
             "type": "string"
           },
-          "artist_name": {
+          "playlist_id": {
             "default": "",
-            "description": "Artist name to narrow the search (optional but recommended)",
-            "title": "Artist Name",
+            "description": "Optional playlist ID \u2014 if provided, plays track within playlist context so next/prev work through the playlist",
+            "title": "Playlist Id",
             "type": "string"
+          },
+          "track_ids_queue": {
+            "default": [],
+            "description": "Optional list of track IDs to play as a queue starting from track_id. Used when playing from liked/recent tracks so next/prev work.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Track Ids Queue",
+            "type": "array"
+          },
+          "is_liked": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Override liked state \u2014 pass True when playing from liked tracks so the like button reflects the correct state without an extra API call",
+            "title": "Is Liked"
           }
         },
         "required": [
-          "album_name"
+          "track_id"
         ],
-        "title": "GetAlbumTracksParams",
+        "title": "PlayTrackParams",
         "type": "object"
       },
       "return_schema": {
@@ -2072,6 +1532,183 @@
           }
         },
         "properties": {
+          "track_id": {
+            "title": "Track Id",
+            "type": "string"
+          },
+          "track": {
+            "$ref": "#/$defs/TrackRecord"
+          },
+          "full_playback": {
+            "title": "Full Playback",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "track_id",
+          "track",
+          "full_playback"
+        ],
+        "title": "PlayTrackRecord",
+        "type": "object"
+      },
+      "event": "track.played",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_spotify_chat"
+    },
+    {
+      "name": "play_playlist",
+      "description": "Start playing a playlist on the active Spotify device. Use this to PLAY a playlist. To only browse tracks without playing, use get_playlist_tracks instead. Accepts playlist_id or playlist name.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "playback:start"
+      ],
+      "id_projection": "playlist_id",
+      "params_schema": {
+        "properties": {
+          "playlist_id": {
+            "description": "Spotify playlist ID to play",
+            "title": "Playlist Id",
+            "type": "string"
+          },
+          "playlist_name": {
+            "default": "",
+            "description": "Optional playlist name for display",
+            "title": "Playlist Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "playlist_id"
+        ],
+        "title": "PlayPlaylistParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "$defs": {
+          "TrackRecord": {
+            "properties": {
+              "id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ],
+                "title": "Id"
+              },
+              "title": {
+                "title": "Title",
+                "type": "string"
+              },
+              "kind": {
+                "default": "track",
+                "title": "Kind",
+                "type": "string"
+              },
+              "subtitle": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Subtitle"
+              },
+              "description": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Description"
+              },
+              "status": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Status"
+              },
+              "url": {
+                "default": "",
+                "title": "Url",
+                "type": "string"
+              },
+              "artist": {
+                "default": "",
+                "title": "Artist",
+                "type": "string",
+                "x-sdl-role": "spotify.artist"
+              },
+              "duration": {
+                "default": "",
+                "title": "Duration",
+                "type": "string",
+                "x-sdl-role": "spotify.duration_label"
+              },
+              "duration_ms": {
+                "default": 0,
+                "title": "Duration Ms",
+                "type": "integer",
+                "x-sdl-role": "spotify.duration_ms"
+              },
+              "popularity": {
+                "default": 0,
+                "title": "Popularity",
+                "type": "integer",
+                "x-sdl-role": "spotify.popularity"
+              },
+              "preview_url": {
+                "default": "",
+                "title": "Preview Url",
+                "type": "string",
+                "x-sdl-role": "spotify.preview_url"
+              },
+              "album": {
+                "default": "",
+                "title": "Album",
+                "type": "string",
+                "x-sdl-role": "spotify.album"
+              },
+              "album_art": {
+                "default": "",
+                "title": "Album Art",
+                "type": "string",
+                "x-sdl-role": "spotify.album_art"
+              }
+            },
+            "required": [
+              "id",
+              "title"
+            ],
+            "title": "TrackRecord",
+            "type": "object",
+            "x-sdl": "entity"
+          }
+        },
+        "properties": {
+          "playlist_id": {
+            "title": "Playlist Id",
+            "type": "string"
+          },
           "tracks": {
             "items": {
               "$ref": "#/$defs/TrackRecord"
@@ -2082,9 +1719,59 @@
           "count": {
             "title": "Count",
             "type": "integer"
+          }
+        },
+        "required": [
+          "playlist_id",
+          "tracks",
+          "count"
+        ],
+        "title": "PlaylistPlayRecord",
+        "type": "object"
+      },
+      "event": "playlist.played",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_spotify_chat"
+    },
+    {
+      "name": "play_album",
+      "description": "Search for an album by name and play it on the active Spotify device. Use this when the user wants to play a specific album.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "playback:start"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "album_name": {
+            "description": "Album name to search for and play",
+            "title": "Album Name",
+            "type": "string"
           },
-          "album": {
-            "title": "Album",
+          "artist_name": {
+            "default": "",
+            "description": "Artist name to narrow search (optional)",
+            "title": "Artist Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "album_name"
+        ],
+        "title": "PlayAlbumParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "album_id": {
+            "title": "Album Id",
+            "type": "string"
+          },
+          "album_name": {
+            "title": "Album Name",
             "type": "string"
           },
           "artist": {
@@ -2093,15 +1780,538 @@
           }
         },
         "required": [
-          "tracks",
-          "count",
-          "album",
+          "album_id",
+          "album_name",
           "artist"
         ],
-        "title": "AlbumTracksRecord",
+        "title": "AlbumPlayRecord",
+        "type": "object"
+      },
+      "event": "spotify.album.played",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_spotify_chat"
+    },
+    {
+      "name": "open_demo_playlist",
+      "description": "Open demo playlist (no Spotify login required). Returns demo tracks for testing.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "demo:active"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {},
+        "title": "OpenDemoPlaylistParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "$defs": {
+          "TrackRecord": {
+            "properties": {
+              "id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ],
+                "title": "Id"
+              },
+              "title": {
+                "title": "Title",
+                "type": "string"
+              },
+              "kind": {
+                "default": "track",
+                "title": "Kind",
+                "type": "string"
+              },
+              "subtitle": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Subtitle"
+              },
+              "description": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Description"
+              },
+              "status": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Status"
+              },
+              "url": {
+                "default": "",
+                "title": "Url",
+                "type": "string"
+              },
+              "artist": {
+                "default": "",
+                "title": "Artist",
+                "type": "string",
+                "x-sdl-role": "spotify.artist"
+              },
+              "duration": {
+                "default": "",
+                "title": "Duration",
+                "type": "string",
+                "x-sdl-role": "spotify.duration_label"
+              },
+              "duration_ms": {
+                "default": 0,
+                "title": "Duration Ms",
+                "type": "integer",
+                "x-sdl-role": "spotify.duration_ms"
+              },
+              "popularity": {
+                "default": 0,
+                "title": "Popularity",
+                "type": "integer",
+                "x-sdl-role": "spotify.popularity"
+              },
+              "preview_url": {
+                "default": "",
+                "title": "Preview Url",
+                "type": "string",
+                "x-sdl-role": "spotify.preview_url"
+              },
+              "album": {
+                "default": "",
+                "title": "Album",
+                "type": "string",
+                "x-sdl-role": "spotify.album"
+              },
+              "album_art": {
+                "default": "",
+                "title": "Album Art",
+                "type": "string",
+                "x-sdl-role": "spotify.album_art"
+              }
+            },
+            "required": [
+              "id",
+              "title"
+            ],
+            "title": "TrackRecord",
+            "type": "object",
+            "x-sdl": "entity"
+          }
+        },
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "tracks": {
+            "items": {
+              "$ref": "#/$defs/TrackRecord"
+            },
+            "title": "Tracks",
+            "type": "array"
+          }
+        },
+        "required": [
+          "count",
+          "tracks"
+        ],
+        "title": "DemoPlaylistRecord",
+        "type": "object"
+      },
+      "event": "open_demo_playlist",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_spotify_chat"
+    },
+    {
+      "name": "demo_play_track",
+      "description": "Play a specific track from demo playlist.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "demo:play"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "track_id": {
+            "description": "Demo track ID or track name/artist to search for and play",
+            "title": "Track Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "track_id"
+        ],
+        "title": "DemoPlayTrackParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "track_id": {
+            "title": "Track Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "artist": {
+            "title": "Artist",
+            "type": "string"
+          }
+        },
+        "required": [
+          "track_id",
+          "title",
+          "artist"
+        ],
+        "title": "DemoTrackRecord",
+        "type": "object"
+      },
+      "event": "demo_play_track",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_spotify_chat"
+    },
+    {
+      "name": "demo_next_track",
+      "description": "Skip to next track in demo playlist.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "demo:next"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {},
+        "title": "DemoNextTrackParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {},
+        "title": "PlayerActionRecord",
+        "type": "object"
+      },
+      "event": "demo_next_track",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_spotify_chat"
+    },
+    {
+      "name": "demo_prev_track",
+      "description": "Go to previous track in demo playlist.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "demo:prev"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {},
+        "title": "DemoPrevTrackParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {},
+        "title": "PlayerActionRecord",
+        "type": "object"
+      },
+      "event": "demo_prev_track",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_spotify_chat"
+    },
+    {
+      "name": "demo_pause",
+      "description": "Toggle playback pause/resume in demo mode.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "demo:pause"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {},
+        "title": "DemoPauseParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {},
+        "title": "PlayerActionRecord",
+        "type": "object"
+      },
+      "event": "demo_pause",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_spotify_chat"
+    },
+    {
+      "name": "demo_shuffle",
+      "description": "Toggle shuffle mode in demo playlist.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "demo:shuffle"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {},
+        "title": "DemoShuffleParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "shuffle": {
+            "title": "Shuffle",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "shuffle"
+        ],
+        "title": "ShuffleRecord",
+        "type": "object"
+      },
+      "event": "demo_shuffle",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_spotify_chat"
+    },
+    {
+      "name": "get_lyrics",
+      "description": "Fetch full song lyrics. Returns the complete lyrics as formatted text. Only track_name is required; providing artist_name improves accuracy. If lyrics are found, they are displayed in full \u2014 no need to call search_tracks first.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "track_name": {
+            "description": "Song title",
+            "title": "Track Name",
+            "type": "string"
+          },
+          "artist_name": {
+            "default": "",
+            "description": "Artist name (optional, improves accuracy)",
+            "title": "Artist Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "track_name"
+        ],
+        "title": "GetLyricsParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "lyrics": {
+            "default": "",
+            "title": "Lyrics",
+            "type": "string"
+          },
+          "url": {
+            "default": "",
+            "title": "Url",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "artist": {
+            "title": "Artist",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "artist"
+        ],
+        "title": "LyricsRecord",
         "type": "object"
       },
       "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_spotify_chat"
+    },
+    {
+      "name": "sp_prev",
+      "description": "Skip to the previous track in the Spotify playback queue.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "player:previous"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {},
+        "title": "EmptyParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {},
+        "title": "PlayerActionRecord",
+        "type": "object"
+      },
+      "event": "player.previous",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_spotify_chat"
+    },
+    {
+      "name": "sp_next",
+      "description": "Skip to the next track in the Spotify playback queue.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "player:next"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {},
+        "title": "EmptyParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {},
+        "title": "PlayerActionRecord",
+        "type": "object"
+      },
+      "event": "player.next",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_spotify_chat"
+    },
+    {
+      "name": "sp_play_pause",
+      "description": "Toggle Spotify playback between playing and paused states.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "player:play_pause"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {},
+        "title": "EmptyParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {},
+        "title": "PlayerActionRecord",
+        "type": "object"
+      },
+      "event": "player.play_pause",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_spotify_chat"
+    },
+    {
+      "name": "sp_shuffle",
+      "description": "Toggle Spotify shuffle mode on or off for the current playback session.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "player:shuffle"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {},
+        "title": "EmptyParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "shuffle": {
+            "title": "Shuffle",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "shuffle"
+        ],
+        "title": "ShuffleRecord",
+        "type": "object"
+      },
+      "event": "player.shuffle",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_spotify_chat"
+    },
+    {
+      "name": "sp_like",
+      "description": "Toggle like/unlike on the currently playing track \u2014 no track_id needed. Use this when the user wants to like or save what's playing right now. To like a specific track by ID, use like_track instead.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "track:like"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {},
+        "title": "EmptyParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "track_id": {
+            "title": "Track Id",
+            "type": "string"
+          },
+          "liked": {
+            "title": "Liked",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "track_id",
+          "liked"
+        ],
+        "title": "TrackLikeRecord",
+        "type": "object"
+      },
+      "event": "track.liked",
       "background": false,
       "long_running": false,
       "scopes": [],
@@ -2442,6 +2652,186 @@
       "owner_chat_tool": "tool_spotify_chat"
     },
     {
+      "name": "get_album_tracks",
+      "description": "Get all tracks from an album by album name (and optionally artist name). Returns track list with ids, titles, durations. Use track ids to play individual tracks or add them to a playlist.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "album_name": {
+            "description": "Album name to search for",
+            "title": "Album Name",
+            "type": "string"
+          },
+          "artist_name": {
+            "default": "",
+            "description": "Artist name to narrow the search (optional but recommended)",
+            "title": "Artist Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "album_name"
+        ],
+        "title": "GetAlbumTracksParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "$defs": {
+          "TrackRecord": {
+            "properties": {
+              "id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ],
+                "title": "Id"
+              },
+              "title": {
+                "title": "Title",
+                "type": "string"
+              },
+              "kind": {
+                "default": "track",
+                "title": "Kind",
+                "type": "string"
+              },
+              "subtitle": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Subtitle"
+              },
+              "description": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Description"
+              },
+              "status": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Status"
+              },
+              "url": {
+                "default": "",
+                "title": "Url",
+                "type": "string"
+              },
+              "artist": {
+                "default": "",
+                "title": "Artist",
+                "type": "string",
+                "x-sdl-role": "spotify.artist"
+              },
+              "duration": {
+                "default": "",
+                "title": "Duration",
+                "type": "string",
+                "x-sdl-role": "spotify.duration_label"
+              },
+              "duration_ms": {
+                "default": 0,
+                "title": "Duration Ms",
+                "type": "integer",
+                "x-sdl-role": "spotify.duration_ms"
+              },
+              "popularity": {
+                "default": 0,
+                "title": "Popularity",
+                "type": "integer",
+                "x-sdl-role": "spotify.popularity"
+              },
+              "preview_url": {
+                "default": "",
+                "title": "Preview Url",
+                "type": "string",
+                "x-sdl-role": "spotify.preview_url"
+              },
+              "album": {
+                "default": "",
+                "title": "Album",
+                "type": "string",
+                "x-sdl-role": "spotify.album"
+              },
+              "album_art": {
+                "default": "",
+                "title": "Album Art",
+                "type": "string",
+                "x-sdl-role": "spotify.album_art"
+              }
+            },
+            "required": [
+              "id",
+              "title"
+            ],
+            "title": "TrackRecord",
+            "type": "object",
+            "x-sdl": "entity"
+          }
+        },
+        "properties": {
+          "tracks": {
+            "items": {
+              "$ref": "#/$defs/TrackRecord"
+            },
+            "title": "Tracks",
+            "type": "array"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "album": {
+            "title": "Album",
+            "type": "string"
+          },
+          "artist": {
+            "title": "Artist",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tracks",
+          "count",
+          "album",
+          "artist"
+        ],
+        "title": "AlbumTracksRecord",
+        "type": "object"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_spotify_chat"
+    },
+    {
       "name": "remove_tracks_from_playlist_by_name",
       "description": "Remove tracks from a playlist by name, artist, or duration. Examples: 'remove [track]', 'remove all tracks by [artist]', 'remove tracks longer than 4 minutes' (min_duration_ms=240000), 'keep only [artist]' (exclude=True). Filters can be combined.",
       "action_type": "write",
@@ -2482,7 +2872,7 @@
               }
             ],
             "default": null,
-            "description": "Set to True to REMOVE everything EXCEPT matches — e.g. 'keep only Artist X, remove the rest'.",
+            "description": "Set to True to REMOVE everything EXCEPT matches \u2014 e.g. 'keep only Artist X, remove the rest'.",
             "title": "Exclude"
           },
           "min_duration_ms": {
@@ -2728,384 +3118,6 @@
         "type": "object"
       },
       "event": "track.added_to_playlist",
-      "background": false,
-      "long_running": false,
-      "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
-    },
-    {
-      "name": "get_lyrics",
-      "description": "Fetch full song lyrics. Returns the complete lyrics as formatted text. Only track_name is required; providing artist_name improves accuracy. If lyrics are found, they are displayed in full — no need to call search_tracks first.",
-      "action_type": "read",
-      "chain_callable": true,
-      "effects": [],
-      "id_projection": "",
-      "params_schema": {
-        "properties": {
-          "track_name": {
-            "description": "Song title",
-            "title": "Track Name",
-            "type": "string"
-          },
-          "artist_name": {
-            "default": "",
-            "description": "Artist name (optional, improves accuracy)",
-            "title": "Artist Name",
-            "type": "string"
-          }
-        },
-        "required": [
-          "track_name"
-        ],
-        "title": "GetLyricsParams",
-        "type": "object"
-      },
-      "return_schema": {
-        "properties": {
-          "lyrics": {
-            "default": "",
-            "title": "Lyrics",
-            "type": "string"
-          },
-          "url": {
-            "default": "",
-            "title": "Url",
-            "type": "string"
-          },
-          "title": {
-            "title": "Title",
-            "type": "string"
-          },
-          "artist": {
-            "title": "Artist",
-            "type": "string"
-          }
-        },
-        "required": [
-          "title",
-          "artist"
-        ],
-        "title": "LyricsRecord",
-        "type": "object"
-      },
-      "event": "",
-      "background": false,
-      "long_running": false,
-      "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
-    },
-    {
-      "name": "open_demo_playlist",
-      "description": "Open demo playlist (no Spotify login required). Returns demo tracks for testing.",
-      "action_type": "write",
-      "chain_callable": true,
-      "effects": [
-        "demo:active"
-      ],
-      "id_projection": "",
-      "params_schema": {
-        "properties": {},
-        "title": "OpenDemoPlaylistParams",
-        "type": "object"
-      },
-      "return_schema": {
-        "$defs": {
-          "TrackRecord": {
-            "properties": {
-              "id": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "integer"
-                  }
-                ],
-                "title": "Id"
-              },
-              "title": {
-                "title": "Title",
-                "type": "string"
-              },
-              "kind": {
-                "default": "track",
-                "title": "Kind",
-                "type": "string"
-              },
-              "subtitle": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ],
-                "default": null,
-                "title": "Subtitle"
-              },
-              "description": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ],
-                "default": null,
-                "title": "Description"
-              },
-              "status": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ],
-                "default": null,
-                "title": "Status"
-              },
-              "url": {
-                "default": "",
-                "title": "Url",
-                "type": "string"
-              },
-              "artist": {
-                "default": "",
-                "title": "Artist",
-                "type": "string",
-                "x-sdl-role": "spotify.artist"
-              },
-              "duration": {
-                "default": "",
-                "title": "Duration",
-                "type": "string",
-                "x-sdl-role": "spotify.duration_label"
-              },
-              "duration_ms": {
-                "default": 0,
-                "title": "Duration Ms",
-                "type": "integer",
-                "x-sdl-role": "spotify.duration_ms"
-              },
-              "popularity": {
-                "default": 0,
-                "title": "Popularity",
-                "type": "integer",
-                "x-sdl-role": "spotify.popularity"
-              },
-              "preview_url": {
-                "default": "",
-                "title": "Preview Url",
-                "type": "string",
-                "x-sdl-role": "spotify.preview_url"
-              },
-              "album": {
-                "default": "",
-                "title": "Album",
-                "type": "string",
-                "x-sdl-role": "spotify.album"
-              },
-              "album_art": {
-                "default": "",
-                "title": "Album Art",
-                "type": "string",
-                "x-sdl-role": "spotify.album_art"
-              }
-            },
-            "required": [
-              "id",
-              "title"
-            ],
-            "title": "TrackRecord",
-            "type": "object",
-            "x-sdl": "entity"
-          }
-        },
-        "properties": {
-          "count": {
-            "title": "Count",
-            "type": "integer"
-          },
-          "tracks": {
-            "items": {
-              "$ref": "#/$defs/TrackRecord"
-            },
-            "title": "Tracks",
-            "type": "array"
-          }
-        },
-        "required": [
-          "count",
-          "tracks"
-        ],
-        "title": "DemoPlaylistRecord",
-        "type": "object"
-      },
-      "event": "open_demo_playlist",
-      "background": false,
-      "long_running": false,
-      "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
-    },
-    {
-      "name": "demo_play_track",
-      "description": "Play a specific track from demo playlist.",
-      "action_type": "write",
-      "chain_callable": true,
-      "effects": [
-        "demo:play"
-      ],
-      "id_projection": "",
-      "params_schema": {
-        "properties": {
-          "track_id": {
-            "description": "Demo track ID or track name/artist to search for and play",
-            "title": "Track Id",
-            "type": "string"
-          }
-        },
-        "required": [
-          "track_id"
-        ],
-        "title": "DemoPlayTrackParams",
-        "type": "object"
-      },
-      "return_schema": {
-        "properties": {
-          "track_id": {
-            "title": "Track Id",
-            "type": "string"
-          },
-          "title": {
-            "title": "Title",
-            "type": "string"
-          },
-          "artist": {
-            "title": "Artist",
-            "type": "string"
-          }
-        },
-        "required": [
-          "track_id",
-          "title",
-          "artist"
-        ],
-        "title": "DemoTrackRecord",
-        "type": "object"
-      },
-      "event": "demo_play_track",
-      "background": false,
-      "long_running": false,
-      "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
-    },
-    {
-      "name": "demo_next_track",
-      "description": "Skip to next track in demo playlist.",
-      "action_type": "write",
-      "chain_callable": true,
-      "effects": [
-        "demo:next"
-      ],
-      "id_projection": "",
-      "params_schema": {
-        "properties": {},
-        "title": "DemoNextTrackParams",
-        "type": "object"
-      },
-      "return_schema": {
-        "properties": {},
-        "title": "PlayerActionRecord",
-        "type": "object"
-      },
-      "event": "demo_next_track",
-      "background": false,
-      "long_running": false,
-      "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
-    },
-    {
-      "name": "demo_prev_track",
-      "description": "Go to previous track in demo playlist.",
-      "action_type": "write",
-      "chain_callable": true,
-      "effects": [
-        "demo:prev"
-      ],
-      "id_projection": "",
-      "params_schema": {
-        "properties": {},
-        "title": "DemoPrevTrackParams",
-        "type": "object"
-      },
-      "return_schema": {
-        "properties": {},
-        "title": "PlayerActionRecord",
-        "type": "object"
-      },
-      "event": "demo_prev_track",
-      "background": false,
-      "long_running": false,
-      "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
-    },
-    {
-      "name": "demo_pause",
-      "description": "Toggle playback pause/resume in demo mode.",
-      "action_type": "write",
-      "chain_callable": true,
-      "effects": [
-        "demo:pause"
-      ],
-      "id_projection": "",
-      "params_schema": {
-        "properties": {},
-        "title": "DemoPauseParams",
-        "type": "object"
-      },
-      "return_schema": {
-        "properties": {},
-        "title": "PlayerActionRecord",
-        "type": "object"
-      },
-      "event": "demo_pause",
-      "background": false,
-      "long_running": false,
-      "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
-    },
-    {
-      "name": "demo_shuffle",
-      "description": "Toggle shuffle mode in demo playlist.",
-      "action_type": "write",
-      "chain_callable": true,
-      "effects": [
-        "demo:shuffle"
-      ],
-      "id_projection": "",
-      "params_schema": {
-        "properties": {},
-        "title": "DemoShuffleParams",
-        "type": "object"
-      },
-      "return_schema": {
-        "properties": {
-          "shuffle": {
-            "title": "Shuffle",
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "shuffle"
-        ],
-        "title": "ShuffleRecord",
-        "type": "object"
-      },
-      "event": "demo_shuffle",
       "background": false,
       "long_running": false,
       "scopes": [],
