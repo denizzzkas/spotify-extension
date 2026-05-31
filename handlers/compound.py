@@ -17,6 +17,23 @@ from handlers.artists import _find_artist_id
 log = logging.getLogger("spotify.compound")
 
 
+async def _fetch_playlist_tracks(ctx, playlist_id: str):
+    tracks, url, fetch_params = [], f"{SP_API_BASE}/playlists/{playlist_id}/items", {"limit": 50}
+    while url:
+        resp, err = await _spotify_call(ctx, "get", url, params=fetch_params)
+        if err:
+            return None, err
+        if not resp.ok:
+            return None, _spotify_err(resp)
+        data = resp.json()
+        for item in (data.get("items") or []):
+            raw = item.get("item")
+            if raw and raw.get("id"):
+                tracks.append(raw)
+        url, fetch_params = data.get("next"), {}
+    return tracks, None
+
+
 class AddArtistTopTracksToPlaylistParams(BaseModel):
     artist_name: str = Field(..., description="Artist name to search for")
     playlist_id: str = Field(..., description="Spotify playlist ID to add tracks to")
@@ -60,58 +77,34 @@ async def fn_remove_tracks_from_playlist_by_name(ctx, params: RemoveTracksFromPl
         if not has_filter:
             return ActionResult.error("Provide at least one filter: track_names, artist_name, min_duration_ms, or max_duration_ms.", retryable=False)
 
-        tracks = []
-        url = f"{SP_API_BASE}/playlists/{params.playlist_id}/items"
-        fetch_params: dict = {"limit": 50}
-        while url:
-            resp, err = await _spotify_call(ctx, "get", url, params=fetch_params)
-            if err:
-                return err
-            if not resp.ok:
-                return _spotify_err(resp)
-            data = resp.json()
-            for item in (data.get("items") or []):
-                raw = item.get("item")
-                if raw and raw.get("id"):
-                    tracks.append(raw)
-            url = data.get("next")
-            fetch_params = {}
-
+        tracks, err = await _fetch_playlist_tracks(ctx, params.playlist_id)
+        if err:
+            return err
         search_names = [n.lower() for n in params.track_names]
         artist_filter = params.artist_name.lower()
         exclude = bool(params.exclude)
 
-        def _matches(track: dict) -> bool:
-            if search_names:
-                name_lower = (track.get("name") or "").lower()
-                if not any(q in name_lower or name_lower in q for q in search_names):
-                    return False
-            if artist_filter:
-                artists = [a.get("name", "").lower() for a in (track.get("artists") or [])]
-                if not any(artist_filter in a or a in artist_filter for a in artists):
-                    return False
-            dur = track.get("duration_ms") or 0
-            if params.min_duration_ms is not None and dur < params.min_duration_ms:
+        def _matches(t: dict) -> bool:
+            name = (t.get("name") or "").lower()
+            if search_names and not any(q in name or name in q for q in search_names):
                 return False
-            if params.max_duration_ms is not None and dur > params.max_duration_ms:
+            artists = [a.get("name", "").lower() for a in (t.get("artists") or [])]
+            if artist_filter and not any(artist_filter in a or a in artist_filter for a in artists):
                 return False
-            return True
+            dur = t.get("duration_ms") or 0
+            return (params.min_duration_ms is None or dur >= params.min_duration_ms) and (params.max_duration_ms is None or dur <= params.max_duration_ms)
 
         seen_uris: set[str] = set()
         to_remove = []
         for track in tracks:
-            matched = _matches(track)
-            if (matched and not exclude) or (not matched and exclude):
-                uri = track.get("uri") or f"spotify:track:{track['id']}"
-                if uri not in seen_uris:
-                    seen_uris.add(uri)
-                    to_remove.append({"uri": uri, "name": track.get("name", track["id"])})
+            uri = track.get("uri") or f"spotify:track:{track['id']}"
+            if _matches(track) != exclude and uri not in seen_uris:
+                seen_uris.add(uri)
+                to_remove.append({"uri": uri, "name": track.get("name", track["id"])})
 
         if not to_remove:
-            if params.track_names:
-                names_str = ", ".join(f"'{n}'" for n in params.track_names)
-                return ActionResult.error(f"No tracks matching {names_str} found in the playlist.", retryable=False)
-            return ActionResult.error("No matching tracks found in the playlist.", retryable=False)
+            detail = f" matching {', '.join(repr(n) for n in params.track_names)}" if params.track_names else ""
+            return ActionResult.error(f"No tracks{detail} found in the playlist.", retryable=False)
 
         removed_names = [t["name"] for t in to_remove]
         for i in range(0, len(to_remove), 100):
@@ -147,38 +140,25 @@ async def fn_remove_tracks_from_playlist_by_name(ctx, params: RemoveTracksFromPl
 async def fn_remove_duplicate_tracks(ctx, params: RemoveDuplicateTracksParams) -> ActionResult:
     """Fetch all playlist tracks, find duplicates by ID, remove extra occurrences using positions."""
     try:
-        tracks = []
-        url = f"{SP_API_BASE}/playlists/{params.playlist_id}/items"
-        fetch_params: dict = {"limit": 50}
-        while url:
-            resp, err = await _spotify_call(ctx, "get", url, params=fetch_params)
-            if err:
-                return err
-            if not resp.ok:
-                return _spotify_err(resp)
-            data = resp.json()
-            for item in (data.get("items") or []):
-                raw = item.get("item")
-                if raw and raw.get("id"):
-                    tracks.append(raw)
-            url = data.get("next")
-            fetch_params = {}
+        tracks, err = await _fetch_playlist_tracks(ctx, params.playlist_id)
+        if err:
+            return err
 
-        seen: dict[str, int] = {}
-        duplicates: dict[str, list[int]] = {}
-        for i, track in enumerate(tracks):
+        seen_ids: set[str] = set()
+        dup_uris: dict[str, int] = {}
+        for track in tracks:
             tid = track["id"]
-            if tid in seen:
-                uri = track.get("uri") or f"spotify:track:{tid}"
-                duplicates.setdefault(uri, []).append(i)
+            uri = track.get("uri") or f"spotify:track:{tid}"
+            if tid in seen_ids:
+                dup_uris[uri] = dup_uris.get(uri, 0) + 1
             else:
-                seen[tid] = i
+                seen_ids.add(tid)
 
-        if not duplicates:
+        if not dup_uris:
             return ActionResult.error("No duplicate tracks found in the playlist.", retryable=False)
 
-        uris_to_dedup = list(duplicates.keys())
-        removed_count = sum(len(p) for p in duplicates.values())
+        uris_to_dedup = list(dup_uris.keys())
+        removed_count = sum(dup_uris.values())
 
         for i in range(0, len(uris_to_dedup), 100):
             batch = [{"uri": uri} for uri in uris_to_dedup[i:i + 100]]
@@ -249,7 +229,6 @@ async def fn_add_artist_top_tracks_to_playlist(ctx, params: AddArtistTopTracksTo
             return err
         if not add_resp.ok:
             return _spotify_err(add_resp)
-
         return ActionResult.success(
             data={"playlist_id": params.playlist_id, "tracks_added": len(uris)},
             summary=f"Added {len(uris)} top tracks by {artist_display} to playlist",
@@ -286,9 +265,7 @@ async def fn_add_album_tracks_to_playlist(ctx, params: AddAlbumTracksToPlaylistP
         if not albums:
             return ActionResult.error(f"Album '{params.album_name}' not found on Spotify.", retryable=False)
 
-        album = albums[0]
-        album_id = album["id"]
-        album_display = album["name"]
+        album_id, album_display = albums[0]["id"], albums[0]["name"]
 
         tracks_resp, err = await _spotify_call(
             ctx, "get", f"{SP_API_BASE}/albums/{album_id}/tracks",
