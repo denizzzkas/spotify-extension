@@ -52,6 +52,9 @@ async def _render_fetched_tracks(ctx, url: str, title: str, item_key: str = "tra
         tracks = [format_track(item[item_key]) for item in raw_list if item and item.get(item_key)]
         next_cursor = str((data.get("cursors") or {}).get("before", "")) if not liked_context else ""
         has_next = bool(data.get("next")) if liked_context else bool(next_cursor)
+        if not tracks and not liked_context:
+            first_keys = list((raw_list[0] or {}).keys()) if raw_list else []
+            return ui.Empty(f"[DEBUG] API: {len(raw_list)} items, cursor={cursor[:20] if cursor else 'none'}, keys={first_keys}", icon="AlertCircle")
 
     except Exception as e:
         log.error("_render_fetched_tracks failed for %s: %s", url, e)
