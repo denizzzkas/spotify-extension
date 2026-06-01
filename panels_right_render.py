@@ -1,5 +1,6 @@
 """Spotify right panel — render helpers for track lists, fetched pages, and profile."""
 import logging
+from datetime import datetime, timezone
 
 from imperal_sdk import ui
 
@@ -50,16 +51,16 @@ async def _render_fetched_tracks(ctx, url: str, title: str, item_key: str = "tra
             return ui.Empty("Could not parse Spotify response.", icon="AlertCircle")
         raw_list = data.get("items") or []
         tracks = [format_track(item[item_key]) for item in raw_list if item and item.get(item_key)]
-        next_cursor = str((data.get("cursors") or {}).get("before", "")) if not liked_context else ""
+        if not liked_context and raw_list:
+            last_played_at = (raw_list[-1] or {}).get("played_at", "")
+            try:
+                dt = datetime.fromisoformat(last_played_at.replace("Z", "+00:00"))
+                next_cursor = str(int(dt.timestamp() * 1000) - 1)
+            except Exception:
+                next_cursor = ""
+        else:
+            next_cursor = ""
         has_next = bool(data.get("next")) if liked_context else bool(next_cursor)
-        if not liked_context:
-            cursors_raw = data.get("cursors") or {}
-            c_before = str(cursors_raw.get("before", ""))[:20]
-            c_after = str(cursors_raw.get("after", ""))[:20]
-            d_next = str(data.get("next", ""))
-            log.info("recent_tracks page cursor_sent=%s items=%d before=%s after=%s next=%s", cursor[:20] if cursor else "none", len(raw_list), c_before, c_after, d_next)
-            if not tracks:
-                return ui.Empty(f"[DEBUG] items={len(raw_list)} sent={cursor[:15] if cursor else 'none'} next_url={d_next}", icon="AlertCircle")
 
     except Exception as e:
         log.error("_render_fetched_tracks failed for %s: %s", url, e)
