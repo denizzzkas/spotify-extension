@@ -33,11 +33,11 @@ async def panel_search_tracks(ctx, query: str = "", limit: int = 20) -> dict:
         if not token:
             return {"error": True, "status": 0}
 
-        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        headers = {"Authorization": f"Bearer {token}"}
         resp = await ctx.http.get(
             f"{SP_API_BASE}/search",
             headers=headers,
-            params={"q": query, "type": "track", "limit": limit},
+            params={"q": query, "type": "track"},
         )
 
         if resp.status_code == 401:
@@ -47,7 +47,7 @@ async def panel_search_tracks(ctx, query: str = "", limit: int = 20) -> dict:
                 resp = await ctx.http.get(
                     f"{SP_API_BASE}/search",
                     headers=headers,
-                    params={"q": query, "type": "track", "limit": limit},
+                    params={"q": query, "type": "track"},
                 )
 
         if not resp.ok:

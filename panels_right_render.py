@@ -55,7 +55,7 @@ async def _render_fetched_tracks(ctx, url: str, title: str, item_key: str = "tra
 
     except Exception as e:
         log.error("_render_fetched_tracks failed for %s: %s", url, e)
-        return ui.Empty("Failed to load tracks.", icon="AlertCircle")
+        return ui.Empty(f"Failed to load tracks: {str(e)[:120]}", icon="AlertCircle")
 
     detail_type = "liked_tracks" if liked_context else "recent_tracks"
     nav_buttons = []

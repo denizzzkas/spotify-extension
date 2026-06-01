@@ -8,16 +8,12 @@ from pydantic import BaseModel, Field
 from imperal_sdk import ActionResult
 
 from app import chat
-from return_models import SearchResultRecord, ArtistAlbumsRecord
+from return_models import ArtistAlbumsRecord
 from spotify_config import SP_API_BASE
 from app_helpers import _spotify_call, _spotify_err
-from utils import format_track, format_album
+from utils import format_album
 
 log = logging.getLogger("spotify.artists")
-
-
-class GetArtistTopTracksParams(BaseModel):
-    artist_name: str = Field(..., description="Artist name to search for")
 
 
 class GetArtistAlbumsParams(BaseModel):
@@ -40,40 +36,6 @@ async def _find_artist_id(ctx, artist_name: str):
         return None, None, ActionResult.error(f"Artist '{artist_name}' not found on Spotify.", retryable=False)
     return items[0]["id"], items[0]["name"], None
 
-
-@chat.function(
-    "get_artist_top_tracks",
-    action_type="read",
-    data_model=SearchResultRecord,
-    description="Get top tracks for an artist by name. Returns up to 10 most popular tracks with id, title, album, duration. Use track ids from results to play or add to playlist.",
-)
-async def fn_get_artist_top_tracks(ctx, params: GetArtistTopTracksParams) -> ActionResult:
-    """Resolve artist ID then fetch top tracks via dedicated endpoint."""
-    try:
-        artist_id, artist_display, err = await _find_artist_id(ctx, params.artist_name)
-        if err:
-            return err
-
-        resp, err = await _spotify_call(ctx, "get", f"{SP_API_BASE}/artists/{artist_id}/top-tracks",
-                                        params={"market": "from_token"})
-        if err:
-            return err
-        if not resp.ok:
-            return _spotify_err(resp)
-
-        items = resp.json().get("tracks") or []
-        tracks = [format_track(t) for t in items[:10]]
-
-        if not tracks:
-            return ActionResult.error(f"No tracks found for '{params.artist_name}'.", retryable=False)
-
-        return ActionResult.success(
-            data={"tracks": tracks, "count": len(tracks), "query": artist_display},
-            summary=f"Top {len(tracks)} tracks by {artist_display}",
-        )
-    except Exception as e:
-        log.error("get_artist_top_tracks failed: %s", e)
-        return ActionResult.error(f"Failed to get artist top tracks: {str(e)}", retryable=True)
 
 
 @chat.function(
