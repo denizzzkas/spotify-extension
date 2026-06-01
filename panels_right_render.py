@@ -49,7 +49,7 @@ async def _render_fetched_tracks(ctx, url: str, title: str, item_key: str = "tra
         except Exception:
             return ui.Empty("Could not parse Spotify response.", icon="AlertCircle")
         raw_list = data.get("items") or []
-        tracks = [format_track(item[item_key]) for item in raw_list if item.get(item_key)]
+        tracks = [format_track(item[item_key]) for item in raw_list if item and item.get(item_key)]
         next_cursor = str(data.get("cursors", {}).get("before", "")) if not liked_context else ""
         has_next = bool(data.get("next")) if liked_context else bool(next_cursor)
 
