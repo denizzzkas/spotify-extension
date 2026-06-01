@@ -56,10 +56,10 @@ async def _render_fetched_tracks(ctx, url: str, title: str, item_key: str = "tra
             cursors_raw = data.get("cursors") or {}
             c_before = str(cursors_raw.get("before", ""))[:20]
             c_after = str(cursors_raw.get("after", ""))[:20]
-            d_next = str(data.get("next", ""))[:40]
+            d_next = str(data.get("next", ""))
             log.info("recent_tracks page cursor_sent=%s items=%d before=%s after=%s next=%s", cursor[:20] if cursor else "none", len(raw_list), c_before, c_after, d_next)
             if not tracks:
-                return ui.Empty(f"[DEBUG] items={len(raw_list)} sent={cursor[:15] if cursor else 'none'} before={c_before} after={c_after} next={bool(d_next)}", icon="AlertCircle")
+                return ui.Empty(f"[DEBUG] items={len(raw_list)} sent={cursor[:15] if cursor else 'none'} next_url={d_next}", icon="AlertCircle")
 
     except Exception as e:
         log.error("_render_fetched_tracks failed for %s: %s", url, e)
