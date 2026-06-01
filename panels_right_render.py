@@ -17,12 +17,13 @@ async def _render_fetched_tracks(ctx, url: str, title: str, item_key: str = "tra
         if not token:
             return ui.Empty("Not connected to Spotify.", icon="Music")
 
-        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-        fetch_params: dict = {"limit": 50}
+        headers = {"Authorization": f"Bearer {token}"}
         if liked_context:
-            fetch_params["offset"] = page * 50
+            fetch_params: dict = {"limit": 50, "offset": page * 50}
         elif cursor:
-            fetch_params["before"] = cursor
+            fetch_params = {"before": cursor}
+        else:
+            fetch_params = {}
 
         resp = await ctx.http.get(url, headers=headers, params=fetch_params)
 
