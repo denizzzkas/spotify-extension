@@ -3,15 +3,13 @@ from __future__ import annotations
 
 import base64
 import logging
-import uuid
-from datetime import datetime, timezone
 
 from pydantic import BaseModel
 
 from imperal_sdk import ActionResult
 
 from app import ext, chat
-from return_models import SpotifyAuthRecord, SpotifyDisconnectRecord, SpotifyConnectionRecord
+from return_models import SpotifyDisconnectRecord, SpotifyConnectionRecord
 from spotify_config import (
     SP_AUTH_URL, SP_TOKEN_URL, SP_SCOPES,
     OAUTH_STATE_COLLECTION, CRED_COLLECTION,
@@ -22,9 +20,6 @@ log = logging.getLogger("spotify.auth")
 
 # ─── Param models ─────────────────────────────────────────────────────────── #
 
-class ConnectSpotifyParams(BaseModel):
-    pass
-
 class DisconnectSpotifyParams(BaseModel):
     pass
 
@@ -32,73 +27,6 @@ class CheckConnectionParams(BaseModel):
     pass
 
 # ─── Auth handlers ────────────────────────────────────────────────────────── #
-
-@chat.function(
-    "connect_spotify",
-    action_type="write",
-    chain_callable=True,
-    effects=["auth:connect"],
-    event="connected",
-    data_model=SpotifyAuthRecord,
-    description="Connect your Spotify account via OAuth 2.0. Returns an authorisation URL to visit.",
-)
-async def fn_connect_spotify(ctx, params: ConnectSpotifyParams) -> ActionResult:
-    """Connect your Spotify account via OAuth 2.0. Returns an authorisation URL to visit."""
-    user_id = await _require_user_id(ctx)
-    if isinstance(user_id, ActionResult):
-        return user_id
-
-    try:
-        client_id = await ctx.secrets.get("spotify_client_id")
-        client_secret = await ctx.secrets.get("spotify_client_secret")
-        if not client_id or not client_secret:
-            return ActionResult.error(
-                "Spotify credentials not configured. Set client_id and client_secret in extension settings."
-            )
-
-        state = str(uuid.uuid4())
-        redirect_uri = ctx.webhook_url("callback")
-
-        # Store OAuth state under __webhook__ user scope so the callback
-        # (which runs as __webhook__ context) can query it directly via ctx.store.
-        # SDK 4.2.16: ctx.as_user() requires __system__ context, not available in webhooks.
-        from imperal_sdk.store.client import StoreClient
-        webhook_store = StoreClient(
-            gateway_url=ctx.store._gateway_url,
-            service_token=ctx.store._auth_token,
-            extension_id=ctx.store._extension_id,
-            user_id="__webhook__",
-            tenant_id=ctx.store._tenant_id,
-        )
-        await webhook_store.create(OAUTH_STATE_COLLECTION, {
-            "user_id": user_id,
-            "state": state,
-            "client_id": client_id,
-            "client_secret": client_secret,
-            "redirect_uri": redirect_uri,
-            "created_at": datetime.now(timezone.utc).isoformat(),
-        })
-
-        import urllib.parse
-        auth_url = SP_AUTH_URL + "?" + urllib.parse.urlencode({
-            "client_id": client_id,
-            "redirect_uri": redirect_uri,
-            "response_type": "code",
-            "scope": SP_SCOPES,
-            "state": state,
-            "show_dialog": "true",
-        })
-
-        from imperal_sdk import ui
-        return ActionResult.success(
-            data={"auth_url": auth_url},
-            summary="Click the link below to connect your Spotify account:",
-            ui=ui.Link(label="Connect Spotify →", href=auth_url),
-        )
-    except Exception as e:
-        log.error("connect_spotify failed: %s", e)
-        return ActionResult.error(f"Connection failed: {str(e)}")
-
 
 @chat.function(
     "disconnect_spotify",

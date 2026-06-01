@@ -93,7 +93,7 @@ async def test_get_playlist_tracks_returns_tracks():
     ctx = await ctx_with_token()
     ctx.http.mock_get(
         "api.spotify.com/v1/playlists/37i9dQZF1DXcBWIGoYBM5M/items",
-        {"items": [{"track": SAMPLE_TRACK}]},
+        {"items": [{"item": SAMPLE_TRACK}]},
     )
     result = await fn_get_playlist_tracks(ctx, GetPlaylistTracksParams(playlist_id="37i9dQZF1DXcBWIGoYBM5M"))
     assert result.status == "success"

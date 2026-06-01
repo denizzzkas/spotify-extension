@@ -17,7 +17,7 @@
   "tools": [
     {
       "name": "skeleton_refresh_spotify_stats",
-      "description": "Spotify library stats: liked track count and playlist count for classifier",
+      "description": "Spotify library stats: liked count, playlist count, first 5 playlist names and IDs",
       "scopes": [],
       "parameters": {}
     },
@@ -26,39 +26,6 @@
       "description": "Spotify current track being played by user",
       "scopes": [],
       "parameters": {}
-    },
-    {
-      "name": "connect_spotify",
-      "description": "Connect your Spotify account via OAuth 2.0. Returns an authorisation URL to visit.",
-      "action_type": "write",
-      "chain_callable": true,
-      "effects": [
-        "auth:connect"
-      ],
-      "id_projection": "",
-      "params_schema": {
-        "properties": {},
-        "title": "ConnectSpotifyParams",
-        "type": "object"
-      },
-      "return_schema": {
-        "properties": {
-          "auth_url": {
-            "title": "Auth Url",
-            "type": "string"
-          }
-        },
-        "required": [
-          "auth_url"
-        ],
-        "title": "SpotifyAuthRecord",
-        "type": "object"
-      },
-      "event": "connected",
-      "background": false,
-      "long_running": false,
-      "scopes": [],
-      "owner_chat_tool": "tool_spotify_chat"
     },
     {
       "name": "disconnect_spotify",
@@ -147,25 +114,25 @@
         "properties": {
           "query": {
             "default": "",
-            "description": "Free-text search query \u2014 use when you only have a partial name or are unsure of the exact title/artist",
+            "description": "Free-text search query — use when you only have a partial name or are unsure of the exact title/artist",
             "title": "Query",
             "type": "string"
           },
           "track_name": {
             "default": "",
-            "description": "Exact track title \u2014 use instead of query when you know the precise song name",
+            "description": "Exact track title — use instead of query when you know the precise song name",
             "title": "Track Name",
             "type": "string"
           },
           "artist_name": {
             "default": "",
-            "description": "Exact artist name \u2014 combine with track_name or album_name for precise results",
+            "description": "Exact artist name — combine with track_name or album_name for precise results",
             "title": "Artist Name",
             "type": "string"
           },
           "album_name": {
             "default": "",
-            "description": "Exact album name \u2014 combine with artist_name to narrow results",
+            "description": "Exact album name — combine with artist_name to narrow results",
             "title": "Album Name",
             "type": "string"
           },
@@ -573,13 +540,13 @@
     },
     {
       "name": "create_playlist",
-      "description": "Create a NEW empty playlist. Call this ONLY when the user explicitly asks to create a playlist \u2014 NOT for viewing existing ones (use get_playlists) or playing one (use play_playlist).",
+      "description": "Create a NEW empty playlist. Call this ONLY when the user explicitly asks to create a playlist — NOT for viewing existing ones (use get_playlists) or playing one (use play_playlist).",
       "action_type": "write",
       "chain_callable": true,
       "effects": [
         "playlist:create"
       ],
-      "id_projection": "playlist_id",
+      "id_projection": "",
       "params_schema": {
         "properties": {
           "name": {
@@ -1381,7 +1348,7 @@
           },
           "playlist_id": {
             "default": "",
-            "description": "Optional playlist ID \u2014 if provided, plays track within playlist context so next/prev work through the playlist",
+            "description": "Optional playlist ID — if provided, plays track within playlist context so next/prev work through the playlist",
             "title": "Playlist Id",
             "type": "string"
           },
@@ -1404,7 +1371,7 @@
               }
             ],
             "default": null,
-            "description": "Override liked state \u2014 pass True when playing from liked tracks so the like button reflects the correct state without an extra API call",
+            "description": "Override liked state — pass True when playing from liked tracks so the like button reflects the correct state without an extra API call",
             "title": "Is Liked"
           }
         },
@@ -2112,7 +2079,7 @@
     },
     {
       "name": "get_lyrics",
-      "description": "Fetch full song lyrics. Returns the complete lyrics as formatted text. Only track_name is required; providing artist_name improves accuracy. If lyrics are found, they are displayed in full \u2014 no need to call search_tracks first.",
+      "description": "Fetch full song lyrics. Returns the complete lyrics as formatted text. Only track_name is required; providing artist_name improves accuracy. If lyrics are found, they are displayed in full — no need to call search_tracks first.",
       "action_type": "read",
       "chain_callable": true,
       "effects": [],
@@ -2281,7 +2248,7 @@
     },
     {
       "name": "sp_like",
-      "description": "Toggle like/unlike on the currently playing track \u2014 no track_id needed. Use this when the user wants to like or save what's playing right now. To like a specific track by ID, use like_track instead.",
+      "description": "Toggle like/unlike on the currently playing track — no track_id needed. Use this when the user wants to like or save what's playing right now. To like a specific track by ID, use like_track instead.",
       "action_type": "write",
       "chain_callable": true,
       "effects": [
@@ -2872,7 +2839,7 @@
               }
             ],
             "default": null,
-            "description": "Set to True to REMOVE everything EXCEPT matches \u2014 e.g. 'keep only Artist X, remove the rest'.",
+            "description": "Set to True to REMOVE everything EXCEPT matches — e.g. 'keep only Artist X, remove the rest'.",
             "title": "Exclude"
           },
           "min_duration_ms": {

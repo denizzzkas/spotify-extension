@@ -54,7 +54,8 @@ async def fn_get_artist_top_tracks(ctx, params: GetArtistTopTracksParams) -> Act
         if err:
             return err
 
-        resp, err = await _spotify_call(ctx, "get", f"{SP_API_BASE}/artists/{artist_id}/top-tracks")
+        resp, err = await _spotify_call(ctx, "get", f"{SP_API_BASE}/artists/{artist_id}/top-tracks",
+                                        params={"market": "from_token"})
         if err:
             return err
         if not resp.ok:

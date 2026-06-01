@@ -210,7 +210,10 @@ async def fn_sp_like(ctx, params: EmptyParams) -> ActionResult:
         if err:
             return err
 
-        is_liked = resp.ok and bool(resp.json()) and resp.json()[0]
+        try:
+            is_liked = resp.ok and bool(resp.json()) and resp.json()[0]
+        except Exception:
+            is_liked = False
 
         resp2, err = await _spotify_call(
             ctx, "delete" if is_liked else "put",

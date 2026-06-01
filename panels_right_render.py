@@ -10,7 +10,7 @@ from utils import format_track
 log = logging.getLogger("spotify.panels.right")
 
 
-async def _render_fetched_tracks(ctx, url: str, title: str, item_key: str = "track", liked_context: bool = False, page: int = 0, cursor: str = "") -> ui.Stack:
+async def _render_fetched_tracks(ctx, url: str, title: str, item_key: str = "track", liked_context: bool = False, page: int = 0, cursor: str = "", cursor_stack: str = "") -> ui.Stack:
     try:
         token = await _get_access_token(ctx)
         if not token:
@@ -34,22 +34,24 @@ async def _render_fetched_tracks(ctx, url: str, title: str, item_key: str = "tra
 
         if resp.status_code == 403:
             try:
-                body = resp.text
+                body = resp.text() if callable(resp.text) else resp.text
             except Exception:
                 body = ""
-            if "not registered" in body.lower():
+            if body and "not registered" in body.lower():
                 return ui.Empty("Account not registered for this app. Add it in Spotify Developer Dashboard → User Management.", icon="Lock")
             return ui.Empty("This feature requires Spotify Premium.", icon="Lock")
 
         if not resp.ok:
             return ui.Empty(f"Could not load tracks (HTTP {resp.status_code}).", icon="AlertCircle")
 
-        data = resp.json()
+        try:
+            data = resp.json()
+        except Exception:
+            return ui.Empty("Could not parse Spotify response.", icon="AlertCircle")
         raw_list = data.get("items") or []
         tracks = [format_track(item[item_key]) for item in raw_list if item.get(item_key)]
-        has_next = bool(data.get("next"))
-
         next_cursor = str(data.get("cursors", {}).get("before", "")) if not liked_context else ""
+        has_next = bool(data.get("next")) if liked_context else bool(next_cursor)
 
     except Exception as e:
         log.error("_render_fetched_tracks failed for %s: %s", url, e)
@@ -63,8 +65,15 @@ async def _render_fetched_tracks(ctx, url: str, title: str, item_key: str = "tra
         if has_next:
             nav_buttons.append(ui.Button("Next →", size="sm", on_click=ui.Call("__panel__spotify_detail", detail_type=detail_type, page=page + 1)))
     else:
+        if cursor_stack:
+            parts = cursor_stack.split(",")
+            back_parts = parts[:-1]
+            back_stack = ",".join(back_parts)
+            back_cursor = back_parts[-1] if back_parts else ""
+            nav_buttons.append(ui.Button("← Back", size="sm", on_click=ui.Call("__panel__spotify_detail", detail_type=detail_type, cursor=back_cursor, cursor_stack=back_stack)))
         if has_next and next_cursor:
-            nav_buttons.append(ui.Button("Load older →", size="sm", on_click=ui.Call("__panel__spotify_detail", detail_type=detail_type, cursor=next_cursor)))
+            new_stack = (cursor_stack + "," + next_cursor) if cursor_stack else next_cursor
+            nav_buttons.append(ui.Button("Next →", size="sm", on_click=ui.Call("__panel__spotify_detail", detail_type=detail_type, cursor=next_cursor, cursor_stack=new_stack)))
 
     track_list = _render_tracks(tracks, title, play_fn="play_track", liked_context=liked_context)
     if nav_buttons:

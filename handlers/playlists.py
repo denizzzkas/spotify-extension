@@ -97,7 +97,7 @@ async def fn_get_playlist_tracks(ctx, params: GetPlaylistTracksParams) -> Action
                 return _spotify_err(resp)
             data = resp.json()
             for item in (data.get("items") or []):
-                raw_track = item.get("track") or item.get("item")
+                raw_track = item.get("item")
                 if raw_track:
                     tracks.append(format_track(raw_track))
             url, fetch_params = data.get("next"), {}
@@ -112,7 +112,6 @@ async def fn_get_playlist_tracks(ctx, params: GetPlaylistTracksParams) -> Action
     "create_playlist",
     action_type="write",
     chain_callable=True,
-    id_projection="playlist_id",
     effects=["playlist:create"],
     event="playlist.created",
     data_model=CreatePlaylistRecord,

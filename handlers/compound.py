@@ -210,6 +210,7 @@ async def fn_add_artist_top_tracks_to_playlist(ctx, params: AddArtistTopTracksTo
 
         tracks_resp, err = await _spotify_call(
             ctx, "get", f"{SP_API_BASE}/artists/{artist_id}/top-tracks",
+            params={"market": "from_token"},
         )
         if err:
             return err

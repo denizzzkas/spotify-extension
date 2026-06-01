@@ -61,10 +61,6 @@ class SpotifyConnectionRecord(BaseModel):
     token_scopes: str | None = None
 
 
-class SpotifyAuthRecord(BaseModel):
-    auth_url: str
-
-
 class SpotifyDisconnectRecord(BaseModel):
     disconnected: bool
 

@@ -21,6 +21,7 @@ class _DetailParams(BaseModel):
     playlist_name: str = ""
     page: int = 0
     cursor: str = ""
+    cursor_stack: str = ""
 
 log = logging.getLogger("spotify.panels.right")
 
@@ -60,9 +61,9 @@ async def _fetch_playlist_tracks(ctx, playlist_id: str, page: int = 0) -> tuple[
             data = resp.json()
             items = data.get("items", [])
             tracks = [
-                format_track(item.get("track") or item.get("item"))
+                format_track(item.get("item"))
                 for item in items
-                if item.get("track") or item.get("item")
+                if item.get("item")
             ]
             return tracks, None, bool(data.get("next"))
 
@@ -96,7 +97,7 @@ async def _fetch_playlist_tracks(ctx, playlist_id: str, page: int = 0) -> tuple[
     title="Spotify",
     icon="Music",
 )
-async def panel_spotify_detail(ctx, detail_type: str = "", playlist_id: str = "", playlist_name: str = "", page: int = 0, cursor: str = "", **kwargs):
+async def panel_spotify_detail(ctx, detail_type: str = "", playlist_id: str = "", playlist_name: str = "", page: int = 0, cursor: str = "", cursor_stack: str = "", **kwargs):
     """Center overlay panel: loads playlist/liked/recent/profile data."""
     log.debug("panel_spotify_detail called: detail_type=%r playlist_id=%r", detail_type, playlist_id)
 
@@ -110,6 +111,7 @@ async def panel_spotify_detail(ctx, detail_type: str = "", playlist_id: str = ""
                 playlist_name = saved.playlist_name
                 page = saved.page
                 cursor = saved.cursor
+                cursor_stack = saved.cursor_stack
         except Exception:
             pass
 
@@ -120,7 +122,7 @@ async def panel_spotify_detail(ctx, detail_type: str = "", playlist_id: str = ""
     try:
         await ctx.cache.set(
             key="detail_params",
-            value=_DetailParams(detail_type=detail_type, playlist_id=playlist_id, playlist_name=playlist_name, page=page, cursor=cursor),
+            value=_DetailParams(detail_type=detail_type, playlist_id=playlist_id, playlist_name=playlist_name, page=page, cursor=cursor, cursor_stack=cursor_stack),
             ttl_seconds=300,
         )
     except Exception:
@@ -133,7 +135,7 @@ async def panel_spotify_detail(ctx, detail_type: str = "", playlist_id: str = ""
         return await _render_fetched_tracks(ctx, f"{SP_API_BASE}/me/tracks", "Liked Tracks", item_key="track", liked_context=True, page=page)
 
     if detail_type == "recent_tracks":
-        return await _render_fetched_tracks(ctx, f"{SP_API_BASE}/me/player/recently-played", "Recent Tracks", item_key="track", cursor=cursor)
+        return await _render_fetched_tracks(ctx, f"{SP_API_BASE}/me/player/recently-played", "Recent Tracks", item_key="track", cursor=cursor, cursor_stack=cursor_stack)
 
     # Demo mode — load directly from hardcoded demo data
     if playlist_id == DEMO_PLAYLIST_ID:

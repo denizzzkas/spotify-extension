@@ -51,8 +51,12 @@ async def panel_search_tracks(ctx, query: str = "", limit: int = 20) -> dict:
                 )
 
         if not resp.ok:
-            log.warning("panel_search_tracks: HTTP %d for query %r", resp.status_code, query)
-            return {"error": True, "status": resp.status_code}
+            try:
+                err_body = resp.text() if callable(resp.text) else resp.text
+            except Exception:
+                err_body = ""
+            log.warning("panel_search_tracks: HTTP %d for query %r: %s", resp.status_code, query, err_body[:300])
+            return {"error": True, "status": resp.status_code, "detail": err_body[:120]}
 
         raw_list = (resp.json().get("tracks") or {}).get("items", [])
         tracks = [format_track(t) for t in raw_list]
@@ -214,7 +218,13 @@ async def panel_spotify(ctx, **kwargs):
 
     if search_error:
         status = result.get("status", 0)
-        msg = f"Search failed (HTTP {status})" if status else "Search failed — check your Spotify connection."
+        detail = result.get("detail", "")
+        if detail:
+            msg = f"Search failed (HTTP {status}): {detail}"
+        elif status:
+            msg = f"Search failed (HTTP {status})"
+        else:
+            msg = "Search failed — check your Spotify connection."
         children.append(ui.Text(msg, variant="caption"))
     elif search_result_items:
         children.append(ui.Text(f'Results for "{search_query}"', variant="caption"))

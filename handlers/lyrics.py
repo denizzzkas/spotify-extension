@@ -38,11 +38,14 @@ async def fn_get_lyrics(ctx, params: GetLyricsParams) -> ActionResult:
                 params={"track_name": params.track_name, "artist_name": params.artist_name},
             )
             if lrc_resp.ok:
-                body = lrc_resp.json()
-                lyrics_text = (body.get("plainLyrics") or "").strip()
-                if lyrics_text:
-                    found_title = body.get("trackName") or params.track_name
-                    found_artist = body.get("artistName") or params.artist_name
+                try:
+                    body = lrc_resp.json()
+                    lyrics_text = (body.get("plainLyrics") or "").strip()
+                    if lyrics_text:
+                        found_title = body.get("trackName") or params.track_name
+                        found_artist = body.get("artistName") or params.artist_name
+                except Exception:
+                    pass
 
         # 1b. Exact lookup by title only (when no artist provided)
         if not lyrics_text:
@@ -51,11 +54,14 @@ async def fn_get_lyrics(ctx, params: GetLyricsParams) -> ActionResult:
                 params={"track_name": params.track_name},
             )
             if lrc_resp.ok:
-                body = lrc_resp.json()
-                lyrics_text = (body.get("plainLyrics") or "").strip()
-                if lyrics_text:
-                    found_title = body.get("trackName") or params.track_name
-                    found_artist = body.get("artistName") or params.artist_name
+                try:
+                    body = lrc_resp.json()
+                    lyrics_text = (body.get("plainLyrics") or "").strip()
+                    if lyrics_text:
+                        found_title = body.get("trackName") or params.track_name
+                        found_artist = body.get("artistName") or params.artist_name
+                except Exception:
+                    pass
 
         # 2. Fuzzy search — handles partial name mismatches
         if not lyrics_text:
@@ -65,13 +71,16 @@ async def fn_get_lyrics(ctx, params: GetLyricsParams) -> ActionResult:
                 params={"q": q},
             )
             if search_resp.ok:
-                for item in (search_resp.json() or []):
-                    text = (item.get("plainLyrics") or "").strip()
-                    if text:
-                        lyrics_text = text
-                        found_title = item.get("trackName") or params.track_name
-                        found_artist = item.get("artistName") or params.artist_name
-                        break
+                try:
+                    for item in (search_resp.json() or []):
+                        text = (item.get("plainLyrics") or "").strip()
+                        if text:
+                            lyrics_text = text
+                            found_title = item.get("trackName") or params.track_name
+                            found_artist = item.get("artistName") or params.artist_name
+                            break
+                except Exception:
+                    pass
 
         if lyrics_text:
             paragraphs = [p.strip() for p in lyrics_text.split("\n\n") if p.strip()]

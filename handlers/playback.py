@@ -171,9 +171,9 @@ async def fn_play_playlist(ctx, params: PlayPlaylistParams) -> ActionResult:
 
         raw_list = resp.json().get("items") or []
         tracks = [
-            format_track(item.get("track") or item.get("item"))
+            format_track(item.get("item"))
             for item in raw_list
-            if item.get("track") or item.get("item")
+            if item.get("item")
         ]
 
         if not tracks:
