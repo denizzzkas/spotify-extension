@@ -70,7 +70,7 @@ async def fn_get_album_tracks(ctx, params: GetAlbumTracksParams) -> ActionResult
             tracks.append(track)
 
         return ActionResult.success(
-            data={"tracks": tracks, "count": len(tracks), "album": album_display, "artist": artist_display},
+            data={"items": tracks, "total": len(tracks), "album": album_display, "artist": artist_display},
             summary=f"'{album_display}' by {artist_display} — {len(tracks)} tracks",
         )
     except Exception as e:

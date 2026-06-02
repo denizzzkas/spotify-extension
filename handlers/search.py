@@ -60,7 +60,7 @@ async def fn_search_tracks(ctx, params: SearchTracksParams) -> ActionResult:
         tracks = [format_track(t) for t in raw_list]
 
         return ActionResult.success(
-            data={"tracks": tracks, "count": len(tracks), "query": q},
+            data={"items": tracks, "total": len(tracks), "query": q},
             summary=f"Found {len(tracks)} track(s) for '{q}'",
         )
     except Exception as e:

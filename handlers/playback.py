@@ -220,7 +220,7 @@ async def fn_play_playlist(ctx, params: PlayPlaylistParams) -> ActionResult:
             summary += " (open Spotify on any device to enable full playback)"
 
         return ActionResult.success(
-            data={"playlist_id": params.playlist_id, "tracks": tracks, "count": len(tracks)},
+            data={"playlist_id": params.playlist_id, "items": tracks, "total": len(tracks)},
             summary=summary,
             refresh_panels=["spotify"],
         )

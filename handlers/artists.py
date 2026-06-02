@@ -62,7 +62,7 @@ async def fn_get_artist_albums(ctx, params: GetArtistAlbumsParams) -> ActionResu
 
         albums = [format_album(a) for a in (resp.json().get("items") or [])]
         return ActionResult.success(
-            data={"albums": albums, "count": len(albums), "artist": artist_display},
+            data={"items": albums, "total": len(albums), "artist": artist_display},
             summary=f"Found {len(albums)} album(s) by {artist_display}",
         )
     except Exception as e:

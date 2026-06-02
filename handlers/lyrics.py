@@ -87,7 +87,7 @@ async def fn_get_lyrics(ctx, params: GetLyricsParams) -> ActionResult:
             formatted = "\n\n".join(paragraphs)
             summary = f"**{found_title}** — {found_artist}\n\n{formatted}"
             return ActionResult.success(
-                data={"lyrics": lyrics_text, "url": "", "title": found_title, "artist": found_artist},
+                data={"id": f"{found_title}:{found_artist}", "title": found_title, "subtitle": found_artist, "url": "", "lyrics": lyrics_text},
                 summary=summary,
             )
 
@@ -109,7 +109,7 @@ async def fn_get_lyrics(ctx, params: GetLyricsParams) -> ActionResult:
                     title = result["title"]
                     artist = result["primary_artist"]["name"]
                     return ActionResult.success(
-                        data={"lyrics": "", "url": genius_url, "title": title, "artist": artist},
+                        data={"id": genius_url, "title": title, "subtitle": artist, "url": genius_url, "lyrics": ""},
                         summary=f"Lyrics page for '{title}' by {artist}: {genius_url}",
                     )
 

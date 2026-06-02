@@ -152,10 +152,11 @@ async def fn_get_user_profile(ctx, params: GetUserProfileParams) -> ActionResult
             return _spotify_err(resp)
         raw = resp.json()
         images = raw.get("images") or []
+        display_name = raw.get("display_name") or raw.get("id", "")
         profile = {
             "id": raw.get("id", ""),
+            "title": display_name,
             "username": raw.get("id", ""),
-            "display_name": raw.get("display_name") or raw.get("id", ""),
             "email": raw.get("email", ""),
             "url": (raw.get("external_urls") or {}).get("spotify", ""),
             "avatar_url": images[0].get("url", "") if images else "",
@@ -163,7 +164,7 @@ async def fn_get_user_profile(ctx, params: GetUserProfileParams) -> ActionResult
             "product": raw.get("product", "free"),
         }
         return ActionResult.success(data=profile,
-                                    summary=f"Profile: {profile['display_name']} ({profile['product']})")
+                                    summary=f"Profile: {display_name} ({profile['product']})")
     except Exception as e:
         log.error("get_user_profile failed: %s", e)
         return ActionResult.error(f"Failed to get profile: {str(e)}", retryable=True)

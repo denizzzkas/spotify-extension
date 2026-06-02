@@ -30,8 +30,8 @@ async def test_search_tracks_returns_formatted_tracks():
     ctx.http.mock_get("api.spotify.com/v1/search", {"tracks": {"items": [SAMPLE_TRACK]}})
     result = await fn_search_tracks(ctx, SearchTracksParams(query="Midnight City"))
     assert result.status == "success"
-    assert result.data["count"] == 1
-    assert result.data["tracks"][0]["title"] == "Midnight City"
+    assert result.data["total"] == 1
+    assert result.data["items"][0]["title"] == "Midnight City"
 
 
 async def test_search_tracks_empty_results():
@@ -39,7 +39,7 @@ async def test_search_tracks_empty_results():
     ctx.http.mock_get("api.spotify.com/v1/search", {"tracks": {"items": []}})
     result = await fn_search_tracks(ctx, SearchTracksParams(query="xyznotfound"))
     assert result.status == "success"
-    assert result.data["count"] == 0
+    assert result.data["total"] == 0
 
 
 async def test_search_tracks_no_token_returns_error():
@@ -62,7 +62,7 @@ async def test_search_tracks_field_filter_params():
     ctx.http.mock_get("api.spotify.com/v1/search", {"tracks": {"items": [SAMPLE_TRACK]}})
     result = await fn_search_tracks(ctx, SearchTracksParams(track_name="Midnight City", artist_name="M83"))
     assert result.status == "success"
-    assert result.data["count"] == 1
+    assert result.data["total"] == 1
 
 
 async def test_search_tracks_no_params_returns_error():
@@ -213,7 +213,7 @@ async def test_get_user_profile_returns_profile():
     ctx.http.mock_get("api.spotify.com/v1/me", SAMPLE_USER)
     result = await fn_get_user_profile(ctx, GetUserProfileParams())
     assert result.status == "success"
-    assert result.data["display_name"] == "Test User"
+    assert result.data["title"] == "Test User"
     assert result.data["product"] == "premium"
     assert result.data["followers_count"] == 42
 

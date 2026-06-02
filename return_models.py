@@ -65,30 +65,24 @@ class SpotifyDisconnectRecord(BaseModel):
     disconnected: bool
 
 
-class UserProfileRecord(BaseModel):
-    id: str
-    username: str
-    display_name: str
-    email: str
-    url: str
-    avatar_url: str
-    followers_count: int
-    product: str
+class UserProfileRecord(sdl.Entity):
+    kind: str = "user"
+    username: str = sdl.field(role="spotify.username", default="")
+    email: str = sdl.field(role="spotify.email", default="")
+    avatar_url: str = sdl.field(role="spotify.avatar_url", default="")
+    followers_count: int = sdl.field(role="spotify.followers_count", default=0)
+    product: str = sdl.field(role="spotify.product", default="")
 
 
 # ── Composite / list result models ────────────────────────────────────────────
 
-class SearchResultRecord(BaseModel):
-    tracks: list[TrackRecord]
-    count: int
-    query: str
+class SearchResultRecord(sdl.EntityList[TrackRecord]):
+    query: str = ""
 
 
-class LyricsRecord(BaseModel):
-    lyrics: str = ""
-    url: str = ""
-    title: str
-    artist: str
+class LyricsRecord(sdl.Entity):
+    kind: str = "lyrics"
+    lyrics: str = sdl.field(role="spotify.lyrics", default="")
 
 
 class PlayTrackRecord(BaseModel):
@@ -116,15 +110,12 @@ class CreatePlaylistRecord(BaseModel):
     tracks_added: int
 
 
-class PlaylistPlayRecord(BaseModel):
-    playlist_id: str
-    tracks: list[TrackRecord]
-    count: int
+class PlaylistPlayRecord(sdl.EntityList[TrackRecord]):
+    playlist_id: str = sdl.field(role="spotify.playlist_id", default="")
 
 
-class DemoPlaylistRecord(BaseModel):
-    count: int
-    tracks: list[TrackRecord]
+class DemoPlaylistRecord(sdl.EntityList[TrackRecord]):
+    pass
 
 
 class DemoTrackRecord(BaseModel):
@@ -139,17 +130,13 @@ class AlbumPlayRecord(BaseModel):
     artist: str
 
 
-class ArtistAlbumsRecord(BaseModel):
-    albums: list[AlbumRecord]
-    count: int
-    artist: str
+class ArtistAlbumsRecord(sdl.EntityList[AlbumRecord]):
+    artist: str = sdl.field(role="spotify.artist", default="")
 
 
-class AlbumTracksRecord(BaseModel):
-    tracks: list[TrackRecord]
-    count: int
-    album: str
-    artist: str
+class AlbumTracksRecord(sdl.EntityList[TrackRecord]):
+    album: str = sdl.field(role="spotify.album", default="")
+    artist: str = sdl.field(role="spotify.artist", default="")
 
 
 class DeletePlaylistRecord(BaseModel):

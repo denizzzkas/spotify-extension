@@ -91,7 +91,7 @@ async def fn_open_demo_playlist(ctx, params: OpenDemoPlaylistParams) -> ActionRe
     try:
         await _set_demo_track(ctx, 0)
         return ActionResult.success(
-            data={"count": len(DEMO_TRACKS), "tracks": DEMO_TRACKS},
+            data={"items": DEMO_TRACKS, "total": len(DEMO_TRACKS)},
             summary=f"Opened demo playlist ({len(DEMO_TRACKS)} tracks)",
             refresh_panels=["spotify"],
         )
