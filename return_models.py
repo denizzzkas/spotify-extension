@@ -110,6 +110,22 @@ class CreatePlaylistRecord(BaseModel):
     tracks_added: int
 
 
+class RecentTracksRecord(sdl.EntityList[TrackRecord]):
+    pass
+
+
+class LikedTracksRecord(sdl.EntityList[TrackRecord]):
+    pass
+
+
+class UserPlaylistsRecord(sdl.EntityList[PlaylistRecord]):
+    pass
+
+
+class PlaylistTracksRecord(sdl.EntityList[TrackRecord]):
+    playlist_id: str = sdl.field(role="spotify.playlist_id", default="")
+
+
 class PlaylistPlayRecord(sdl.EntityList[TrackRecord]):
     playlist_id: str = sdl.field(role="spotify.playlist_id", default="")
 

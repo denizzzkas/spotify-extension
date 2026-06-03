@@ -79,7 +79,7 @@ async def test_get_playlists_returns_list():
     result = await fn_get_playlists(ctx, GetPlaylistsParams())
     assert result.status == "success"
     assert result.data["count"] == 1
-    assert result.data["playlists"][0]["title"] == "My Workout"
+    assert result.data["items"][0]["title"] == "My Workout"
 
 
 async def test_get_playlists_no_token_returns_error():
@@ -98,7 +98,7 @@ async def test_get_playlist_tracks_returns_tracks():
     result = await fn_get_playlist_tracks(ctx, GetPlaylistTracksParams(playlist_id="37i9dQZF1DXcBWIGoYBM5M"))
     assert result.status == "success"
     assert result.data["count"] == 1
-    assert result.data["tracks"][0]["title"] == "Midnight City"
+    assert result.data["items"][0]["title"] == "Midnight City"
 
 
 # ── create_playlist ───────────────────────────────────────────────────────────
@@ -149,7 +149,7 @@ async def test_get_recent_tracks_success():
     )
     result = await fn_get_recent_tracks(ctx, GetRecentTracksParams())
     assert result.status == "success"
-    assert result.data["tracks"][0]["title"] == "Midnight City"
+    assert result.data["items"][0]["title"] == "Midnight City"
 
 
 async def test_get_recent_tracks_premium_required():

@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 from imperal_sdk import ActionResult
 
 from app import chat
-from return_models import TrackRecord, TrackLikeRecord, UserProfileRecord
+from return_models import RecentTracksRecord, LikedTracksRecord, TrackLikeRecord, UserProfileRecord
 from spotify_config import SP_API_BASE, DEFAULT_HISTORY_LIMIT, DEFAULT_LIKES_LIMIT, MAX_LIMIT
 from app_helpers import _spotify_call, _spotify_err
 from utils import format_track, to_spotify_uri
@@ -37,7 +37,7 @@ class GetUserProfileParams(BaseModel):
 @chat.function(
     "get_recent_tracks",
     action_type="read",
-    data_model=TrackRecord,
+    data_model=RecentTracksRecord,
     description="Get the user's recently played tracks (requires Spotify Premium). Returns list of tracks with full details.",
 )
 async def fn_get_recent_tracks(ctx, params: GetRecentTracksParams) -> ActionResult:
@@ -52,7 +52,7 @@ async def fn_get_recent_tracks(ctx, params: GetRecentTracksParams) -> ActionResu
         if not resp.ok:
             return _spotify_err(resp)
         tracks = [format_track(item["track"]) for item in (resp.json().get("items") or []) if item.get("track")]
-        return ActionResult.success(data={"tracks": tracks, "count": len(tracks)},
+        return ActionResult.success(data={"items": tracks, "count": len(tracks)},
                                     summary=f"Retrieved {len(tracks)} recently played track(s)")
     except Exception as e:
         log.error("get_recent_tracks failed: %s", e)
@@ -62,7 +62,7 @@ async def fn_get_recent_tracks(ctx, params: GetRecentTracksParams) -> ActionResu
 @chat.function(
     "get_liked_tracks",
     action_type="read",
-    data_model=TrackRecord,
+    data_model=LikedTracksRecord,
     description="Get all tracks saved/liked in the user's Spotify library. Returns list of liked tracks with full details.",
 )
 async def fn_get_liked_tracks(ctx, params: GetLikedTracksParams) -> ActionResult:
@@ -75,7 +75,7 @@ async def fn_get_liked_tracks(ctx, params: GetLikedTracksParams) -> ActionResult
         if not resp.ok:
             return _spotify_err(resp)
         tracks = [format_track(item["track"]) for item in (resp.json().get("items") or []) if item.get("track")]
-        return ActionResult.success(data={"tracks": tracks, "count": len(tracks)},
+        return ActionResult.success(data={"items": tracks, "count": len(tracks)},
                                     summary=f"Retrieved {len(tracks)} saved track(s)")
     except Exception as e:
         log.error("get_liked_tracks failed: %s", e)

@@ -5,7 +5,7 @@ import logging
 from pydantic import BaseModel, Field
 from imperal_sdk import ActionResult
 from app import chat
-from return_models import PlaylistRecord, TrackRecord, CreatePlaylistRecord, PlaylistTrackRecord, PlaylistRemoveRecord, DeletePlaylistRecord, BulkAddTracksRecord, RenamePlaylistRecord
+from return_models import UserPlaylistsRecord, PlaylistTracksRecord, CreatePlaylistRecord, PlaylistTrackRecord, PlaylistRemoveRecord, DeletePlaylistRecord, BulkAddTracksRecord, RenamePlaylistRecord
 from spotify_config import SP_API_BASE, MAX_LIMIT
 from app_helpers import _spotify_call, _spotify_err
 from cache_models import PlaylistsModel
@@ -48,7 +48,7 @@ class AddTracksToPlaylistParams(BaseModel):
 @chat.function(
     "get_playlists",
     action_type="read",
-    data_model=PlaylistRecord,
+    data_model=UserPlaylistsRecord,
     description="List all playlists owned or followed by the user. Use this to browse or find a playlist before playing or editing it. Returns id, title, track_count, image_url.",
 )
 async def fn_get_playlists(ctx, params: GetPlaylistsParams) -> ActionResult:
@@ -70,7 +70,7 @@ async def fn_get_playlists(ctx, params: GetPlaylistsParams) -> ActionResult:
             await ctx.cache.set(key="playlists", value=PlaylistsModel(items=playlists), ttl_seconds=300)
         except Exception as e:
             log.error("Failed to cache playlists: %s", e)
-        return ActionResult.success(data={"playlists": playlists, "count": len(playlists)},
+        return ActionResult.success(data={"items": playlists, "count": len(playlists)},
                                     summary=f"Found {len(playlists)} playlist(s)")
     except Exception as e:
         log.error("get_playlists failed: %s", e)
@@ -80,7 +80,7 @@ async def fn_get_playlists(ctx, params: GetPlaylistsParams) -> ActionResult:
 @chat.function(
     "get_playlist_tracks",
     action_type="read",
-    data_model=TrackRecord,
+    data_model=PlaylistTracksRecord,
     description="List tracks in a playlist WITHOUT playing it. Use this to browse contents. To actually play the playlist, use play_playlist instead. Accepts playlist_id or playlist name.",
 )
 async def fn_get_playlist_tracks(ctx, params: GetPlaylistTracksParams) -> ActionResult:
@@ -101,7 +101,7 @@ async def fn_get_playlist_tracks(ctx, params: GetPlaylistTracksParams) -> Action
                 if raw_track:
                     tracks.append(format_track(raw_track))
             url, fetch_params = data.get("next"), {}
-        return ActionResult.success(data={"tracks": tracks, "count": len(tracks), "playlist_id": params.playlist_id},
+        return ActionResult.success(data={"items": tracks, "count": len(tracks), "playlist_id": params.playlist_id},
                                     summary=f"Retrieved {len(tracks)} track(s) from playlist")
     except Exception as e:
         log.error("get_playlist_tracks failed: %s", e)
