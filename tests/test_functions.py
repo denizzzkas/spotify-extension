@@ -78,7 +78,7 @@ async def test_get_playlists_returns_list():
     ctx.http.mock_get("api.spotify.com/v1/me/playlists", {"items": [SAMPLE_PLAYLIST]})
     result = await fn_get_playlists(ctx, GetPlaylistsParams())
     assert result.status == "success"
-    assert result.data["count"] == 1
+    assert result.data["total"] == 1
     assert result.data["items"][0]["title"] == "My Workout"
 
 
@@ -97,7 +97,7 @@ async def test_get_playlist_tracks_returns_tracks():
     )
     result = await fn_get_playlist_tracks(ctx, GetPlaylistTracksParams(playlist_id="37i9dQZF1DXcBWIGoYBM5M"))
     assert result.status == "success"
-    assert result.data["count"] == 1
+    assert result.data["total"] == 1
     assert result.data["items"][0]["title"] == "Midnight City"
 
 
@@ -175,7 +175,7 @@ async def test_get_liked_tracks_returns_tracks():
     )
     result = await fn_get_liked_tracks(ctx, GetLikedTracksParams())
     assert result.status == "success"
-    assert result.data["count"] == 1
+    assert result.data["total"] == 1
 
 
 async def test_get_liked_tracks_no_token_returns_error():
