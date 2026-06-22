@@ -70,7 +70,7 @@ async def fn_get_playlists(ctx, params: GetPlaylistsParams) -> ActionResult:
             await ctx.cache.set(key="playlists", value=PlaylistsModel(items=playlists), ttl_seconds=300)
         except Exception as e:
             log.error("Failed to cache playlists: %s", e)
-        return ActionResult.success(data={"items": playlists, "count": len(playlists)},
+        return ActionResult.success(data={"items": playlists, "total": len(playlists)},
                                     summary=f"Found {len(playlists)} playlist(s)")
     except Exception as e:
         log.error("get_playlists failed: %s", e)
@@ -101,7 +101,7 @@ async def fn_get_playlist_tracks(ctx, params: GetPlaylistTracksParams) -> Action
                 if raw_track:
                     tracks.append(format_track(raw_track))
             url, fetch_params = data.get("next"), {}
-        return ActionResult.success(data={"items": tracks, "count": len(tracks), "playlist_id": params.playlist_id},
+        return ActionResult.success(data={"items": tracks, "total": len(tracks), "playlist_id": params.playlist_id},
                                     summary=f"Retrieved {len(tracks)} track(s) from playlist")
     except Exception as e:
         log.error("get_playlist_tracks failed: %s", e)

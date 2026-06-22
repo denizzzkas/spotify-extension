@@ -21,6 +21,7 @@ async def render_demo_state(ctx) -> ui.Stack:
         ui.Header("Spotify", level=3),
         ui.Alert("Connect your Spotify account to get started.", type="info"),
         connect_button,
+        ui.Alert("Spotify is available in developer mode only. It will be available for all users soon.", type="info"),
     ]
 
     children.append(

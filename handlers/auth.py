@@ -83,7 +83,7 @@ async def fn_check_connection(ctx, params: CheckConnectionParams) -> ActionResul
 
 # ─── OAuth webhook callback ────────────────────────────────────────────────── #
 
-@ext.webhook("callback", method="GET")
+@ext.webhook("/callback", method="GET")
 async def oauth_callback(ctx, headers, body, query_params) -> dict:
     from imperal_sdk import WebhookResponse
 

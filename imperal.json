@@ -1,8 +1,8 @@
 {
   "manifest_schema_version": 3,
-  "sdk_version": "5.2.0",
+  "sdk_version": "5.7.3",
   "app_id": "spotify",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "name": "Spotify",
   "description": "Full access to your Spotify music library. Search tracks, manage playlists, save songs, view play history, and more.",
   "icon": "icon.svg",
@@ -17,7 +17,7 @@
   "tools": [
     {
       "name": "skeleton_refresh_spotify_stats",
-      "description": "Spotify library stats: liked count, playlist count, first 5 playlist names and IDs",
+      "description": "Spotify library stats: liked track count",
       "scopes": [],
       "parameters": {}
     },
@@ -266,29 +266,54 @@
           }
         },
         "properties": {
-          "tracks": {
+          "items": {
             "items": {
               "$ref": "#/$defs/TrackRecord"
             },
-            "title": "Tracks",
+            "title": "Items",
             "type": "array"
           },
-          "count": {
-            "title": "Count",
-            "type": "integer"
+          "total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Total"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Page"
+          },
+          "has_more": {
+            "default": false,
+            "title": "Has More",
+            "type": "boolean"
           },
           "query": {
+            "default": "",
             "title": "Query",
             "type": "string"
           }
         },
         "required": [
-          "tracks",
-          "count",
-          "query"
+          "items"
         ],
         "title": "SearchResultRecord",
-        "type": "object"
+        "type": "object",
+        "x-sdl": "entity-list"
       },
       "event": "",
       "background": false,
@@ -309,87 +334,135 @@
         "type": "object"
       },
       "return_schema": {
-        "properties": {
-          "id": {
-            "anyOf": [
-              {
+        "$defs": {
+          "PlaylistRecord": {
+            "properties": {
+              "id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ],
+                "title": "Id"
+              },
+              "title": {
+                "title": "Title",
                 "type": "string"
               },
+              "kind": {
+                "default": "playlist",
+                "title": "Kind",
+                "type": "string"
+              },
+              "subtitle": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Subtitle"
+              },
+              "description": {
+                "default": "",
+                "title": "Description",
+                "type": "string"
+              },
+              "status": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Status"
+              },
+              "url": {
+                "default": "",
+                "title": "Url",
+                "type": "string"
+              },
+              "track_count": {
+                "default": 0,
+                "title": "Track Count",
+                "type": "integer",
+                "x-sdl-role": "spotify.track_count"
+              },
+              "is_public": {
+                "default": false,
+                "title": "Is Public",
+                "type": "boolean",
+                "x-sdl-role": "spotify.is_public"
+              },
+              "image_url": {
+                "default": "",
+                "title": "Image Url",
+                "type": "string",
+                "x-sdl-role": "spotify.image_url"
+              }
+            },
+            "required": [
+              "id",
+              "title"
+            ],
+            "title": "PlaylistRecord",
+            "type": "object",
+            "x-sdl": "entity"
+          }
+        },
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/$defs/PlaylistRecord"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "anyOf": [
               {
                 "type": "integer"
-              }
-            ],
-            "title": "Id"
-          },
-          "title": {
-            "title": "Title",
-            "type": "string"
-          },
-          "kind": {
-            "default": "playlist",
-            "title": "Kind",
-            "type": "string"
-          },
-          "subtitle": {
-            "anyOf": [
-              {
-                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
             "default": null,
-            "title": "Subtitle"
+            "title": "Total"
           },
-          "description": {
-            "default": "",
-            "title": "Description",
-            "type": "string"
-          },
-          "status": {
+          "page": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "integer"
               },
               {
                 "type": "null"
               }
             ],
             "default": null,
-            "title": "Status"
+            "title": "Page"
           },
-          "url": {
-            "default": "",
-            "title": "Url",
-            "type": "string"
-          },
-          "track_count": {
-            "default": 0,
-            "title": "Track Count",
-            "type": "integer",
-            "x-sdl-role": "spotify.track_count"
-          },
-          "is_public": {
+          "has_more": {
             "default": false,
-            "title": "Is Public",
-            "type": "boolean",
-            "x-sdl-role": "spotify.is_public"
-          },
-          "image_url": {
-            "default": "",
-            "title": "Image Url",
-            "type": "string",
-            "x-sdl-role": "spotify.image_url"
+            "title": "Has More",
+            "type": "boolean"
           }
         },
         "required": [
-          "id",
-          "title"
+          "items"
         ],
-        "title": "PlaylistRecord",
+        "title": "UserPlaylistsRecord",
         "type": "object",
-        "x-sdl": "entity"
+        "x-sdl": "entity-list"
       },
       "event": "",
       "background": false,
@@ -419,118 +492,172 @@
         "type": "object"
       },
       "return_schema": {
-        "properties": {
-          "id": {
-            "anyOf": [
-              {
+        "$defs": {
+          "TrackRecord": {
+            "properties": {
+              "id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ],
+                "title": "Id"
+              },
+              "title": {
+                "title": "Title",
                 "type": "string"
               },
+              "kind": {
+                "default": "track",
+                "title": "Kind",
+                "type": "string"
+              },
+              "subtitle": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Subtitle"
+              },
+              "description": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Description"
+              },
+              "status": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Status"
+              },
+              "url": {
+                "default": "",
+                "title": "Url",
+                "type": "string"
+              },
+              "artist": {
+                "default": "",
+                "title": "Artist",
+                "type": "string",
+                "x-sdl-role": "spotify.artist"
+              },
+              "duration": {
+                "default": "",
+                "title": "Duration",
+                "type": "string",
+                "x-sdl-role": "spotify.duration_label"
+              },
+              "duration_ms": {
+                "default": 0,
+                "title": "Duration Ms",
+                "type": "integer",
+                "x-sdl-role": "spotify.duration_ms"
+              },
+              "popularity": {
+                "default": 0,
+                "title": "Popularity",
+                "type": "integer",
+                "x-sdl-role": "spotify.popularity"
+              },
+              "preview_url": {
+                "default": "",
+                "title": "Preview Url",
+                "type": "string",
+                "x-sdl-role": "spotify.preview_url"
+              },
+              "album": {
+                "default": "",
+                "title": "Album",
+                "type": "string",
+                "x-sdl-role": "spotify.album"
+              },
+              "album_art": {
+                "default": "",
+                "title": "Album Art",
+                "type": "string",
+                "x-sdl-role": "spotify.album_art"
+              }
+            },
+            "required": [
+              "id",
+              "title"
+            ],
+            "title": "TrackRecord",
+            "type": "object",
+            "x-sdl": "entity"
+          }
+        },
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/$defs/TrackRecord"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "anyOf": [
               {
                 "type": "integer"
-              }
-            ],
-            "title": "Id"
-          },
-          "title": {
-            "title": "Title",
-            "type": "string"
-          },
-          "kind": {
-            "default": "track",
-            "title": "Kind",
-            "type": "string"
-          },
-          "subtitle": {
-            "anyOf": [
-              {
-                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
             "default": null,
-            "title": "Subtitle"
+            "title": "Total"
           },
-          "description": {
+          "page": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "integer"
               },
               {
                 "type": "null"
               }
             ],
             "default": null,
-            "title": "Description"
+            "title": "Page"
           },
-          "status": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Status"
+          "has_more": {
+            "default": false,
+            "title": "Has More",
+            "type": "boolean"
           },
-          "url": {
+          "playlist_id": {
             "default": "",
-            "title": "Url",
-            "type": "string"
-          },
-          "artist": {
-            "default": "",
-            "title": "Artist",
+            "title": "Playlist Id",
             "type": "string",
-            "x-sdl-role": "spotify.artist"
-          },
-          "duration": {
-            "default": "",
-            "title": "Duration",
-            "type": "string",
-            "x-sdl-role": "spotify.duration_label"
-          },
-          "duration_ms": {
-            "default": 0,
-            "title": "Duration Ms",
-            "type": "integer",
-            "x-sdl-role": "spotify.duration_ms"
-          },
-          "popularity": {
-            "default": 0,
-            "title": "Popularity",
-            "type": "integer",
-            "x-sdl-role": "spotify.popularity"
-          },
-          "preview_url": {
-            "default": "",
-            "title": "Preview Url",
-            "type": "string",
-            "x-sdl-role": "spotify.preview_url"
-          },
-          "album": {
-            "default": "",
-            "title": "Album",
-            "type": "string",
-            "x-sdl-role": "spotify.album"
-          },
-          "album_art": {
-            "default": "",
-            "title": "Album Art",
-            "type": "string",
-            "x-sdl-role": "spotify.album_art"
+            "x-sdl-role": "spotify.playlist_id"
           }
         },
         "required": [
-          "id",
-          "title"
+          "items"
         ],
-        "title": "TrackRecord",
+        "title": "PlaylistTracksRecord",
         "type": "object",
-        "x-sdl": "entity"
+        "x-sdl": "entity-list"
       },
       "event": "",
       "background": false,
@@ -910,118 +1037,166 @@
         "type": "object"
       },
       "return_schema": {
-        "properties": {
-          "id": {
-            "anyOf": [
-              {
+        "$defs": {
+          "TrackRecord": {
+            "properties": {
+              "id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ],
+                "title": "Id"
+              },
+              "title": {
+                "title": "Title",
                 "type": "string"
               },
+              "kind": {
+                "default": "track",
+                "title": "Kind",
+                "type": "string"
+              },
+              "subtitle": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Subtitle"
+              },
+              "description": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Description"
+              },
+              "status": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Status"
+              },
+              "url": {
+                "default": "",
+                "title": "Url",
+                "type": "string"
+              },
+              "artist": {
+                "default": "",
+                "title": "Artist",
+                "type": "string",
+                "x-sdl-role": "spotify.artist"
+              },
+              "duration": {
+                "default": "",
+                "title": "Duration",
+                "type": "string",
+                "x-sdl-role": "spotify.duration_label"
+              },
+              "duration_ms": {
+                "default": 0,
+                "title": "Duration Ms",
+                "type": "integer",
+                "x-sdl-role": "spotify.duration_ms"
+              },
+              "popularity": {
+                "default": 0,
+                "title": "Popularity",
+                "type": "integer",
+                "x-sdl-role": "spotify.popularity"
+              },
+              "preview_url": {
+                "default": "",
+                "title": "Preview Url",
+                "type": "string",
+                "x-sdl-role": "spotify.preview_url"
+              },
+              "album": {
+                "default": "",
+                "title": "Album",
+                "type": "string",
+                "x-sdl-role": "spotify.album"
+              },
+              "album_art": {
+                "default": "",
+                "title": "Album Art",
+                "type": "string",
+                "x-sdl-role": "spotify.album_art"
+              }
+            },
+            "required": [
+              "id",
+              "title"
+            ],
+            "title": "TrackRecord",
+            "type": "object",
+            "x-sdl": "entity"
+          }
+        },
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/$defs/TrackRecord"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "anyOf": [
               {
                 "type": "integer"
-              }
-            ],
-            "title": "Id"
-          },
-          "title": {
-            "title": "Title",
-            "type": "string"
-          },
-          "kind": {
-            "default": "track",
-            "title": "Kind",
-            "type": "string"
-          },
-          "subtitle": {
-            "anyOf": [
-              {
-                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
             "default": null,
-            "title": "Subtitle"
+            "title": "Total"
           },
-          "description": {
+          "page": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "integer"
               },
               {
                 "type": "null"
               }
             ],
             "default": null,
-            "title": "Description"
+            "title": "Page"
           },
-          "status": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Status"
-          },
-          "url": {
-            "default": "",
-            "title": "Url",
-            "type": "string"
-          },
-          "artist": {
-            "default": "",
-            "title": "Artist",
-            "type": "string",
-            "x-sdl-role": "spotify.artist"
-          },
-          "duration": {
-            "default": "",
-            "title": "Duration",
-            "type": "string",
-            "x-sdl-role": "spotify.duration_label"
-          },
-          "duration_ms": {
-            "default": 0,
-            "title": "Duration Ms",
-            "type": "integer",
-            "x-sdl-role": "spotify.duration_ms"
-          },
-          "popularity": {
-            "default": 0,
-            "title": "Popularity",
-            "type": "integer",
-            "x-sdl-role": "spotify.popularity"
-          },
-          "preview_url": {
-            "default": "",
-            "title": "Preview Url",
-            "type": "string",
-            "x-sdl-role": "spotify.preview_url"
-          },
-          "album": {
-            "default": "",
-            "title": "Album",
-            "type": "string",
-            "x-sdl-role": "spotify.album"
-          },
-          "album_art": {
-            "default": "",
-            "title": "Album Art",
-            "type": "string",
-            "x-sdl-role": "spotify.album_art"
+          "has_more": {
+            "default": false,
+            "title": "Has More",
+            "type": "boolean"
           }
         },
         "required": [
-          "id",
-          "title"
+          "items"
         ],
-        "title": "TrackRecord",
+        "title": "RecentTracksRecord",
         "type": "object",
-        "x-sdl": "entity"
+        "x-sdl": "entity-list"
       },
       "event": "",
       "background": false,
@@ -1051,118 +1226,166 @@
         "type": "object"
       },
       "return_schema": {
-        "properties": {
-          "id": {
-            "anyOf": [
-              {
+        "$defs": {
+          "TrackRecord": {
+            "properties": {
+              "id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ],
+                "title": "Id"
+              },
+              "title": {
+                "title": "Title",
                 "type": "string"
               },
+              "kind": {
+                "default": "track",
+                "title": "Kind",
+                "type": "string"
+              },
+              "subtitle": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Subtitle"
+              },
+              "description": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Description"
+              },
+              "status": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Status"
+              },
+              "url": {
+                "default": "",
+                "title": "Url",
+                "type": "string"
+              },
+              "artist": {
+                "default": "",
+                "title": "Artist",
+                "type": "string",
+                "x-sdl-role": "spotify.artist"
+              },
+              "duration": {
+                "default": "",
+                "title": "Duration",
+                "type": "string",
+                "x-sdl-role": "spotify.duration_label"
+              },
+              "duration_ms": {
+                "default": 0,
+                "title": "Duration Ms",
+                "type": "integer",
+                "x-sdl-role": "spotify.duration_ms"
+              },
+              "popularity": {
+                "default": 0,
+                "title": "Popularity",
+                "type": "integer",
+                "x-sdl-role": "spotify.popularity"
+              },
+              "preview_url": {
+                "default": "",
+                "title": "Preview Url",
+                "type": "string",
+                "x-sdl-role": "spotify.preview_url"
+              },
+              "album": {
+                "default": "",
+                "title": "Album",
+                "type": "string",
+                "x-sdl-role": "spotify.album"
+              },
+              "album_art": {
+                "default": "",
+                "title": "Album Art",
+                "type": "string",
+                "x-sdl-role": "spotify.album_art"
+              }
+            },
+            "required": [
+              "id",
+              "title"
+            ],
+            "title": "TrackRecord",
+            "type": "object",
+            "x-sdl": "entity"
+          }
+        },
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/$defs/TrackRecord"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "anyOf": [
               {
                 "type": "integer"
-              }
-            ],
-            "title": "Id"
-          },
-          "title": {
-            "title": "Title",
-            "type": "string"
-          },
-          "kind": {
-            "default": "track",
-            "title": "Kind",
-            "type": "string"
-          },
-          "subtitle": {
-            "anyOf": [
-              {
-                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
             "default": null,
-            "title": "Subtitle"
+            "title": "Total"
           },
-          "description": {
+          "page": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "integer"
               },
               {
                 "type": "null"
               }
             ],
             "default": null,
-            "title": "Description"
+            "title": "Page"
           },
-          "status": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Status"
-          },
-          "url": {
-            "default": "",
-            "title": "Url",
-            "type": "string"
-          },
-          "artist": {
-            "default": "",
-            "title": "Artist",
-            "type": "string",
-            "x-sdl-role": "spotify.artist"
-          },
-          "duration": {
-            "default": "",
-            "title": "Duration",
-            "type": "string",
-            "x-sdl-role": "spotify.duration_label"
-          },
-          "duration_ms": {
-            "default": 0,
-            "title": "Duration Ms",
-            "type": "integer",
-            "x-sdl-role": "spotify.duration_ms"
-          },
-          "popularity": {
-            "default": 0,
-            "title": "Popularity",
-            "type": "integer",
-            "x-sdl-role": "spotify.popularity"
-          },
-          "preview_url": {
-            "default": "",
-            "title": "Preview Url",
-            "type": "string",
-            "x-sdl-role": "spotify.preview_url"
-          },
-          "album": {
-            "default": "",
-            "title": "Album",
-            "type": "string",
-            "x-sdl-role": "spotify.album"
-          },
-          "album_art": {
-            "default": "",
-            "title": "Album Art",
-            "type": "string",
-            "x-sdl-role": "spotify.album_art"
+          "has_more": {
+            "default": false,
+            "title": "Has More",
+            "type": "boolean"
           }
         },
         "required": [
-          "id",
-          "title"
+          "items"
         ],
-        "title": "TrackRecord",
+        "title": "LikedTracksRecord",
         "type": "object",
-        "x-sdl": "entity"
+        "x-sdl": "entity-list"
       },
       "event": "",
       "background": false,
@@ -1279,50 +1502,111 @@
       "return_schema": {
         "properties": {
           "id": {
-            "title": "Id",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "title": "Title",
             "type": "string"
           },
-          "username": {
-            "title": "Username",
+          "kind": {
+            "default": "user",
+            "title": "Kind",
             "type": "string"
           },
-          "display_name": {
-            "title": "Display Name",
-            "type": "string"
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subtitle"
           },
-          "email": {
-            "title": "Email",
-            "type": "string"
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
           },
           "url": {
-            "title": "Url",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Url"
+          },
+          "username": {
+            "default": "",
+            "title": "Username",
+            "type": "string",
+            "x-sdl-role": "spotify.username"
+          },
+          "email": {
+            "default": "",
+            "title": "Email",
+            "type": "string",
+            "x-sdl-role": "spotify.email"
           },
           "avatar_url": {
+            "default": "",
             "title": "Avatar Url",
-            "type": "string"
+            "type": "string",
+            "x-sdl-role": "spotify.avatar_url"
           },
           "followers_count": {
+            "default": 0,
             "title": "Followers Count",
-            "type": "integer"
+            "type": "integer",
+            "x-sdl-role": "spotify.followers_count"
           },
           "product": {
+            "default": "",
             "title": "Product",
-            "type": "string"
+            "type": "string",
+            "x-sdl-role": "spotify.product"
           }
         },
         "required": [
           "id",
-          "username",
-          "display_name",
-          "email",
-          "url",
-          "avatar_url",
-          "followers_count",
-          "product"
+          "title"
         ],
         "title": "UserProfileRecord",
-        "type": "object"
+        "type": "object",
+        "x-sdl": "entity"
       },
       "event": "",
       "background": false,
@@ -1672,29 +1956,55 @@
           }
         },
         "properties": {
-          "playlist_id": {
-            "title": "Playlist Id",
-            "type": "string"
-          },
-          "tracks": {
+          "items": {
             "items": {
               "$ref": "#/$defs/TrackRecord"
             },
-            "title": "Tracks",
+            "title": "Items",
             "type": "array"
           },
-          "count": {
-            "title": "Count",
-            "type": "integer"
+          "total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Total"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Page"
+          },
+          "has_more": {
+            "default": false,
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "playlist_id": {
+            "default": "",
+            "title": "Playlist Id",
+            "type": "string",
+            "x-sdl-role": "spotify.playlist_id"
           }
         },
         "required": [
-          "playlist_id",
-          "tracks",
-          "count"
+          "items"
         ],
         "title": "PlaylistPlayRecord",
-        "type": "object"
+        "type": "object",
+        "x-sdl": "entity-list"
       },
       "event": "playlist.played",
       "background": false,
@@ -1892,24 +2202,49 @@
           }
         },
         "properties": {
-          "count": {
-            "title": "Count",
-            "type": "integer"
-          },
-          "tracks": {
+          "items": {
             "items": {
               "$ref": "#/$defs/TrackRecord"
             },
-            "title": "Tracks",
+            "title": "Items",
             "type": "array"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Total"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Page"
+          },
+          "has_more": {
+            "default": false,
+            "title": "Has More",
+            "type": "boolean"
           }
         },
         "required": [
-          "count",
-          "tracks"
+          "items"
         ],
         "title": "DemoPlaylistRecord",
-        "type": "object"
+        "type": "object",
+        "x-sdl": "entity-list"
       },
       "event": "open_demo_playlist",
       "background": false,
@@ -2106,31 +2441,88 @@
       },
       "return_schema": {
         "properties": {
-          "lyrics": {
-            "default": "",
-            "title": "Lyrics",
-            "type": "string"
-          },
-          "url": {
-            "default": "",
-            "title": "Url",
-            "type": "string"
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Id"
           },
           "title": {
             "title": "Title",
             "type": "string"
           },
-          "artist": {
-            "title": "Artist",
+          "kind": {
+            "default": "lyrics",
+            "title": "Kind",
             "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subtitle"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Url"
+          },
+          "lyrics": {
+            "default": "",
+            "title": "Lyrics",
+            "type": "string",
+            "x-sdl-role": "spotify.lyrics"
           }
         },
         "required": [
-          "title",
-          "artist"
+          "id",
+          "title"
         ],
         "title": "LyricsRecord",
-        "type": "object"
+        "type": "object",
+        "x-sdl": "entity"
       },
       "event": "",
       "background": false,
@@ -2419,29 +2811,55 @@
           }
         },
         "properties": {
-          "albums": {
+          "items": {
             "items": {
               "$ref": "#/$defs/AlbumRecord"
             },
-            "title": "Albums",
+            "title": "Items",
             "type": "array"
           },
-          "count": {
-            "title": "Count",
-            "type": "integer"
+          "total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Total"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Page"
+          },
+          "has_more": {
+            "default": false,
+            "title": "Has More",
+            "type": "boolean"
           },
           "artist": {
+            "default": "",
             "title": "Artist",
-            "type": "string"
+            "type": "string",
+            "x-sdl-role": "spotify.artist"
           }
         },
         "required": [
-          "albums",
-          "count",
-          "artist"
+          "items"
         ],
         "title": "ArtistAlbumsRecord",
-        "type": "object"
+        "type": "object",
+        "x-sdl": "entity-list"
       },
       "event": "",
       "background": false,
@@ -2594,34 +3012,61 @@
           }
         },
         "properties": {
-          "tracks": {
+          "items": {
             "items": {
               "$ref": "#/$defs/TrackRecord"
             },
-            "title": "Tracks",
+            "title": "Items",
             "type": "array"
           },
-          "count": {
-            "title": "Count",
-            "type": "integer"
+          "total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Total"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Page"
+          },
+          "has_more": {
+            "default": false,
+            "title": "Has More",
+            "type": "boolean"
           },
           "album": {
+            "default": "",
             "title": "Album",
-            "type": "string"
+            "type": "string",
+            "x-sdl-role": "spotify.album"
           },
           "artist": {
+            "default": "",
             "title": "Artist",
-            "type": "string"
+            "type": "string",
+            "x-sdl-role": "spotify.artist"
           }
         },
         "required": [
-          "tracks",
-          "count",
-          "album",
-          "artist"
+          "items"
         ],
         "title": "AlbumTracksRecord",
-        "type": "object"
+        "type": "object",
+        "x-sdl": "entity-list"
       },
       "event": "",
       "background": false,
@@ -2867,12 +3312,12 @@
   "icon_size_bytes": 905,
   "webhooks": [
     {
-      "path": "callback",
+      "path": "/callback",
       "method": "GET",
       "secret_header": ""
     },
     {
-      "path": "player-ready",
+      "path": "/player-ready",
       "method": "POST",
       "secret_header": ""
     }
@@ -2978,6 +3423,26 @@
       "required": false,
       "write_mode": "user",
       "max_bytes": 256
+    }
+  ],
+  "panels": [
+    {
+      "panel_id": "secrets",
+      "slot": "right",
+      "title": "Secrets",
+      "tree": {}
+    },
+    {
+      "panel_id": "spotify",
+      "slot": "left",
+      "title": "Spotify",
+      "tree": {}
+    },
+    {
+      "panel_id": "spotify_detail",
+      "slot": "center",
+      "title": "Spotify",
+      "tree": {}
     }
   ]
 }

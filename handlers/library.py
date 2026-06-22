@@ -52,7 +52,7 @@ async def fn_get_recent_tracks(ctx, params: GetRecentTracksParams) -> ActionResu
         if not resp.ok:
             return _spotify_err(resp)
         tracks = [format_track(item["track"]) for item in (resp.json().get("items") or []) if item.get("track")]
-        return ActionResult.success(data={"items": tracks, "count": len(tracks)},
+        return ActionResult.success(data={"items": tracks, "total": len(tracks)},
                                     summary=f"Retrieved {len(tracks)} recently played track(s)")
     except Exception as e:
         log.error("get_recent_tracks failed: %s", e)
@@ -75,7 +75,7 @@ async def fn_get_liked_tracks(ctx, params: GetLikedTracksParams) -> ActionResult
         if not resp.ok:
             return _spotify_err(resp)
         tracks = [format_track(item["track"]) for item in (resp.json().get("items") or []) if item.get("track")]
-        return ActionResult.success(data={"items": tracks, "count": len(tracks)},
+        return ActionResult.success(data={"items": tracks, "total": len(tracks)},
                                     summary=f"Retrieved {len(tracks)} saved track(s)")
     except Exception as e:
         log.error("get_liked_tracks failed: %s", e)
