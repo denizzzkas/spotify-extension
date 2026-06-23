@@ -133,10 +133,12 @@ async def prepare_oauth_url(ctx) -> str | None:
 
     try:
         if not ctx.store:
+            log.error("prepare_oauth_url: ctx.store is None")
             return None
         client_id = await ctx.secrets.get("spotify_client_id")
         client_secret = await ctx.secrets.get("spotify_client_secret")
         if not client_id or not client_secret:
+            log.error("prepare_oauth_url: secrets missing (client_id=%s client_secret=%s)", bool(client_id), bool(client_secret))
             return None
 
         user_id = ctx.user.imperal_id
