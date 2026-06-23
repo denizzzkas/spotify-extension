@@ -28,6 +28,37 @@
       "parameters": {}
     },
     {
+      "name": "connect_spotify",
+      "description": "Start the Spotify OAuth flow. Returns a URL the user must open to authorise the extension.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {},
+        "title": "ConnectSpotifyParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "auth_url": {
+            "title": "Auth Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "auth_url"
+        ],
+        "title": "SpotifyConnectRecord",
+        "type": "object"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_spotify_chat"
+    },
+    {
       "name": "disconnect_spotify",
       "description": "Disconnect your Spotify account and remove all stored credentials.",
       "action_type": "write",

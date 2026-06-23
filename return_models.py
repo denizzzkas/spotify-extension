@@ -56,6 +56,10 @@ class TrackLikeRecord(BaseModel):
     liked: bool
 
 
+class SpotifyConnectRecord(BaseModel):
+    auth_url: str
+
+
 class SpotifyConnectionRecord(BaseModel):
     connected: bool
     token_scopes: str | None = None

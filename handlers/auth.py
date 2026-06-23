@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from imperal_sdk import ActionResult
 
 from app import ext, chat
-from return_models import SpotifyDisconnectRecord, SpotifyConnectionRecord
+from return_models import SpotifyConnectRecord, SpotifyDisconnectRecord, SpotifyConnectionRecord
 from spotify_config import (
     SP_AUTH_URL, SP_TOKEN_URL, SP_SCOPES,
     OAUTH_STATE_COLLECTION, CRED_COLLECTION,
@@ -20,6 +20,9 @@ log = logging.getLogger("spotify.auth")
 
 # ─── Param models ─────────────────────────────────────────────────────────── #
 
+class ConnectSpotifyParams(BaseModel):
+    pass
+
 class DisconnectSpotifyParams(BaseModel):
     pass
 
@@ -27,6 +30,23 @@ class CheckConnectionParams(BaseModel):
     pass
 
 # ─── Auth handlers ────────────────────────────────────────────────────────── #
+
+@chat.function(
+    "connect_spotify",
+    action_type="read",
+    data_model=SpotifyConnectRecord,
+    description="Start the Spotify OAuth flow. Returns a URL the user must open to authorise the extension.",
+)
+async def fn_connect_spotify(ctx, params: ConnectSpotifyParams) -> ActionResult:
+    """Start the Spotify OAuth flow."""
+    from app_helpers import prepare_oauth_url
+    auth_url = await prepare_oauth_url(ctx)
+    if not auth_url:
+        return ActionResult.error("Could not generate Spotify authorisation URL. Check that your Spotify credentials are configured in the Secrets panel.")
+    return ActionResult.success(
+        data={"auth_url": auth_url},
+        summary=f"Open this link to connect Spotify: {auth_url}",
+    )
 
 @chat.function(
     "disconnect_spotify",
