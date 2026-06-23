@@ -174,7 +174,7 @@ async def prepare_oauth_url(ctx) -> str | None:
             "show_dialog": "true",
         })
     except Exception as e:
-        log.error("prepare_oauth_url failed: %s", e)
+        log.error("prepare_oauth_url failed: %s", e, exc_info=True)
         return None
 
 

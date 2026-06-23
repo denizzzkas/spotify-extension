@@ -1,6 +1,6 @@
 {
   "manifest_schema_version": 3,
-  "sdk_version": "5.2.1",
+  "sdk_version": "5.7.3",
   "app_id": "spotify",
   "version": "2.3.0",
   "name": "Spotify",
@@ -3423,6 +3423,26 @@
       "required": false,
       "write_mode": "user",
       "max_bytes": 256
+    }
+  ],
+  "panels": [
+    {
+      "panel_id": "secrets",
+      "slot": "right",
+      "title": "Secrets",
+      "tree": {}
+    },
+    {
+      "panel_id": "spotify",
+      "slot": "left",
+      "title": "Spotify",
+      "tree": {}
+    },
+    {
+      "panel_id": "spotify_detail",
+      "slot": "center",
+      "title": "Spotify",
+      "tree": {}
     }
   ]
 }
