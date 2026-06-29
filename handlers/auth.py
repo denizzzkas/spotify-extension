@@ -127,14 +127,17 @@ async def oauth_callback(ctx, headers, body, query_params) -> dict:
 
         record = page.data[0].data
         user_id = record.get("user_id")
-        client_id = record.get("client_id")
-        client_secret = record.get("client_secret")
         redirect_uri = record.get("redirect_uri")
 
         await ctx.store.delete(OAUTH_STATE_COLLECTION, page.data[0].id)
 
-        if not client_id or not client_secret or not user_id:
-            return WebhookResponse.error("Spotify credentials missing from state", 500)
+        if not user_id:
+            return WebhookResponse.error("Missing user_id in state", 500)
+
+        client_id = await ctx.secrets.get("spotify_client_id")
+        client_secret = await ctx.secrets.get("spotify_client_secret")
+        if not client_id or not client_secret:
+            return WebhookResponse.error("Spotify app credentials not configured", 500)
 
         credentials = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
 

@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from imperal_sdk import Extension
 from imperal_sdk.chat import ChatExtension
 from imperal_sdk.types.health import HealthStatus
+from imperal_sdk.secrets.spec import SecretSpec
 
 from spotify_config import (
     SP_API_BASE, SP_AUTH_URL, SP_TOKEN_URL, SP_SCOPES,
@@ -36,21 +37,21 @@ ext = Extension(
     config_defaults={},
 )
 
-ext.secret(
+ext._secrets["spotify_client_id"] = SecretSpec(
     name="spotify_client_id",
     description="Spotify OAuth Client ID from developer.spotify.com",
     required=True,
-    write_mode="user",
+    scope="app",
     max_bytes=256,
-)(lambda: None)
+)
 
-ext.secret(
+ext._secrets["spotify_client_secret"] = SecretSpec(
     name="spotify_client_secret",
     description="Spotify OAuth Client Secret from developer.spotify.com",
     required=True,
-    write_mode="user",
+    scope="app",
     max_bytes=512,
-)(lambda: None)
+)
 
 ext.secret(
     name="genius_access_token",
