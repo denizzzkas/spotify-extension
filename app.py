@@ -28,7 +28,7 @@ log = logging.getLogger("spotify")
 ext = Extension(
     "spotify",
     display_name="Spotify",
-    description="Full access to your Spotify music library. Search tracks, manage playlists, save songs, view play history, and more.",
+    description="A smarter way to manage your music. Instantly search Spotify's catalog, organize playlists, and explore your listening history right from the panel. Save tracks to your library, discover what you've been playing lately, and ask the AI anything about your music collection. Your Spotify data, always within reach.",
     icon="icon.svg",
     version="2.3.0",
     capabilities=["music:read", "music:write", "playback:control", "auth:oauth"],
