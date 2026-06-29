@@ -3343,7 +3343,7 @@
   "icon_size_bytes": 905,
   "webhooks": [
     {
-      "path": "/callback",
+      "path": "callback",
       "method": "GET",
       "secret_header": ""
     },
