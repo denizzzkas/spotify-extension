@@ -88,7 +88,7 @@ async def fn_get_liked_tracks(ctx, params: GetLikedTracksParams) -> ActionResult
     chain_callable=True,
     id_projection="track_id",
     effects=["library:like"],
-    event="track.liked",
+    event="spotify.track.liked",
     data_model=TrackLikeRecord,
     description="Like a specific track by track_id. Use in chains after search_tracks. To like the currently playing track without knowing its ID, use sp_like instead.",
 )
@@ -115,7 +115,7 @@ async def fn_like_track(ctx, params: LikeTrackParams) -> ActionResult:
     chain_callable=True,
     id_projection="track_id",
     effects=["library:unlike"],
-    event="track.unliked",
+    event="spotify.track.unliked",
     data_model=TrackLikeRecord,
     description="Unlike a specific track by track_id. Use in chains after search_tracks. To unlike the currently playing track, use sp_like instead.",
 )

@@ -14,7 +14,13 @@ from spotify_config import (
     SP_AUTH_URL, SP_TOKEN_URL, SP_SCOPES,
     OAUTH_STATE_COLLECTION, CRED_COLLECTION,
 )
-from app_helpers import _get_access_token, _save_token_to_store, _require_user_id
+from app_helpers import (
+    _get_access_token,
+    _save_token_to_store,
+    _require_user_id,
+    _state_is_fresh,
+    _user_error_message,
+)
 
 log = logging.getLogger("spotify.auth")
 
@@ -53,7 +59,7 @@ async def fn_connect_spotify(ctx, params: ConnectSpotifyParams) -> ActionResult:
     action_type="write",
     chain_callable=True,
     effects=["auth:disconnect"],
-    event="disconnected",
+    event="spotify.disconnected",
     data_model=SpotifyDisconnectRecord,
     description="Disconnect your Spotify account and remove all stored credentials.",
 )
@@ -72,7 +78,7 @@ async def fn_disconnect_spotify(ctx, params: DisconnectSpotifyParams) -> ActionR
         return ActionResult.success(data={"disconnected": True}, summary="Spotify account disconnected")
     except Exception as e:
         log.error("disconnect_spotify failed: %s", e)
-        return ActionResult.error(f"Disconnect failed: {str(e)}")
+        return ActionResult.error(_user_error_message("disconnect", e))
 
 
 @chat.function(
@@ -98,7 +104,7 @@ async def fn_check_connection(ctx, params: CheckConnectionParams) -> ActionResul
         )
     except Exception as e:
         log.error("check_connection failed: %s", e)
-        return ActionResult.error(f"Status check failed: {str(e)}")
+        return ActionResult.error(_user_error_message("check connection", e))
 
 
 # ─── OAuth webhook callback ────────────────────────────────────────────────── #
@@ -128,8 +134,12 @@ async def oauth_callback(ctx, headers, body, query_params) -> dict:
         record = page.data[0].data
         user_id = record.get("user_id")
         redirect_uri = record.get("redirect_uri")
+        created_at = record.get("created_at")
 
         await ctx.store.delete(OAUTH_STATE_COLLECTION, page.data[0].id)
+
+        if not _state_is_fresh(created_at):
+            return WebhookResponse.error("State expired — please try connect_spotify() again.", 400)
 
         if not user_id:
             return WebhookResponse.error("Missing user_id in state", 500)
@@ -184,4 +194,4 @@ h1{font-size:24px;}p{color:#fff;margin-top:8px;}</style></head>
         return WebhookResponse(status_code=200, body=html, headers={"Content-Type": "text/html"})
     except Exception as e:
         log.error("oauth_callback failed: %s", e)
-        return WebhookResponse.error(f"Callback failed: {str(e)}", 500)
+        return WebhookResponse.error("Spotify callback failed. Please try connecting again.", 500)

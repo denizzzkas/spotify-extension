@@ -1,12 +1,19 @@
 """Auth helpers and utility functions for Spotify extension."""
 import base64
 import logging
+from datetime import datetime, timezone
+
+from email.utils import parsedate_to_datetime
 
 from imperal_sdk import ActionResult
 
-from spotify_config import SP_TOKEN_URL, CRED_COLLECTION
+from spotify_config import SP_TOKEN_URL, CRED_COLLECTION, OAUTH_STATE_TTL_SECONDS, PLAYER_READY_TTL_SECONDS
 
 log = logging.getLogger("spotify")
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 async def _get_access_token(ctx) -> str | None:
@@ -71,8 +78,8 @@ async def _refresh_access_token(ctx) -> str | None:
         if not creds or not creds.get("refresh_token"):
             return None
 
-        client_id = await ctx.secrets.get("spotify_client_id")
-        client_secret = await ctx.secrets.get("spotify_client_secret")
+        client_id = await ctx.secrets.get("spotify_client_id") or ""
+        client_secret = await ctx.secrets.get("spotify_client_secret") or ""
         if not client_id or not client_secret:
             return None
 
@@ -135,8 +142,8 @@ async def prepare_oauth_url(ctx) -> str | None:
         if not ctx.store:
             log.error("prepare_oauth_url: ctx.store is None")
             return None
-        client_id = await ctx.secrets.get("spotify_client_id")
-        client_secret = await ctx.secrets.get("spotify_client_secret")
+        client_id = await ctx.secrets.get("spotify_client_id") or ""
+        client_secret = await ctx.secrets.get("spotify_client_secret") or ""
         if not client_id or not client_secret:
             log.error("prepare_oauth_url: secrets missing (client_id=%s client_secret=%s)", bool(client_id), bool(client_secret))
             return None
@@ -176,6 +183,44 @@ async def prepare_oauth_url(ctx) -> str | None:
     except Exception as e:
         log.error("prepare_oauth_url failed: %s", e, exc_info=True)
         return None
+
+
+def _parse_timestamp(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except Exception:
+        try:
+            parsed = parsedate_to_datetime(value)
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=timezone.utc)
+            return parsed.astimezone(timezone.utc)
+        except Exception:
+            return None
+
+
+def _state_is_fresh(created_at: str | None, ttl_seconds: int = OAUTH_STATE_TTL_SECONDS) -> bool:
+    created = _parse_timestamp(created_at)
+    if created is None:
+        return False
+    return (_utcnow() - created).total_seconds() <= ttl_seconds
+
+
+def _user_error_message(action: str, exc: Exception | None = None) -> str:
+    return f"Could not {action}. Please try again."
+
+
+def _build_store_client_from_ctx(ctx, user_id: str):
+    from imperal_sdk.store.client import StoreClient
+
+    return StoreClient(
+        gateway_url=ctx.store._gateway_url,
+        service_token=ctx.store._auth_token,
+        extension_id=ctx.store._extension_id,
+        user_id=user_id,
+        tenant_id=ctx.store._tenant_id,
+    )
 
 
 async def _require_user_id(ctx) -> str | ActionResult:

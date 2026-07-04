@@ -60,7 +60,7 @@ class AddAlbumTracksToPlaylistParams(BaseModel):
     chain_callable=True,
     id_projection="playlist_id",
     effects=["playlist:remove_track"],
-    event="track.removed_from_playlist",
+    event="spotify.track.removed_from_playlist",
     data_model=BulkRemoveTracksRecord,
     description="Remove tracks from a playlist by name, artist, or duration. Examples: 'remove [track]', 'remove all tracks by [artist]', 'remove tracks longer than 4 minutes' (min_duration_ms=240000), 'keep only [artist]' (exclude=True). Filters can be combined.",
 )
@@ -127,7 +127,7 @@ async def fn_remove_tracks_from_playlist_by_name(ctx, params: RemoveTracksFromPl
     chain_callable=True,
     id_projection="playlist_id",
     effects=["playlist:remove_track"],
-    event="track.removed_from_playlist",
+    event="spotify.track.removed_from_playlist",
     data_model=BulkRemoveTracksRecord,
     description="Remove duplicate tracks from a playlist, keeping the first occurrence of each track.",
 )
@@ -192,7 +192,7 @@ async def fn_remove_duplicate_tracks(ctx, params: RemoveDuplicateTracksParams) -
     chain_callable=True,
     id_projection="playlist_id",
     effects=["playlist:add_track"],
-    event="track.added_to_playlist",
+    event="spotify.track.added_to_playlist",
     data_model=BulkAddTracksRecord,
     description="Find an album by name and add its tracks to a playlist in one step. Use when the user says 'add tracks from [album] to [playlist]' or 'add first N tracks from [album] to [playlist]'.",
 )

@@ -82,7 +82,7 @@ class DemoShuffleParams(BaseModel):
     action_type="write",
     chain_callable=True,
     effects=["demo:active"],
-    event="open_demo_playlist",
+    event="spotify.open_demo_playlist",
     data_model=DemoPlaylistRecord,
     description="Open demo playlist (no Spotify login required). Returns demo tracks for testing.",
 )
@@ -105,7 +105,7 @@ async def fn_open_demo_playlist(ctx, params: OpenDemoPlaylistParams) -> ActionRe
     action_type="write",
     chain_callable=True,
     effects=["demo:play"],
-    event="demo_play_track",
+    event="spotify.demo_play_track",
     data_model=DemoTrackRecord,
     description="Play a specific track from demo playlist.",
 )
@@ -143,7 +143,7 @@ async def fn_demo_play_track(ctx, params: DemoPlayTrackParams) -> ActionResult:
     action_type="write",
     chain_callable=True,
     effects=["demo:next"],
-    event="demo_next_track",
+    event="spotify.demo_next_track",
     data_model=PlayerActionRecord,
     description="Skip to next track in demo playlist.",
 )
@@ -169,7 +169,7 @@ async def fn_demo_next_track(ctx, params: DemoNextTrackParams) -> ActionResult:
     action_type="write",
     chain_callable=True,
     effects=["demo:prev"],
-    event="demo_prev_track",
+    event="spotify.demo_prev_track",
     data_model=PlayerActionRecord,
     description="Go to previous track in demo playlist.",
 )
@@ -189,7 +189,7 @@ async def fn_demo_prev_track(ctx, params: DemoPrevTrackParams) -> ActionResult:
     action_type="write",
     chain_callable=True,
     effects=["demo:pause"],
-    event="demo_pause",
+    event="spotify.demo_pause",
     data_model=PlayerActionRecord,
     description="Toggle playback pause/resume in demo mode.",
 )
@@ -211,7 +211,7 @@ async def fn_demo_pause(ctx, params: DemoPauseParams) -> ActionResult:
     action_type="write",
     chain_callable=True,
     effects=["demo:shuffle"],
-    event="demo_shuffle",
+    event="spotify.demo_shuffle",
     data_model=ShuffleRecord,
     description="Toggle shuffle mode in demo playlist.",
 )

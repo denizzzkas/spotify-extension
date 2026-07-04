@@ -6,7 +6,7 @@ from imperal_sdk import ui
 from app import ext, NowPlayingModel
 from panels_demo import render_demo_state
 from spotify_config import SP_API_BASE
-from app_helpers import _get_access_token, _refresh_access_token
+from app_helpers import _get_access_token, _spotify_call
 from utils import format_playlist, format_track
 from cache_models import SearchModel, PlaylistsModel
 from player_html import build_player_html
@@ -15,11 +15,7 @@ log = logging.getLogger("spotify.panels.left")
 
 
 async def _get_auth_headers(ctx) -> dict | None:
-    """Get auth headers with token refresh if needed."""
-    token = await _get_access_token(ctx)
-    if not token:
-        return None
-    return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    return await _get_access_token(ctx) and {"Authorization": f"Bearer {await _get_access_token(ctx)}", "Content-Type": "application/json"} or None
 
 
 async def panel_search_tracks(ctx, query: str = "", limit: int = 20) -> dict:
@@ -29,26 +25,14 @@ async def panel_search_tracks(ctx, query: str = "", limit: int = 20) -> dict:
         return {}
 
     try:
-        token = await _get_access_token(ctx)
-        if not token:
-            return {"error": True, "status": 0}
-
-        headers = {"Authorization": f"Bearer {token}"}
-        resp = await ctx.http.get(
+        resp, err = await _spotify_call(
+            ctx,
+            "get",
             f"{SP_API_BASE}/search",
-            headers=headers,
             params={"q": query, "type": "track"},
         )
-
-        if resp.status_code == 401:
-            token = await _refresh_access_token(ctx)
-            if token:
-                headers["Authorization"] = f"Bearer {token}"
-                resp = await ctx.http.get(
-                    f"{SP_API_BASE}/search",
-                    headers=headers,
-                    params={"q": query, "type": "track"},
-                )
+        if err:
+            return {"error": True, "status": 0, "detail": err.error}
 
         if not resp.ok:
             try:
@@ -122,13 +106,8 @@ async def panel_spotify(ctx, **kwargs):
                 url = f"{SP_API_BASE}/me/playlists"
                 fetch_params = {"limit": 50}
                 while url:
-                    resp = await ctx.http.get(url, headers=headers, params=fetch_params)
-                    if resp.status_code == 401:
-                        token = await _refresh_access_token(ctx)
-                        if token:
-                            headers["Authorization"] = f"Bearer {token}"
-                            resp = await ctx.http.get(url, headers=headers, params=fetch_params)
-                    if not resp.ok:
+                    resp, err = await _spotify_call(ctx, "get", url, params=fetch_params)
+                    if err or not resp.ok:
                         break
                     data = resp.json()
                     all_playlists.extend([format_playlist(p) for p in (data.get("items") or [])])

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from imperal_sdk import Extension
 from imperal_sdk.chat import ChatExtension
@@ -81,25 +81,25 @@ class NowPlayingModel(BaseModel):
 @ext.cache_model("search")
 class SearchModel(BaseModel):
     query: str = ""
-    tracks: list[dict] = []
+    tracks: list[dict] = Field(default_factory=list)
 
 @ext.cache_model("detail")
 class DetailModel(BaseModel):
     type: str = ""
     title: str = ""
-    tracks: list[dict] = []
-    profile: dict = {}
+    tracks: list[dict] = Field(default_factory=list)
+    profile: dict = Field(default_factory=dict)
     has_next: bool = False
 
 @ext.cache_model("playlists")
 class PlaylistsModel(BaseModel):
-    items: list[dict] = []
+    items: list[dict] = Field(default_factory=list)
 
 @ext.cache_model("queue")
 class QueueModel(BaseModel):
     playlist_id: str = ""
     playlist_name: str = ""
-    tracks: list[dict] = []
+    tracks: list[dict] = Field(default_factory=list)
     index: int = 0
 
 @ext.cache_model("demo_state")
@@ -126,6 +126,8 @@ chat = ChatExtension(
 @ext.emits("spotify.track.added_to_playlist")
 @ext.emits("spotify.track.removed_from_playlist")
 @ext.emits("spotify.playlist.created")
+@ext.emits("spotify.playlist.renamed")
+@ext.emits("spotify.playlist.deleted")
 @ext.emits("spotify.album.played")
 @ext.emits("spotify.playlist.played")
 @ext.emits("spotify.player.previous")
@@ -147,15 +149,21 @@ async def _declare_events() -> None:
 async def health(ctx) -> HealthStatus:
     try:
         client_id = await ctx.secrets.get("spotify_client_id")
-        if not client_id:
+        client_secret = await ctx.secrets.get("spotify_client_secret")
+        if not client_id or not client_secret:
             return HealthStatus.degraded("Spotify credentials not configured")
 
-        token = await _get_access_token(ctx)
-        connected = token is not None
-        return HealthStatus.ok({"connected": connected})
+        connected = False
+        try:
+            token = await _get_access_token(ctx)
+            connected = token is not None
+        except Exception:
+            connected = False
+
+        return HealthStatus.ok({"configured": True, "connected": connected})
     except Exception as exc:
         log.error("health check failed: %s", exc)
-        return HealthStatus.degraded(str(exc))
+        return HealthStatus.degraded("Spotify health check failed")
 
 @ext.on_install
 async def on_install(ctx) -> None:

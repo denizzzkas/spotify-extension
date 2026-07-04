@@ -113,7 +113,7 @@ async def fn_get_playlist_tracks(ctx, params: GetPlaylistTracksParams) -> Action
     action_type="write",
     chain_callable=True,
     effects=["playlist:create"],
-    event="playlist.created",
+    event="spotify.playlist.created",
     data_model=CreatePlaylistRecord,
     description="Create a NEW empty playlist. Call this ONLY when the user explicitly asks to create a playlist — NOT for viewing existing ones (use get_playlists) or playing one (use play_playlist).",
 )
@@ -154,7 +154,7 @@ async def fn_create_playlist(ctx, params: CreatePlaylistParams) -> ActionResult:
     chain_callable=True,
     id_projection="playlist_id",
     effects=["playlist:add_track"],
-    event="track.added_to_playlist",
+    event="spotify.track.added_to_playlist",
     data_model=PlaylistTrackRecord,
     description="Add a track to an existing playlist. Accepts track name/artist or track_id. In chains after search_tracks, pass the track_id from results. Accepts playlist name or playlist_id.",
 )
@@ -182,7 +182,7 @@ async def fn_add_track_to_playlist(ctx, params: AddTrackToPlaylistParams) -> Act
     chain_callable=True,
     id_projection="playlist_id",
     effects=["playlist:remove_track"],
-    event="track.removed_from_playlist",
+    event="spotify.track.removed_from_playlist",
     data_model=PlaylistRemoveRecord,
     description="Remove a track from a playlist. Accepts track name/artist or track_id, and playlist name or playlist_id.",
 )
@@ -210,7 +210,7 @@ async def fn_remove_track_from_playlist(ctx, params: RemoveTrackFromPlaylistPara
     chain_callable=True,
     id_projection="playlist_id",
     effects=["playlist:update"],
-    event="playlist.renamed",
+    event="spotify.playlist.renamed",
     data_model=RenamePlaylistRecord,
     description="Rename an existing playlist. Accepts playlist_id (use get_playlists to find it if you only have the name) and the new name.",
 )
@@ -241,7 +241,7 @@ async def fn_rename_playlist(ctx, params: RenamePlaylistParams) -> ActionResult:
     chain_callable=True,
     id_projection="playlist_id",
     effects=["playlist:delete"],
-    event="playlist.deleted",
+    event="spotify.playlist.deleted",
     data_model=DeletePlaylistRecord,
     description="Delete (unfollow) a playlist from the user's library by playlist_id. Use get_playlists first to find the playlist_id if you only have the name.",
 )
@@ -271,7 +271,7 @@ async def fn_delete_playlist(ctx, params: DeletePlaylistParams) -> ActionResult:
     chain_callable=True,
     id_projection="playlist_id",
     effects=["playlist:add_track"],
-    event="track.added_to_playlist",
+    event="spotify.track.added_to_playlist",
     data_model=BulkAddTracksRecord,
     description="Add multiple tracks to a playlist in one operation. Pass a list of track_ids. Use this after get_artist_top_tracks, get_album_tracks, or search_tracks to bulk-add results to a playlist.",
 )

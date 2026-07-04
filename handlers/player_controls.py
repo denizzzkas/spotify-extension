@@ -59,7 +59,7 @@ async def _update_now_playing_cache(ctx) -> None:
     chain_callable=True,
     data_model=PlayerActionRecord,
     description="Skip to the previous track in the Spotify playback queue.",
-    event="player.previous",
+    event="spotify.player.previous",
     effects=["player:previous"],
 )
 async def fn_sp_prev(ctx, params: EmptyParams) -> ActionResult:
@@ -82,7 +82,7 @@ async def fn_sp_prev(ctx, params: EmptyParams) -> ActionResult:
     chain_callable=True,
     data_model=PlayerActionRecord,
     description="Skip to the next track in the Spotify playback queue.",
-    event="player.next",
+    event="spotify.player.next",
     effects=["player:next"],
 )
 async def fn_sp_next(ctx, params: EmptyParams) -> ActionResult:
@@ -105,7 +105,7 @@ async def fn_sp_next(ctx, params: EmptyParams) -> ActionResult:
     chain_callable=True,
     data_model=PlayerActionRecord,
     description="Toggle Spotify playback between playing and paused states.",
-    event="player.play_pause",
+    event="spotify.player.play_pause",
     effects=["player:play_pause"],
 )
 async def fn_sp_play_pause(ctx, params: EmptyParams) -> ActionResult:
@@ -138,7 +138,7 @@ async def fn_sp_play_pause(ctx, params: EmptyParams) -> ActionResult:
     chain_callable=True,
     data_model=ShuffleRecord,
     description="Toggle Spotify shuffle mode on or off for the current playback session.",
-    event="player.shuffle",
+    event="spotify.player.shuffle",
     effects=["player:shuffle"],
 )
 async def fn_sp_shuffle(ctx, params: EmptyParams) -> ActionResult:
@@ -187,7 +187,7 @@ async def fn_sp_shuffle(ctx, params: EmptyParams) -> ActionResult:
     chain_callable=True,
     data_model=TrackLikeRecord,
     description="Toggle like/unlike on the currently playing track — no track_id needed. Use this when the user wants to like or save what's playing right now. To like a specific track by ID, use like_track instead.",
-    event="track.liked",
+    event="spotify.track.liked",
     effects=["track:like"],
 )
 async def fn_sp_like(ctx, params: EmptyParams) -> ActionResult:

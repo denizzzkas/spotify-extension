@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from app import ext
 from spotify_config import SP_API_BASE
-from app_helpers import _get_access_token, _refresh_access_token
+from app_helpers import _get_access_token, _spotify_call, _spotify_error
 from cache_models import DetailModel
 from demo_data import DEMO_TRACKS, DEMO_PLAYLIST_ID, DEMO_PLAYLIST_NAME
 from utils import format_track
@@ -36,26 +36,15 @@ async def _get_auth_headers(ctx) -> dict | None:
 async def _fetch_playlist_tracks(ctx, playlist_id: str, page: int = 0) -> tuple[list[dict], str | None, bool]:
     """Fetch one page of playlist tracks. Returns (tracks, error_msg, has_next)."""
     try:
-        headers = await _get_auth_headers(ctx)
-        if not headers:
-            return [], "Not authenticated", False
-
         fetch_params = {"limit": 50, "offset": page * 50}
-        resp = await ctx.http.get(
+        resp, err = await _spotify_call(
+            ctx,
+            "get",
             f"{SP_API_BASE}/playlists/{playlist_id}/items",
-            headers=headers,
             params=fetch_params,
         )
-
-        if resp.status_code == 401:
-            token = await _refresh_access_token(ctx)
-            if token:
-                headers["Authorization"] = f"Bearer {token}"
-                resp = await ctx.http.get(
-                    f"{SP_API_BASE}/playlists/{playlist_id}/items",
-                    headers=headers,
-                    params=fetch_params,
-                )
+        if err:
+            return [], err.error, False
 
         if resp.ok:
             data = resp.json()

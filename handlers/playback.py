@@ -40,7 +40,7 @@ class PlayAlbumParams(BaseModel):
     chain_callable=True,
     id_projection="track_id",
     effects=["playback:start"],
-    event="track.played",
+    event="spotify.track.played",
     data_model=PlayTrackRecord,
     description="Play a specific track. Accepts a track_id from search_tracks results, or a track name/artist (will search and play the best match). If the request is ambiguous or you are not certain which track the user means, call search_tracks first and show the results so the user can confirm. If the request is unambiguous (e.g. 'Rasputin by Boney M'), play immediately without asking.",
 )
@@ -155,7 +155,7 @@ async def fn_play_track(ctx, params: PlayTrackParams) -> ActionResult:
     chain_callable=True,
     id_projection="playlist_id",
     effects=["playback:start"],
-    event="playlist.played",
+    event="spotify.playlist.played",
     data_model=PlaylistPlayRecord,
     description="Start playing a playlist on the active Spotify device. Use this to PLAY a playlist. To only browse tracks without playing, use get_playlist_tracks instead. Accepts playlist_id or playlist name.",
 )
