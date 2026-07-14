@@ -147,20 +147,27 @@ async def _declare_events() -> None:
 
 @ext.health_check
 async def health(ctx) -> HealthStatus:
+    # App-level probe only: health checks run without a user / per-user store
+    # (kernel I-HEALTH-CTX-HONEST). Do NOT fetch per-user tokens here — that
+    # belongs in user-facing tools (see _get_access_token).
     try:
         client_id = await ctx.secrets.get("spotify_client_id")
         client_secret = await ctx.secrets.get("spotify_client_secret")
-        if not client_id or not client_secret:
+        configured = bool(client_id and client_secret)
+        if not configured:
             return HealthStatus.degraded("Spotify credentials not configured")
 
-        connected = False
+        api_reachable = False
         try:
-            token = await _get_access_token(ctx)
-            connected = token is not None
-        except Exception:
-            connected = False
+            resp = await ctx.http.get(SP_API_BASE)
+            # Any HTTP response (even 401 Unauthorized on the unauthenticated
+            # root) proves the Spotify API is reachable from here.
+            api_reachable = resp is not None
+        except Exception as exc:
+            log.warning("Spotify reachability probe failed: %s", exc)
+            api_reachable = False
 
-        return HealthStatus.ok({"configured": True, "connected": connected})
+        return HealthStatus.ok({"configured": configured, "api_reachable": api_reachable})
     except Exception as exc:
         log.error("health check failed: %s", exc)
         return HealthStatus.degraded("Spotify health check failed")
