@@ -1,6 +1,6 @@
 {
   "manifest_schema_version": 3,
-  "sdk_version": "5.9.3",
+  "sdk_version": "5.9.9",
   "app_id": "spotify",
   "version": "2.3.0",
   "name": "Spotify",
