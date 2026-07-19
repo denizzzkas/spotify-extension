@@ -1,6 +1,6 @@
 {
   "manifest_schema_version": 3,
-  "sdk_version": "5.9.9",
+  "sdk_version": "5.9.12",
   "app_id": "spotify",
   "version": "2.3.0",
   "name": "Spotify",
@@ -3393,6 +3393,12 @@
         "type": "spotify.album.played"
       },
       {
+        "type": "spotify.playlist.deleted"
+      },
+      {
+        "type": "spotify.playlist.renamed"
+      },
+      {
         "type": "spotify.playlist.created"
       },
       {
@@ -3439,21 +3445,24 @@
       "description": "Spotify OAuth Client ID from developer.spotify.com",
       "required": true,
       "write_mode": "user",
-      "max_bytes": 256
+      "max_bytes": 256,
+      "scope": "app"
     },
     {
       "name": "spotify_client_secret",
       "description": "Spotify OAuth Client Secret from developer.spotify.com",
       "required": true,
       "write_mode": "user",
-      "max_bytes": 512
+      "max_bytes": 512,
+      "scope": "app"
     },
     {
       "name": "genius_access_token",
       "description": "Genius API access token for lyrics lookup (optional)",
       "required": false,
       "write_mode": "user",
-      "max_bytes": 256
+      "max_bytes": 256,
+      "scope": "user"
     }
   ],
   "panels": [
@@ -3461,19 +3470,31 @@
       "panel_id": "secrets",
       "slot": "right",
       "title": "Secrets",
-      "tree": {}
+      "tree": {},
+      "icon": "KeyRound",
+      "refresh": "manual",
+      "center_overlay": false
     },
     {
       "panel_id": "spotify",
       "slot": "left",
       "title": "Spotify",
-      "tree": {}
+      "tree": {},
+      "icon": "Music",
+      "refresh": "on_event:spotify.connected,spotify.disconnected,spotify.track.liked,spotify.track.unliked,spotify.playlist.created,spotify.player.shuffle,spotify.track.played",
+      "center_overlay": false,
+      "default_width": 280,
+      "min_width": 220,
+      "max_width": 400
     },
     {
       "panel_id": "spotify_detail",
       "slot": "center",
       "title": "Spotify",
-      "tree": {}
+      "tree": {},
+      "icon": "Music",
+      "refresh": "manual",
+      "center_overlay": true
     }
   ]
 }
